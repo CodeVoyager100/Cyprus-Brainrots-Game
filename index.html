@@ -1,10 +1,186 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Hello World</title>
+    <style>
+        #coins-display {
+            font-size: 20px;
+            margin: 10px;
+        }
+
+        .skin-card {
+            display: inline-block;
+            background-color: #f4f4f4;
+            border: 2px solid #ccc;
+            padding: 10px;
+            margin: 10px;
+            text-align: center;
+            border-radius: 12px;
+            width: 180px;
+        }
+
+        .skin-img {
+            width: 100%;
+            border-radius: 8px;
+        }
+
+        .map-buttons-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .map-button {
+            padding: 10px 20px;
+            background-color: #ffcc00;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+            .map-button:hover {
+                transform: scale(1.1);
+            }
+    </style>
 </head>
 <body>
-    <h1>Hello World</h1>
+    <div id="coins-display"></div>
+    <div id="skins-container"></div>
+    <div id="map-selection" class="map-buttons-container"></div>
+
+    <div class="menu">
+        <button class="btn" onclick="startGame()">Play</button>
+        <button class="btn" onclick="openShop()">Shop</button>
+        <button class="btn" onclick="showRankings()">Rankings</button>
+    </div>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+    <script>// Coin and Skin Shop Logic
+        let playerCoins = parseInt(localStorage.getItem('coins')) || 1000;
+        let unlockedSkins = JSON.parse(localStorage.getItem('unlockedSkins')) || [];
+
+        function saveCoins() {
+            localStorage.setItem('coins', playerCoins);
+            localStorage.setItem('unlockedSkins', JSON.stringify(unlockedSkins));
+        }
+
+        function showCoins() {
+            document.getElementById('coins-display').innerText = `💰 Coins: ${playerCoins}`;
+        }
+
+        async function loadSkins() {
+            const res = await fetch('skins.json');
+            const skins = await res.json();
+            const container = document.getElementById('skins-container');
+            container.innerHTML = '';
+
+            skins.forEach((skin) => {
+                const div = document.createElement('div');
+                div.className = 'skin-card';
+                div.innerHTML = `
+                    <img src="${skin.image}" class="skin-img">
+                    <h3>${skin.name}</h3>
+                    <p>${skin.character}</p>
+                    <button ${unlockedSkins.includes(skin.id) || skin.price === 0 ? '' : 'onclick="buySkin(\'' + skin.id + '\',' + skin.price + ')"'}>
+                        ${unlockedSkins.includes(skin.id) || skin.price === 0 ? '✔️ Owned' : `Buy for ${skin.price} coins`}
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function buySkin(id, price) {
+            if (playerCoins >= price) {
+                playerCoins -= price;
+                unlockedSkins.push(id);
+                saveCoins();
+                showCoins();
+                loadSkins();
+                alert("Skin unlocked!");
+            } else {
+                alert("Not enough coins 😢");
+            }
+        }
+
+        // Map Selection Logic
+        async function loadMaps() {
+            const res = await fetch('maps.json');
+            const maps = await res.json();
+
+            const mapContainer = document.getElementById('map-selection');
+            mapContainer.innerHTML = '';
+
+            maps.forEach((map) => {
+                const btn = document.createElement('button');
+                btn.className = 'map-button';
+                btn.innerText = map.name;
+                btn.onclick = () => selectMap(map);
+                mapContainer.appendChild(btn);
+            });
+        }
+
+        function selectMap(map) {
+            console.log(`Selected map: ${map.name}`);
+            // You can load an image or change the game scene here
+        }
+
+        // Game Logic
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let player = {
+            x: 400,
+            y: 300,
+            size: 30,
+            color: 'blue',
+            speed: 4
+        };
+
+        function drawPlayer() {
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.size, player.size);
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function gameLoop() {
+            clearCanvas();
+            drawPlayer();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            gameLoop();
+        }
+
+        function openShop() {
+            alert("Shop not available yet. Coming soon!");
+        }
+
+        function showRankings() {
+            alert("Rankings will be unlocked as you play!");
+        }
+
+        window.addEventListener('keydown', (e) => {
+            switch (e.key) {
+                case 'ArrowUp': player.y -= player.speed; break;
+                case 'ArrowDown': player.y += player.speed; break;
+                case 'ArrowLeft': player.x -= player.speed; break;
+                case 'ArrowRight': player.x += player.speed; break;
+            }
+        });
+
+        // Initialize everything on page load
+        window.onload = () => {
+            showCoins();
+            loadSkins();
+            loadMaps();
+        };</script>
 </body>
 </html>
