@@ -51,7 +51,7 @@
     <div id="coins-display"></div>
     <div id="skins-container"></div>
     <div id="map-selection" class="map-buttons-container"></div>
-
+   
     <div class="menu">
         <button class="btn" onclick="startGame()">Play</button>
         <button class="btn" onclick="openShop()">Shop</button>
@@ -62,6 +62,9 @@
     <script>// Coin and Skin Shop Logic
         let playerCoins = parseInt(localStorage.getItem('coins')) || 1000;
         let unlockedSkins = JSON.parse(localStorage.getItem('unlockedSkins')) || [];
+
+        const playerImg = new Image();
+        playerImg.src = 'images/ScorpiosSouvlak.png'; // Adjust path if needed
 
         function saveCoins() {
             localStorage.setItem('coins', playerCoins);
@@ -135,16 +138,21 @@
         let player = {
             x: 400,
             y: 300,
-            size: 30,
+            size: 60,
             color: 'blue',
             speed: 4
         };
 
+       // 2. Update drawPlayer to use the image
         function drawPlayer() {
-            ctx.fillStyle = player.color;
-            ctx.fillRect(player.x, player.y, player.size, player.size);
+            if (playerImg.complete && playerImg.naturalWidth !== 0) {
+                ctx.drawImage(playerImg, player.x, player.y, player.size, player.size);
+            } else {
+                // Fallback: draw a square until the image loads
+                ctx.fillStyle = player.color;
+                ctx.fillRect(player.x, player.y, player.size, player.size);
+            }
         }
-
         function clearCanvas() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
