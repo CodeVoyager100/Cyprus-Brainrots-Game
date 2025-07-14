@@ -1,8 +1,8 @@
-﻿DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Tsimpitiris Showdown</title>
+    <title>Cyprus Brainrot Game</title>
     <style>
         body, html {
             margin: 0;
@@ -54,9 +54,9 @@
             transition: transform 0.2s;
         }
 
-            .map-button:hover {
-                transform: scale(1.1);
-            }
+        .map-button:hover {
+            transform: scale(1.1);
+        }
 
         .menu {
             position: absolute;
@@ -78,9 +78,9 @@
             font-weight: bold;
         }
 
-            .btn:hover {
-                background-color: #666;
-            }
+        .btn:hover {
+            background-color: #666;
+        }
 
         #gameCanvas {
             width: 100vw;
@@ -107,6 +107,10 @@
         let unlockedSkins = JSON.parse(localStorage.getItem('unlockedSkins')) || [];
         const playerImg = new Image();
         playerImg.src = 'images/ScorpiosSouvlak.png';
+        // Add map image
+        const mapImg = new Image();
+        mapImg.src = 'images/map.png';
+        let gameStarted = false;
 
         function saveCoins() {
             localStorage.setItem('coins', playerCoins);
@@ -130,7 +134,7 @@
                 <img src="${skin.image}" class="skin-img">
                 <h3>${skin.name}</h3>
                 <p>${skin.character}</p>
-                <button ${unlockedSkins.includes(skin.id) || skin.price === 0 ? '' : 'onclick="buySkin(\'' + skin.id + '\',' + skin.price + ')"'}>
+                <button ${unlockedSkins.includes(skin.id) || skin.price === 0 ? '' : 'onclick="buySkin(\'${skin.id}\',${skin.price})"'}>
                     ${unlockedSkins.includes(skin.id) || skin.price === 0 ? '✔️ Owned' : `Buy for ${skin.price} coins`}
                 </button>
             `;
@@ -192,13 +196,22 @@
             }
         }
 
+        function drawMap() {
+            if (mapImg.complete && mapImg.naturalWidth !== 0) {
+                ctx.drawImage(mapImg, 0, 0, canvas.width, canvas.height);
+            }
+        }
+
         function clearCanvas() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
 
         function gameLoop() {
             clearCanvas();
-            drawPlayer();
+            if (gameStarted) {
+                drawMap();
+                drawPlayer();
+            }
             requestAnimationFrame(gameLoop);
         }
 
@@ -207,6 +220,7 @@
             document.getElementById('skins-container').style.display = 'none';
             document.getElementById('map-selection').style.display = 'none';
             document.querySelector('.menu').style.display = 'none';
+            gameStarted = true;
             gameLoop();
         }
 
@@ -221,10 +235,26 @@
 
         window.addEventListener('keydown', (e) => {
             switch (e.key) {
-                case 'ArrowUp': player.y -= player.speed; break;
-                case 'ArrowDown': player.y += player.speed; break;
-                case 'ArrowLeft': player.x -= player.speed; break;
-                case 'ArrowRight': player.x += player.speed; break;
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    player.y -= player.speed;
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    player.y += player.speed;
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    player.x -= player.speed;
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    player.x += player.speed;
+                    break;
             }
         });
 
@@ -235,5 +265,4 @@
         };
     </script>
 </body>
-</html>
 </html>
