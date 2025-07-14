@@ -152,7 +152,7 @@
         }
 
         async function loadMaps() {
-            const res = await fetch('maps.json');
+            const res = await fetch('images/maps.json');
             const maps = await res.json();
             const mapContainer = document.getElementById('map-selection');
             mapContainer.innerHTML = '';
