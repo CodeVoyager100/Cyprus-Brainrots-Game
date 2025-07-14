@@ -1,12 +1,24 @@
-﻿<!DOCTYPE html>
+﻿DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Hello World</title>
+    <title>Tsimpitiris Showdown</title>
     <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+        }
+
         #coins-display {
             font-size: 20px;
             margin: 10px;
+            color: white;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
         }
 
         .skin-card {
@@ -45,26 +57,56 @@
             .map-button:hover {
                 transform: scale(1.1);
             }
+
+        .menu {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        .btn {
+            background-color: #444;
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+            .btn:hover {
+                background-color: #666;
+            }
+
+        #gameCanvas {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
     </style>
 </head>
 <body>
     <div id="coins-display"></div>
     <div id="skins-container"></div>
     <div id="map-selection" class="map-buttons-container"></div>
-   
-    <div class="menu">
-        <button class="btn" onclick="startGame()">Play</button>
-        <button class="btn" onclick="openShop()">Shop</button>
-        <button class="btn" onclick="showRankings()">Rankings</button>
-    </div>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
 
-    <script>// Coin and Skin Shop Logic
+    <div class="menu">
+        <button class="btn" onclick="startGame()">🎮 Tsimbatle!</button>
+        <button class="btn" onclick="openShop()">🛒 Bazaar</button>
+        <button class="btn" onclick="showRankings()">🏆 Glory Ladder</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
         let playerCoins = parseInt(localStorage.getItem('coins')) || 1000;
         let unlockedSkins = JSON.parse(localStorage.getItem('unlockedSkins')) || [];
-
         const playerImg = new Image();
-        playerImg.src = 'images/ScorpiosSouvlak.png'; // Adjust path if needed
+        playerImg.src = 'images/ScorpiosSouvlak.png';
 
         function saveCoins() {
             localStorage.setItem('coins', playerCoins);
@@ -85,13 +127,13 @@
                 const div = document.createElement('div');
                 div.className = 'skin-card';
                 div.innerHTML = `
-                    <img src="${skin.image}" class="skin-img">
-                    <h3>${skin.name}</h3>
-                    <p>${skin.character}</p>
-                    <button ${unlockedSkins.includes(skin.id) || skin.price === 0 ? '' : 'onclick="buySkin(\'' + skin.id + '\',' + skin.price + ')"'}>
-                        ${unlockedSkins.includes(skin.id) || skin.price === 0 ? '✔️ Owned' : `Buy for ${skin.price} coins`}
-                    </button>
-                `;
+                <img src="${skin.image}" class="skin-img">
+                <h3>${skin.name}</h3>
+                <p>${skin.character}</p>
+                <button ${unlockedSkins.includes(skin.id) || skin.price === 0 ? '' : 'onclick="buySkin(\'' + skin.id + '\',' + skin.price + ')"'}>
+                    ${unlockedSkins.includes(skin.id) || skin.price === 0 ? '✔️ Owned' : `Buy for ${skin.price} coins`}
+                </button>
+            `;
                 container.appendChild(div);
             });
         }
@@ -109,11 +151,9 @@
             }
         }
 
-        // Map Selection Logic
         async function loadMaps() {
             const res = await fetch('maps.json');
             const maps = await res.json();
-
             const mapContainer = document.getElementById('map-selection');
             mapContainer.innerHTML = '';
 
@@ -128,31 +168,30 @@
 
         function selectMap(map) {
             console.log(`Selected map: ${map.name}`);
-            // You can load an image or change the game scene here
         }
 
-        // Game Logic
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
         let player = {
-            x: 400,
-            y: 300,
+            x: canvas.width / 2,
+            y: canvas.height / 2,
             size: 60,
             color: 'blue',
             speed: 4
         };
 
-       // 2. Update drawPlayer to use the image
         function drawPlayer() {
             if (playerImg.complete && playerImg.naturalWidth !== 0) {
                 ctx.drawImage(playerImg, player.x, player.y, player.size, player.size);
             } else {
-                // Fallback: draw a square until the image loads
                 ctx.fillStyle = player.color;
                 ctx.fillRect(player.x, player.y, player.size, player.size);
             }
         }
+
         function clearCanvas() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
@@ -164,11 +203,16 @@
         }
 
         function startGame() {
+            document.getElementById('coins-display').style.display = 'none';
+            document.getElementById('skins-container').style.display = 'none';
+            document.getElementById('map-selection').style.display = 'none';
+            document.querySelector('.menu').style.display = 'none';
             gameLoop();
         }
 
         function openShop() {
             alert("Shop not available yet. Coming soon!");
+            console.log("user clicked openShop");
         }
 
         function showRankings() {
@@ -184,11 +228,12 @@
             }
         });
 
-        // Initialize everything on page load
         window.onload = () => {
             showCoins();
             loadSkins();
             loadMaps();
-        };</script>
+        };
+    </script>
 </body>
+</html>
 </html>
