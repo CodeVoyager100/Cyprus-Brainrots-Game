@@ -120,35 +120,53 @@
         let unlockedSkins = JSON.parse(localStorage.getItem('unlockedSkins')) || [];
         const playerImg = new Image();
         playerImg.src = 'images/ScorpiosSouvlak.png';
-        const mapImg = new Image();
-        mapImg.src = 'images/map.png';
         let gameStarted = false;
         let lasers = [];
         let aiLasers = [];
 
-        // Make AI easier: lower speed, higher player HP, more AI mistakes, no AI give up
+        // Smaller player and AI size
         let player = {
             x: gameCanvas.width / 2,
             y: gameCanvas.height / 2,
-            size: 60,
+            size: 36, // smaller
             color: 'blue',
             speed: 4,
-            hp: 10, // Much higher player HP
+            hp: 10,
             shootCooldown: 0
         };
 
         let ai = {
             x: gameCanvas.width / 4,
             y: gameCanvas.height / 4,
-            size: 60,
+            size: 36, // smaller
             color: 'green',
-            speed: 0.5, // Much lower AI speed
+            speed: 1.5, // a bit faster for random walk
             hp: 7,
-            shootCooldown: 0
+            shootCooldown: 0,
+            vx: 1.5, // random walk direction
+            vy: 1.5
         };
 
         // --- Add playerLevel and use it for rank ---
         let playerLevel = parseInt(localStorage.getItem('playerLevel')) || 1;
+
+        // Remove map image background
+        drawMap = function() {};
+
+        // Smaller obstacles, more chaotic
+        const obstacles = [
+            { x: 100, y: 100, width: 50, height: 30, type: 'lake' },
+            { x: 700, y: 200, width: 40, height: 60, type: 'lake' },
+            { x: 400, y: 500, width: 60, height: 40, type: 'lake' },
+            { x: 250, y: 350, width: 30, height: 60, type: 'brick' },
+            { x: 600, y: 400, width: 40, height: 30, type: 'brick' },
+            { x: 800, y: 600, width: 50, height: 50, type: 'brick' },
+            { x: 350, y: 200, width: 30, height: 70, type: 'brick' },
+            { x: 500, y: 100, width: 40, height: 40, type: 'brick' },
+            { x: 200, y: 600, width: 60, height: 30, type: 'brick' },
+            { x: 900, y: 300, width: 40, height: 60, type: 'lake' },
+            { x: 100, y: 500, width: 50, height: 50, type: 'lake' }
+        ];
 
         function clearCanvas() {
             ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
@@ -244,41 +262,50 @@
             ctx.restore();
         }
 
-        // --- AI mistakes: sometimes skips shooting, sometimes gives up ---
+        // --- AI improved shooting logic ---
         function updateAI() {
-            // Move AI towards player
-            let dx = player.x - ai.x;
-            let dy = player.y - ai.y;
-            let dist = Math.sqrt(dx*dx + dy*dy);
-            if (dist > 10) {
-                ai.x += (dx / dist) * ai.speed;
-                ai.y += (dy / dist) * ai.speed;
-            }
-            // AI mistake: 40% chance to skip shooting (easier)
-            if (ai.shootCooldown <= 0) {
-                if (Math.random() < 0.40) {
-                    ai.shootCooldown = 200; // skip shooting this turn
-                } else {
-                    // Normal shoot (no more give up)
-                    const startX = ai.x + ai.size / 2;
-                    const startY = ai.y + ai.size / 2;
-                    const pdx = (player.x + player.size/2) - startX;
-                    const pdy = (player.y + player.size/2) - startY;
-                    const plen = Math.sqrt(pdx*pdx + pdy*pdy);
-                    const speed = 12;
-                    const vx = pdx / plen * speed;
-                    const vy = pdy / plen * speed;
-                    aiLasers.push({ x: startX, y: startY, vx, vy, life: 60 });
-                    ai.shootCooldown = 200;
+            // Move AI in a straight line, bounce off walls/obstacles
+            let oldX = ai.x;
+            let oldY = ai.y;
+            ai.x += ai.vx;
+            ai.y += ai.vy;
+            // Bounce off walls
+            if (ai.x < 0 || ai.x + ai.size > gameCanvas.width) ai.vx *= -1;
+            if (ai.y < 0 || ai.y + ai.size > gameCanvas.height) ai.vy *= -1;
+            // Bounce off obstacles
+            for (let obs of obstacles) {
+                if (checkCollisionWithRect(ai, obs)) {
+                    ai.x = oldX;
+                    ai.y = oldY;
+                    ai.vx = (Math.random() - 0.5) * 3;
+                    ai.vy = (Math.random() - 0.5) * 3;
+                    break;
                 }
+            }
+            // AI shooting: if player in range, shoot at player, else random
+            const shootRange = 250;
+            const dx = (player.x + player.size/2) - (ai.x + ai.size/2);
+            const dy = (player.y + player.size/2) - (ai.y + ai.size/2);
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (ai.shootCooldown <= 0) {
+                let vx, vy;
+                if (dist <= shootRange) {
+                    // Shoot at player
+                    const len = Math.sqrt(dx*dx + dy*dy);
+                    vx = dx / len * 12;
+                    vy = dy / len * 12;
+                } else {
+                    // Shoot randomly
+                    let angle = Math.random() * 2 * Math.PI;
+                    vx = Math.cos(angle) * 12;
+                    vy = Math.sin(angle) * 12;
+                }
+                const startX = ai.x + ai.size / 2;
+                const startY = ai.y + ai.size / 2;
+                aiLasers.push({ x: startX, y: startY, vx, vy, life: 60 });
+                ai.shootCooldown = 60 + Math.floor(Math.random() * 120); // random cooldown
             } else {
                 ai.shootCooldown--;
-            }
-        }
-
-        function drawMap() {
-            if (mapImg.complete && mapImg.naturalWidth !== 0) {
-                ctx.drawImage(mapImg, 0, 0, gameCanvas.width, gameCanvas.height);
             }
         }
 
@@ -321,6 +348,22 @@
                 lasers[i].x += lasers[i].vx;
                 lasers[i].y += lasers[i].vy;
                 lasers[i].life--;
+                // Stop laser if it hits any obstacle
+                let hitObstacle = false;
+                for (let obs of obstacles) {
+                    if (checkCollisionWithRect({
+                        x: lasers[i].x,
+                        y: lasers[i].y,
+                        size: 4 // laser thickness
+                    }, obs)) {
+                        hitObstacle = true;
+                        break;
+                    }
+                }
+                if (hitObstacle) {
+                    lasers.splice(i, 1);
+                    continue;
+                }
                 if (checkCollision(lasers[i], ai)) {
                     ai.hp--;
                     lasers.splice(i, 1);
@@ -331,6 +374,7 @@
                         showCoins();
                         alert("You won! +1000 coins, +1 level");
                         endGame();
+                        return; // Ensure game ends immediately
                     }
                     continue;
                 }
@@ -363,6 +407,22 @@
                 aiLasers[i].x += aiLasers[i].vx;
                 aiLasers[i].y += aiLasers[i].vy;
                 aiLasers[i].life--;
+                // Stop AI laser if it hits any obstacle
+                let hitObstacle = false;
+                for (let obs of obstacles) {
+                    if (checkCollisionWithRect({
+                        x: aiLasers[i].x,
+                        y: aiLasers[i].y,
+                        size: 4 // laser thickness
+                    }, obs)) {
+                        hitObstacle = true;
+                        break;
+                    }
+                }
+                if (hitObstacle) {
+                    aiLasers.splice(i, 1);
+                    continue;
+                }
                 if (checkCollision(aiLasers[i], player)) {
                     player.hp--;
                     aiLasers.splice(i, 1);
@@ -396,6 +456,29 @@
             );
         }
 
+        // Add obstacle collision check function
+        function checkCollisionWithRect(rect1, rect2) {
+            return (
+                rect1.x < rect2.x + rect2.width &&
+                rect1.x + rect1.size > rect2.x &&
+                rect1.y < rect2.y + rect2.height &&
+                rect1.y + rect1.size > rect2.y
+            );
+        }
+
+        function drawObstacles() {
+            ctx.save();
+            for (let obs of obstacles) {
+                if (obs.type === 'lake') {
+                    ctx.fillStyle = "#0077aa";
+                } else {
+                    ctx.fillStyle = "#8B0000";
+                }
+                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+            }
+            ctx.restore();
+        }
+
         function updateCooldowns() {
             if (player.shootCooldown > 0) player.shootCooldown--;
             if (ai.shootCooldown > 0) ai.shootCooldown--;
@@ -404,7 +487,7 @@
         function gameLoop() {
             clearCanvas();
             if (gameStarted) {
-                drawMap();
+                drawObstacles(); // Draw obstacles before player and AI
                 drawPlayer();
                 drawAI();
                 drawHP();
@@ -521,6 +604,9 @@
         }
 
         window.addEventListener('keydown', (e) => {
+            let oldX = player.x;
+            let oldY = player.y;
+            
             switch (e.key) {
                 case 'ArrowUp':
                 case 'w':
@@ -543,6 +629,15 @@
                     player.x += player.speed;
                     break;
             }
+
+            // Check for collisions with obstacles
+            for (let obs of obstacles) {
+                if (checkCollisionWithRect(player, obs)) {
+                    player.x = oldX;
+                    player.y = oldY;
+                    break;
+                }
+            }
         });
  
         window.onload = () => {
@@ -551,8 +646,6 @@
             loadMaps();
         };
 
-
-   
     </script>
 </body>
 </html>
