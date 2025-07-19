@@ -1,0 +1,252 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cyprus Brainrot Game</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #coins-display {
+            font-size: 20px;
+            margin: 10px;
+            color: white;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+        }
+
+        .skin-card {
+            display: inline-block;
+            background-color: #f4f4f4;
+            border: 2px solid #ccc;
+            padding: 10px;
+            margin: 10px;
+            text-align: center;
+            border-radius: 12px;
+            width: 180px;
+        }
+
+        .skin-img {
+            width: 100%;
+            border-radius: 8px;
+        }
+
+        .map-buttons-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .map-button {
+            padding: 10px 20px;
+            background-color: #ffcc00;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .map-button:hover {
+            transform: scale(1.1);
+        }
+
+        .menu {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        .btn {
+            background-color: #444;
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            background-color: #666;
+        }
+
+        #gameCanvas {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div id="coins-display"></div>
+    <div id="skins-container"></div>
+    <div id="map-selection" class="map-buttons-container"></div>
+
+    <div class="menu">
+        <button class="btn" onclick="startGame()">🎮 Tsimbatle!</button>
+        <button class="btn" onclick="openShop()">🛒 Bazaar</button>
+        <button class="btn" onclick="showRankings()">🏆 Glory Ladder</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        let playerCoins = parseInt(localStorage.getItem('coins')) || 1000;
+        let unlockedSkins = JSON.parse(localStorage.getItem('unlockedSkins')) || [];
+        const playerImg = new Image();
+        playerImg.src = 'images/ScorpiosSouvlak.png';
+        // Add map image
+        const mapImg = new Image();
+        mapImg.src = 'images/map.png';
+        let gameStarted = false;
+
+        function saveCoins() {
+            localStorage.setItem('coins', playerCoins);
+            localStorage.setItem('unlockedSkins', JSON.stringify(unlockedSkins));
+        }
+
+        function showCoins() {
+            document.getElementById('coins-display').innerText = `💰 Coins: ${playerCoins}`;
+        }
+
+        async function loadSkins() {
+            const res = await fetch('skins.json');
+            const skins = await res.json();
+            const container = document.getElementById('skins-container');
+            container.innerHTML = '';
+
+            skins.forEach((skin) => {
+                const div = document.createElement('div');
+                div.className = 'skin-card';
+                div.innerHTML = `
+                <img src="${skin.image}" class="skin-img">
+                <h3>${skin.name}</h3>
+                <p>${skin.character}</p>
+                <button ${unlockedSkins.includes(skin.id) || skin.price === 0 ? '' : 'onclick="buySkin(\'${skin.id}\',${skin.price})"'}>
+                    ${unlockedSkins.includes(skin.id) || skin.price === 0 ? '✔️ Owned' : `Buy for ${skin.price} coins`}
+                </button>
+            `;
+                container.appendChild(div);
+            });
+        }
+
+        function buySkin(id, price) {
+            if (playerCoins >= price) {
+                playerCoins -= price;
+                unlockedSkins.push(id);
+                saveCoins();
+                showCoins();
+                loadSkins();
+                alert("Skin unlocked!");
+            } else {
+                alert("Not enough coins 😢");
+            }
+        }
+
+        async function loadMaps() {
+            const res = await fetch('images/maps.json');
+            const maps = await res.json();
+            const mapContainer = document.getElementById('map-selection');
+            mapContainer.innerHTML = '';
+
+            maps.forEach((map) => {
+                const btn = document.createElement('button');
+                btn.className = 'map-button';
+                btn.innerText = map.name;
+                btn.onclick = () => selectMap(map);
+                mapContainer.appendChild(btn);
+            });
+        }
+
+        function selectMap(map) {
+            console.log(`Selected map: ${map.name}`);
+        }
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let player = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            size: 60,
+            color: 'blue',
+            speed: 4
+        };
+
+        function drawPlayer() {
+            if (playerImg.complete && playerImg.naturalWidth !== 0) {
+                ctx.drawImage(playerImg, player.x, player.y, player.size, player.size);
+            } else {
+                ctx.fillStyle = player.color;
+                ctx.fillRect(player.x, player.y, player.size, player.size);
+            }
+        }
+
+        function drawMap() {
+            if (mapImg.complete && mapImg.naturalWidth !== 0) {
+                ctx.drawImage(mapImg, 0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function gameLoop() {
+            clearCanvas();
+            if (gameStarted) {
+                drawMap();
+                drawPlayer();
+            }
+            requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            document.getElementById('coins-display').style.display = 'none';
+            document.getElementById('skins-container').style.display = 'none';
+            document.getElementById('map-selection').style.display = 'none';
+            document.querySelector('.menu').style.display = 'none';
+            gameStarted = true;
+            gameLoop();
+        }
+
+        function openShop() {
+            alert("Shop not available yet. Coming soon!");
+            console.log("user clicked openShop");
+        }
+
+        function showRankings() {
+            alert("Rankings will be unlocked as you play!");
+        }
+
+        window.addEventListener('keydown', (e) => {
+            switch (e.key) {
+                case 'ArrowUp': player.y -= player.speed; break;
+                case 'ArrowDown': player.y += player.speed; break;
+                case 'ArrowLeft': player.x -= player.speed; break;
+                case 'ArrowRight': player.x += player.speed; break;
+            }
+        });
+
+        window.onload = () => {
+            showCoins();
+            loadSkins();
+            loadMaps();
+        };
+    </script>
+</body>
+</html>
