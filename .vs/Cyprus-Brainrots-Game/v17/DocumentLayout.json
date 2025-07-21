@@ -18,7 +18,7 @@
           "Children": [
             {
               "$type": "Bookmark",
-              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+              "Name": "ST:0:0:{56df62a4-05a3-4e5b-aa1a-99371ccfb997}"
             },
             {
               "$type": "Document",
@@ -26,9 +26,9 @@
               "Title": "index.html",
               "DocumentMoniker": "C:\\Users\\itsupport\\source\\repos\\CodeVoyager100\\Cyprus-Brainrots-Game\\index.html",
               "RelativeDocumentMoniker": "index.html",
-              "ToolTip": "C:\\Users\\itsupport\\source\\repos\\CodeVoyager100\\Cyprus-Brainrots-Game\\index.html*",
-              "RelativeToolTip": "index.html*",
-              "ViewState": "AgIAAAUBAAAAAAAAAAAAAIkAAABeAAAAAAAAAA==",
+              "ToolTip": "C:\\Users\\itsupport\\source\\repos\\CodeVoyager100\\Cyprus-Brainrots-Game\\index.html",
+              "RelativeToolTip": "index.html",
+              "ViewState": "AgIAAAUBAAAAAAAAAAAAAIkAAAASAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
               "WhenOpened": "2025-07-14T17:31:01.065Z",
               "EditorCaption": ""
