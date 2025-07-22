@@ -1,0 +1,651 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cyprus Brainrot Game</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #coins-display {
+            font-size: 30px;
+            margin: 20px;
+            color: white;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+        }
+
+        .skin-card {
+            display: inline-block;
+            background-color: #f4f4f4;
+            border: 2px solid #ccc;
+            padding: 10px;
+            margin: 10px;
+            text-align: center;
+            border-radius: 12px;
+            width: 180px;
+        }
+
+        .skin-img {
+            width: 110%;
+            border-radius: 8px;
+        }
+
+        .map-buttons-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .map-button {
+            padding: 10px 20px;
+            background-color: #ffcc00;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .map-button:hover {
+            transform: scale(1.1);
+        }
+
+        .menu {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        .btn {
+            background-color: #444;
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            background-color: #666;
+        }
+
+        #gameCanvas {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div id="coins-display"></div>
+    <div id="skins-container"></div>
+    <div id="map-selection" class="map-buttons-container"></div>
+
+    <div class="menu">
+        <button class="btn" onclick="startGame()">🎮 battle!</button>
+        <button class="btn" onclick="openShop()">🛒 Bazaar</button>
+        <button class="btn" onclick="showRankings()">🏆 Glory Line</button>
+    </div>
+
+    <div id="rankings-container" style="display:none; position:absolute; top:60px; left:50%; transform:translateX(-50%); background:#222; color:#fff; padding:24px 32px; border-radius:16px; z-index:20; min-width:320px; text-align:center;">
+        <h2>🏆 Glory Line</h2>
+        <ol id="ladder-list" style="text-align:left; margin:0 auto; max-width:300px;"></ol>
+        <div id="rank-prize-message" style="margin-top:10px; color:#ffcc00;"></div>
+        <button class="btn" onclick="closeRankings()" style="margin-top:16px;">Close</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        // --- CANVAS INIT AT TOP ---
+        const gameCanvas = document.getElementById('gameCanvas');
+        const ctx = gameCanvas.getContext('2d');
+        gameCanvas.width = window.innerWidth;
+        gameCanvas.height = window.innerHeight;
+
+        let playerCoins = parseInt(localStorage.getItem('coins')) || 1000;
+        let unlockedSkins = JSON.parse(localStorage.getItem('unlockedSkins')) || [];
+        const playerImg = new Image();
+        playerImg.src = 'images/ScorpiosSouvlak.png';
+        let gameStarted = false;
+        let lasers = [];
+        let aiLasers = [];
+
+        // Smaller player and AI size
+        let player = {
+            x: gameCanvas.width / 2,
+            y: gameCanvas.height / 2,
+            size: 36, // smaller
+            color: 'blue',
+            speed: 4,
+            hp: 10,
+            shootCooldown: 0
+        };
+
+        let ai = {
+            x: gameCanvas.width / 4,
+            y: gameCanvas.height / 4,
+            size: 36, // smaller
+            color: 'green',
+            speed: 1.5, // a bit faster for random walk
+            hp: 7,
+            shootCooldown: 0,
+            vx: 1.5, // random walk direction
+            vy: 1.5
+        };
+
+        // --- Add playerLevel and use it for rank ---
+        let playerLevel = parseInt(localStorage.getItem('playerLevel')) || 1;
+
+        // Remove map image background
+        drawMap = function() {};
+
+        // Smaller obstacles, more chaotic
+        const obstacles = [
+            { x: 100, y: 100, width: 50, height: 30, type: 'lake' },
+            { x: 700, y: 200, width: 40, height: 60, type: 'lake' },
+            { x: 400, y: 500, width: 60, height: 40, type: 'lake' },
+            { x: 250, y: 350, width: 30, height: 60, type: 'brick' },
+            { x: 600, y: 400, width: 40, height: 30, type: 'brick' },
+            { x: 800, y: 600, width: 50, height: 50, type: 'brick' },
+            { x: 350, y: 200, width: 30, height: 70, type: 'brick' },
+            { x: 500, y: 100, width: 40, height: 40, type: 'brick' },
+            { x: 200, y: 600, width: 60, height: 30, type: 'brick' },
+            { x: 900, y: 300, width: 40, height: 60, type: 'lake' },
+            { x: 100, y: 500, width: 50, height: 50, type: 'lake' }
+        ];
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+        }
+
+        // Fix showCoins to always show coins/rank when not in game
+        function showCoins() {
+            const rank = getCurrentRank(playerLevel);
+            const display = document.getElementById('coins-display');
+            display.innerText = `💰 Coins: ${playerCoins}  |  🏅 Rank: ${rank.name}  |  🔼 Level: ${playerLevel}`;
+            display.style.display = 'block';
+        }
+
+        async function loadSkins() {
+            const res = await fetch('skins.json');
+            const skins = await res.json();
+            const container = document.getElementById('skins-container');
+            container.innerHTML = '';
+
+            skins.forEach((skin) => {
+                const div = document.createElement('div');
+                div.className = 'skin-card';
+                div.innerHTML = `
+                <img src="${skin.image}" class="skin-img">
+                <h3>${skin.name}</h3>
+                <p>${skin.character}</p>
+                <button ${unlockedSkins.includes(skin.id) || skin.price === 0 ? '' : 'onclick="buySkin(\'${skin.id}\',${skin.price})"'}>
+                    ${unlockedSkins.includes(skin.id) || skin.price === 0 ? '✔️ Owned' : `Buy for ${skin.price} coins`}
+                </button>
+            `;
+                container.appendChild(div);
+            });
+        }
+
+        function buySkin(id, price) {
+            if (playerCoins >= price) {
+                playerCoins -= price;
+                unlockedSkins.push(id);
+                saveCoins();
+                showCoins();
+                loadSkins();
+                alert("Skin unlocked!");
+            } else {
+                alert("Not enough coins 😢");
+            }
+        }
+
+        async function loadMaps() {
+            const res = await fetch('images/maps.json');
+            const maps = await res.json();
+            const mapContainer = document.getElementById('map-selection');
+            mapContainer.innerHTML = '';
+
+            maps.forEach((map) => {
+                const btn = document.createElement('button');
+                btn.className = 'map-button';
+                btn.innerText = map.name;
+                btn.onclick = () => selectMap(map);
+                mapContainer.appendChild(btn);
+            });
+        }
+
+        function selectMap(map) {
+            console.log(`Selected map: ${map.name}`);
+        }
+
+        function drawPlayer() {
+            if (playerImg.complete && playerImg.naturalWidth !== 0) {
+                ctx.drawImage(playerImg, player.x, player.y, player.size, player.size);
+            } else {
+                ctx.fillStyle = player.color;
+                ctx.fillRect(player.x, player.y, player.size, player.size);
+            }
+        }
+
+        function drawAI() {
+            if (playerImg.complete && playerImg.naturalWidth !== 0) {
+                ctx.drawImage(playerImg, ai.x, ai.y, ai.size, ai.size);
+            } else {
+                ctx.fillStyle = ai.color;
+                ctx.fillRect(ai.x, ai.y, ai.size, ai.size);
+            }
+        }
+
+        // Show HP only when fighting (gameStarted)
+        function drawHP() {
+            if (!gameStarted) return;
+            ctx.save();
+            ctx.fillStyle = 'white';
+            ctx.font = '20px Arial';
+            ctx.fillText(`Your HP: ${player.hp}`, 10, 30);
+            ctx.fillText(`Enemy HP: ${ai.hp}`, 10, 60);
+            ctx.restore();
+        }
+
+        // --- AI improved shooting logic ---
+        function updateAI() {
+            // Move AI in a straight line, bounce off walls/obstacles
+            let oldX = ai.x;
+            let oldY = ai.y;
+            ai.x += ai.vx;
+            ai.y += ai.vy;
+            // Bounce off walls
+            if (ai.x < 0 || ai.x + ai.size > gameCanvas.width) ai.vx *= -1;
+            if (ai.y < 0 || ai.y + ai.size > gameCanvas.height) ai.vy *= -1;
+            // Bounce off obstacles
+            for (let obs of obstacles) {
+                if (checkCollisionWithRect(ai, obs)) {
+                    ai.x = oldX;
+                    ai.y = oldY;
+                    ai.vx = (Math.random() - 0.5) * 3;
+                    ai.vy = (Math.random() - 0.5) * 3;
+                    break;
+                }
+            }
+            // AI shooting: if player in range, shoot at player, else random
+            const shootRange = 250;
+            const dx = (player.x + player.size/2) - (ai.x + ai.size/2);
+            const dy = (player.y + player.size/2) - (ai.y + ai.size/2);
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (ai.shootCooldown <= 0) {
+                let vx, vy;
+                if (dist <= shootRange) {
+                    // Shoot at player
+                    const len = Math.sqrt(dx*dx + dy*dy);
+                    vx = dx / len * 12;
+                    vy = dy / len * 12;
+                } else {
+                    // Shoot randomly
+                    let angle = Math.random() * 2 * Math.PI;
+                    vx = Math.cos(angle) * 12;
+                    vy = Math.sin(angle) * 12;
+                }
+                const startX = ai.x + ai.size / 2;
+                const startY = ai.y + ai.size / 2;
+                aiLasers.push({ x: startX, y: startY, vx, vy, life: 60 });
+                ai.shootCooldown = 60 + Math.floor(Math.random() * 120); // random cooldown
+            } else {
+                ai.shootCooldown--;
+            }
+        }
+
+        gameCanvas.addEventListener('mousedown', function(e) {
+            if (!gameStarted || player.shootCooldown > 0) return;
+            // Get mouse position relative to canvas
+            const rect = gameCanvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            // Start position: center of player
+            const startX = player.x + player.size / 2;
+            const startY = player.y + player.size / 2;
+            // Direction vector
+            const dx = mouseX - startX;
+            const dy = mouseY - startY;
+            const len = Math.sqrt(dx*dx + dy*dy);
+            const speed = 12;
+            // Normalize direction
+            const vx = dx / len * speed;
+            const vy = dy / len * speed;
+            lasers.push({ x: startX, y: startY, vx, vy, life: 60 }); // life: frames
+            player.shootCooldown = 60; // 60 frames = 1 second at 60fps
+        });
+
+        function drawLasers() {
+            ctx.save();
+            ctx.strokeStyle = '#00ffff';
+            ctx.lineWidth = 4;
+            lasers.forEach(laser => {
+                ctx.beginPath();
+                ctx.moveTo(laser.x, laser.y);
+                ctx.lineTo(laser.x - laser.vx * 2, laser.y - laser.vy * 2);
+                ctx.stroke();
+            });
+            ctx.restore();
+        }
+
+        function updateLasers() {
+            for (let i = lasers.length - 1; i >= 0; i--) {
+                lasers[i].x += lasers[i].vx;
+                lasers[i].y += lasers[i].vy;
+                lasers[i].life--;
+                // Stop laser if it hits any obstacle
+                let hitObstacle = false;
+                for (let obs of obstacles) {
+                    if (checkCollisionWithRect({
+                        x: lasers[i].x,
+                        y: lasers[i].y,
+                        size: 4 // laser thickness
+                    }, obs)) {
+                        hitObstacle = true;
+                        break;
+                    }
+                }
+                if (hitObstacle) {
+                    lasers.splice(i, 1);
+                    continue;
+                }
+                if (checkCollision(lasers[i], ai)) {
+                    ai.hp--;
+                    lasers.splice(i, 1);
+                    if (ai.hp <= 0) {
+                        playerCoins += 100;
+                        playerLevel += 1;
+                        //saveCoins();
+                        //showCoins();
+                        alert("You won! +100 coins, +1 level");
+                        endGame();
+                        return; // Ensure game ends immediately
+                    }
+                    continue;
+                }
+                if (
+                    lasers[i].x < 0 || lasers[i].x > gameCanvas.width ||
+                    lasers[i].y < 0 || lasers[i].y > gameCanvas.height ||
+                    lasers[i].life <= 0 ||
+                    getDistance(lasers[i].x, lasers[i].y, player.x + player.size/2, player.y + player.size/2) > 300
+                ) {
+                    lasers.splice(i, 1);
+                }
+            }
+        }
+
+        function drawAILasers() {
+            ctx.save();
+            ctx.strokeStyle = '#ff4444'; // AI laser color: red
+            ctx.lineWidth = 4;
+            aiLasers.forEach(laser => {
+                ctx.beginPath();
+                ctx.moveTo(laser.x, laser.y);
+                ctx.lineTo(laser.x - laser.vx * 2, laser.y - laser.vy * 2);
+                ctx.stroke();
+            });
+            ctx.restore();
+        }
+
+        function updateAILasers() {
+            for (let i = aiLasers.length - 1; i >= 0; i--) {
+                aiLasers[i].x += aiLasers[i].vx;
+                aiLasers[i].y += aiLasers[i].vy;
+                aiLasers[i].life--;
+                // Stop AI laser if it hits any obstacle
+                let hitObstacle = false;
+                for (let obs of obstacles) {
+                    if (checkCollisionWithRect({
+                        x: aiLasers[i].x,
+                        y: aiLasers[i].y,
+                        size: 4 // laser thickness
+                    }, obs)) {
+                        hitObstacle = true;
+                        break;
+                    }
+                }
+                if (hitObstacle) {
+                    aiLasers.splice(i, 1);
+                    continue;
+                }
+                if (checkCollision(aiLasers[i], player)) {
+                    player.hp--;
+                    aiLasers.splice(i, 1);
+                    if (player.hp <= 0) {
+                        alert("Game Over!");
+                        endGame();
+                    }
+                    continue;
+                }
+                if (
+                    aiLasers[i].x < 0 || aiLasers[i].x > gameCanvas.width ||
+                    aiLasers[i].y < 0 || aiLasers[i].y > gameCanvas.height ||
+                    aiLasers[i].life <= 0 ||
+                    getDistance(aiLasers[i].x, aiLasers[i].y, ai.x + ai.size/2, ai.y + ai.size/2) > 300
+                ) {
+                    aiLasers.splice(i, 1);
+                }
+            }
+        }
+
+        function getDistance(x1, y1, x2, y2) {
+            return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+        }
+
+        function checkCollision(laser, target) {
+            return (
+                laser.x >= target.x &&
+                laser.x <= target.x + target.size &&
+                laser.y >= target.y &&
+                laser.y <= target.y + target.size
+            );
+        }
+
+        // Add obstacle collision check function
+        function checkCollisionWithRect(rect1, rect2) {
+            return (
+                rect1.x < rect2.x + rect2.width &&
+                rect1.x + rect1.size > rect2.x &&
+                rect1.y < rect2.y + rect2.height &&
+                rect1.y + rect1.size > rect2.y
+            );
+        }
+
+        function drawObstacles() {
+            ctx.save();
+            for (let obs of obstacles) {
+                if (obs.type === 'lake') {
+                    ctx.fillStyle = "#0077aa";
+                } else {
+                    ctx.fillStyle = "#8B0000";
+                }
+                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+            }
+            ctx.restore();
+        }
+
+        function updateCooldowns() {
+            if (player.shootCooldown > 0) player.shootCooldown--;
+            if (ai.shootCooldown > 0) ai.shootCooldown--;
+        }
+
+        function gameLoop() {
+            clearCanvas();
+            if (gameStarted) {
+                drawObstacles(); // Draw obstacles before player and AI
+                drawPlayer();
+                drawAI();
+                drawHP();
+                updateAI();
+                updateCooldowns();
+                updateLasers();
+                drawLasers();
+                updateAILasers();
+                drawAILasers();
+            }
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Fix startGame to show coins/rank after game ends
+        function startGame() {
+            document.getElementById('coins-display').style.display = 'block';
+            document.getElementById('skins-container').style.display = 'none';
+            document.getElementById('map-selection').style.display = 'none';
+            document.querySelector('.menu').style.display = 'none';
+            document.getElementById('rankings-container').style.display = 'none';
+            player.hp = 5; // reset to new max
+            ai.hp = 3;
+            player.x = gameCanvas.width / 2;
+            player.y = gameCanvas.height / 2;
+            ai.x = gameCanvas.width / 4;
+            ai.y = gameCanvas.height / 4;
+            lasers = [];
+            aiLasers = [];
+            ai.shootCooldown = 0;
+            gameStarted = true;
+            showCoins();
+            gameLoop();
+        }
+
+        function endGame() {
+            gameStarted = false;
+            document.getElementById('coins-display').style.display = 'block';
+            document.querySelector('.menu').style.display = 'flex';
+            showCoins();
+            //player.hp = 13;
+            //ai.hp = 10;
+            player.x = gameCanvas.width / 2;
+            player.y = gameCanvas.height / 2;
+            ai.x = gameCanvas.width / 4;
+            ai.y = gameCanvas.height / 4;
+            lasers = [];
+            aiLasers = [];
+            ai.shootCooldown = 0;
+        }
+
+        function openShop() {
+            alert("Shop not available yet. Coming soon!");
+            console.log("user clicked openShop");
+        }
+
+        // Rank ladder by level
+        const ladderRanks = [
+            { name: 'Bronze', min: 1, prize: 0 },
+            { name: 'Silver', min: 3, prize: 200 },
+            { name: 'Gold', min: 6, prize: 500 },
+            { name: 'Platinum', min: 10, prize: 1000 },
+            { name: 'Diamond', min: 15, prize: 2000 }
+        ];
+
+        function getCurrentRank(level) {
+            let current = ladderRanks[0];
+            for (let i = 0; i < ladderRanks.length; i++) {
+                if (level >= ladderRanks[i].min) {
+                    current = ladderRanks[i];
+                }
+            }
+            return current;
+        }
+
+        function showRankings() {
+            const container = document.getElementById('rankings-container');
+            const list = document.getElementById('ladder-list');
+            const prizeMsg = document.getElementById('rank-prize-message');
+            list.innerHTML = '';
+            prizeMsg.innerText = '';
+
+            let lastRank = localStorage.getItem('lastRank') || ladderRanks[0].name;
+            let currentRank = getCurrentRank(playerLevel);
+            let newRankAchieved = false;
+
+            ladderRanks.forEach(rank => {
+                const li = document.createElement('li');
+                li.innerHTML = `${rank.name} (Level ${rank.min})`;
+                if (currentRank.name === rank.name) {
+                    li.style.color = '#ffcc00';
+                    li.style.fontWeight = 'bold';
+                    li.innerHTML += ' ← You are here!';
+                }
+                list.appendChild(li);
+            });
+
+            if (currentRank.name !== lastRank) {
+                if (currentRank.prize > 0) {
+                    playerCoins += currentRank.prize;
+                    saveCoins();
+                    showCoins();
+                    prizeMsg.innerText = `Congratulations! You reached ${currentRank.name} rank and won ${currentRank.prize} coins!`;
+                } else {
+                    prizeMsg.innerText = `You reached ${currentRank.name} rank!`;
+                }
+                localStorage.setItem('lastRank', currentRank.name);
+            }
+
+            container.style.display = 'block';
+        }
+
+        function closeRankings() {
+            document.getElementById('rankings-container').style.display = 'none';
+        }
+
+        window.addEventListener('keydown', (e) => {
+            let oldX = player.x;
+            let oldY = player.y;
+            
+            switch (e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    player.y -= player.speed;
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    player.y += player.speed;
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    player.x -= player.speed;
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    player.x += player.speed;
+                    break;
+            }
+
+            // Check for collisions with obstacles
+            for (let obs of obstacles) {
+                if (checkCollisionWithRect(player, obs)) {
+                    player.x = oldX;
+                    player.y = oldY;
+                    break;
+                }
+            }
+        });
+ 
+        window.onload = () => {
+            showCoins();
+            loadSkins();
+            loadMaps();
+        };
+
+    </script>
+</body>
+</html>
