@@ -90,6 +90,7 @@
     </style>
 </head>
 <body>
+    
     <div id="coins-display"></div>
     <div id="skins-container"></div>
     <div id="map-selection" class="map-buttons-container"></div>
@@ -257,8 +258,8 @@
             ctx.save();
             ctx.fillStyle = 'white';
             ctx.font = '20px Arial';
-            ctx.fillText(`Your HP: ${player.hp}`, 10, 30);
-            ctx.fillText(`Enemy HP: ${ai.hp}`, 10, 60);
+            ctx.fillText(`Your HP: ${player.hp}`, 10, 25);
+            ctx.fillText(`Enemy HP: ${ai.hp}`, 10, 90);
             ctx.restore();
         }
 
@@ -427,7 +428,7 @@
                     player.hp--;
                     aiLasers.splice(i, 1);
                     if (player.hp <= 0) {
-                        alert("Game Over!");
+                        alert("Game Over! You Loose!");
                         endGame();
                     }
                     continue;
@@ -503,13 +504,13 @@
 
         // Fix startGame to show coins/rank after game ends
         function startGame() {
-            document.getElementById('coins-display').style.display = 'block';
+            document.getElementById('coins-display').style.display = 'none';
             document.getElementById('skins-container').style.display = 'none';
             document.getElementById('map-selection').style.display = 'none';
             document.querySelector('.menu').style.display = 'none';
             document.getElementById('rankings-container').style.display = 'none';
-            player.hp = 5; // reset to new max
-            ai.hp = 3;
+            player.hp = 13; // reset to new max
+            ai.hp = 10;
             player.x = gameCanvas.width / 2;
             player.y = gameCanvas.height / 2;
             ai.x = gameCanvas.width / 4;
@@ -527,8 +528,8 @@
             document.getElementById('coins-display').style.display = 'block';
             document.querySelector('.menu').style.display = 'flex';
             showCoins();
-            //player.hp = 13;
-            //ai.hp = 10;
+            player.hp = 13;
+            ai.hp = 10;
             player.x = gameCanvas.width / 2;
             player.y = gameCanvas.height / 2;
             ai.x = gameCanvas.width / 4;
