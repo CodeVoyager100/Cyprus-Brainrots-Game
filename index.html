@@ -87,6 +87,35 @@
             height: 100vh;
             display: block;
         }
+
+        /* CSS: Μπορείς να το βάλεις σε ένα <style> ή αρχείο CSS */
+#joystick-container {
+  position: fixed;
+  bottom: 30px;
+  left: 30px;
+  z-index: 9999;
+}
+
+#joystick-base {
+  width: 120px;
+  height: 120px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+  position: relative;
+  touch-action: none;
+}
+
+#joystick-stick {
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  position: absolute;
+  left: 30px;
+  top: 30px;
+  touch-action: none;
+}
+
     </style>
 </head>
 <body>
@@ -109,6 +138,13 @@
     </div>
 
     <canvas id="gameCanvas"></canvas>
+
+  <!-- HTML μέρος (βάζεις αυτό στο body σου) -->
+<div id="joystick-container" style="display: none;">
+  <div id="joystick-base">
+    <div id="joystick-stick"></div>
+  </div>
+</div>
 
     <script>
         // --- CANVAS INIT AT TOP ---
@@ -647,6 +683,77 @@
             loadMaps();
         };
 
+
+
+// JavaScript
+function isMobileOrTablet() {
+  return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+//if (isMobileOrTablet()) {
+  document.getElementById('joystick-container').style.display = 'block';
+
+  const base = document.getElementById('joystick-base');
+  const stick = document.getElementById('joystick-stick');
+
+  let dragging = false;
+  let centerX, centerY;
+  let movement = { x: 0, y: 0 };
+
+  function updateStickPosition(x, y) {
+    const dx = x - centerX;
+    const dy = y - centerY;
+    const distance = Math.min(Math.sqrt(dx * dx + dy * dy), 40);
+
+    const angle = Math.atan2(dy, dx);
+    const newX = Math.cos(angle) * distance;
+    const newY = Math.sin(angle) * distance;
+
+    stick.style.left = `${30 + newX}px`;
+    stick.style.top = `${30 + newY}px`;
+
+    movement = { x: newX / 40, y: newY / 40 }; // Νορμαλισμένο (-1 ως 1)
+  }
+
+  function resetStick() {
+    stick.style.left = `30px`;
+    stick.style.top = `30px`;
+    movement = { x: 0, y: 0 };
+  }
+
+  base.addEventListener("touchstart", (e) => {
+    dragging = true;
+    const rect = base.getBoundingClientRect();
+    centerX = rect.left + rect.width / 2;
+    centerY = rect.top + rect.height / 2;
+  });
+
+  base.addEventListener("touchmove", (e) => {
+    if (dragging) {
+      e.preventDefault();
+      updateStickPosition(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  });
+
+  base.addEventListener("touchend", () => {
+    dragging = false;
+    resetStick();
+  });
+
+  // Κάθε frame: χρήση για μετακίνηση χαρακτήρα
+  setInterval(() => {
+    if (movement.x !== 0 || movement.y !== 0) {
+      movePlayer(movement.x, movement.y);
+    }
+  }, 16); // ~60fps
+
+  // --- ΕΔΩ θα βάλεις τον δικό σου player movement ---
+  function movePlayer(x, y) {
+    // Παράδειγμα: προσάρμοσέ το ανάλογα με τον χαρακτήρα σου
+    player.x += x * 5;
+    player.y += y * 5;
+  }
+//}
     </script>
 </body>
 </html>
