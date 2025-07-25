@@ -688,7 +688,7 @@
 // JavaScript
 function isMobileOrTablet() {
   return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-}
+} 
 
 //if (isMobileOrTablet()) {
   document.getElementById('joystick-container').style.display = 'block';
@@ -746,14 +746,26 @@ function isMobileOrTablet() {
       movePlayer(movement.x, movement.y);
     }
   }, 16); // ~60fps
-
   // --- ΕΔΩ θα βάλεις τον δικό σου player movement ---
   function movePlayer(x, y) {
-    // Παράδειγμα: προσάρμοσέ το ανάλογα με τον χαρακτήρα σου
-    player.x += x * 5;
-    player.y += y * 5;
+    let oldX = player.x;
+    let oldY = player.y;
+            
+    // Παράδειγμα: προσάρμοσέ το ανάλογα με τον χαρακτήρα σου 
+    player.x += x * 3;
+    player.y += y * 3;
+
+    // Check for collisions with obstacles
+    for (let obs of obstacles) {
+        if (checkCollisionWithRect(player, obs)) {
+            player.x = oldX;
+            player.y = oldY;
+            break;
+        }
+    }
   }
+
 //}
     </script>
 </body>
-</html>
+</html> 
