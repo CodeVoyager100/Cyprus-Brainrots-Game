@@ -146,6 +146,13 @@
   </div>
 </div>
 
+<!-- Add to your HTML -->
+<div id="shoot-joystick-container" style="display: none; position: fixed; bottom: 30px; right: 30px; z-index: 9999;">
+  <div id="shoot-joystick-base" style="width: 120px; height: 120px; background: rgba(0, 0, 0, 0.3); border-radius: 50%; position: relative; touch-action: none;">
+    <div id="shoot-joystick-stick" style="width: 60px; height: 60px; background: rgba(255, 100, 100, 0.8); border-radius: 50%; position: absolute; left: 30px; top: 30px; touch-action: none;"></div>
+  </div>
+</div>
+
     <script>
         // --- CANVAS INIT AT TOP ---
         const gameCanvas = document.getElementById('gameCanvas');
@@ -766,6 +773,82 @@ function isMobileOrTablet() {
   }
 
 //}
+
+// start second joystick change
+//if (isMobileOrTablet()) {
+  document.getElementById('shoot-joystick-container').style.display = 'block';
+  
+  const shootBase = document.getElementById('shoot-joystick-base');
+  const shootStick = document.getElementById('shoot-joystick-stick');
+  
+  let shootDragging = false;
+  let shootCenterX, shootCenterY;
+  let shootDirection = { x: 0, y: 0 };
+  let lastShootTime = 0;
+  const shootCooldown = 500; // ms
+
+  function updateShootStickPosition(x, y) {
+    const dx = x - shootCenterX;
+    const dy = y - shootCenterY;
+    const distance = Math.min(Math.sqrt(dx * dx + dy * dy), 40);
+    const angle = Math.atan2(dy, dx);
+    
+    const newX = Math.cos(angle) * distance;
+    const newY = Math.sin(angle) * distance;
+    
+    shootStick.style.left = `${30 + newX}px`;
+    shootStick.style.top = `${30 + newY}px`;
+    
+    shootDirection = { x: newX / 40, y: newY / 40 };
+    
+    // Auto-shoot when joystick is moved
+    const now = Date.now();
+    if (distance > 10 && now - lastShootTime > shootCooldown && player.shootCooldown <= 0) {
+      shoot();
+      lastShootTime = now;
+    }
+  }
+
+  function resetShootStick() {
+    shootStick.style.left = `30px`;
+    shootStick.style.top = `30px`;
+    shootDirection = { x: 0, y: 0 };
+  }
+
+  function shoot() {
+    if (!gameStarted || player.shootCooldown > 0) return;
+    
+    const speed = 12;
+    lasers.push({
+      x: player.x + player.size / 2,
+      y: player.y + player.size / 2,
+      vx: shootDirection.x * speed,
+      vy: shootDirection.y * speed,
+      life: 60
+    });
+    player.shootCooldown = 20; // 1/3 second cooldown
+  }
+
+  shootBase.addEventListener("touchstart", (e) => {
+    shootDragging = true;
+    const rect = shootBase.getBoundingClientRect();
+    shootCenterX = rect.left + rect.width / 2;
+    shootCenterY = rect.top + rect.height / 2;
+  });
+
+  shootBase.addEventListener("touchmove", (e) => {
+    if (shootDragging) {
+      e.preventDefault();
+      updateShootStickPosition(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  });
+
+  shootBase.addEventListener("touchend", () => {
+    shootDragging = false;
+    resetShootStick();
+  });
+//}
+//end second joystick change
     </script>
 </body>
 </html> 
