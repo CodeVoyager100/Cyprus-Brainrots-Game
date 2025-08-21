@@ -90,7 +90,7 @@
             display: block;
         }
 
-        /* CSS: Μπορείς να το βάλεις σε ένα <style> ή αρχείο CSS */
+
 #joystick-container {
   position: fixed;
   bottom: 30px;
@@ -106,7 +106,17 @@
   position: relative;
   touch-action: none;
 }
-
+    @keyframes zoom {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.2); }
+}
+.confetti {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: #f00;
+  opacity: 0.7;
+}
 #joystick-stick {
   width: 60px;
   height: 60px;
@@ -128,12 +138,16 @@
         <br > Use the white joystick to move your character and red joystic to shoot at the Enemy. 
         <br > Collect coins and unlock skins in the Bazaar! [Not yet available]
         <br> Click "battle!" to start a game.
-        <br> Use the joystick on mobile or tablet devices. 
+        <br> Use the joystick on mobile or tablet devices.
         <br> Use arrow keys or WASD to move on desktop and mouse click to shoot.
         <br> Enjoy the game and have fun!
     </p>
     </div>
-
+    <div id="lootbox-popup" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:linear-gradient(135deg,#FFD700,#FFAA00); padding:30px; border-radius:20px; border:5px solid white; z-index:1000; text-align:center; box-shadow:0 0 30px rgba(255,215,0,0.7);">
+  <h2 style="color:#FFF; text-shadow:2px 2px 4px #000;">LOOT BOX REWARD!</h2>
+  <div id="lootbox-content" style="font-size:24px; margin:20px 0;"></div>
+  <button onclick="document.getElementById('lootbox-popup').style.display='none'" style="background:#FFF; border:none; padding:10px 20px; border-radius:10px; font-weight:bold;">OK</button>
+</div>
     <div id="coins-display"></div>
     <div id="skins-container"></div>
     <div id="map-selection" class="map-buttons-container"></div>
@@ -167,7 +181,7 @@
   </div>
 </div>
     </div>
-    
+
     <script>
         // --- CANVAS INIT AT TOP ---
         const gameCanvas = document.getElementById('gameCanvas');
@@ -182,7 +196,41 @@
         let gameStarted = false;
         let lasers = [];
         let aiLasers = [];
-
+        function openLootBox() {
+  const roll = Math.random() * 100; // Random number 0-99
+  
+  if (roll < 30) {
+    return { type: "nothing", message: "Better luck next time! 🍀" };
+  } 
+  else if (roll < 80) { // 50% chance (30-80)
+    return { 
+      type: "levels", 
+      amount: 2,
+      message: "🔥 +2 Levels! 🔥" 
+    };
+  }
+  else if (roll < 81) { // 1% chance (80-81)
+    return { 
+      type: "rank", 
+      message: "✨ RANK UP! ✨" 
+    };
+  }
+  else if (roll < 84) { // 3% chance (81-84)
+    const canLoseLevel = playerLevel > 1;
+    return {
+      type: "penalty",
+      amount: canLoseLevel ? -1 : 0,
+      message: canLoseLevel ? "😱 -1 Level" : "Level too low for penalty"
+    };
+  }
+  else { 
+    return { 
+      type: "coins", 
+      amount: 50,
+      message: "💰 +50 Coins! 💰" 
+    };
+  }
+}
         // Smaller player and AI size
         let player = {
             x: gameCanvas.width / 2,
@@ -418,6 +466,26 @@
                         hitObstacle = true;
                         break;
                     }
+                    function showLootBoxResults(reward) {
+  const popup = document.getElementById('lootbox-popup');
+  const content = document.getElementById('lootbox-content');
+  
+  // Special effects based on reward
+  if (reward.type === "rank") {
+    content.innerHTML = `
+      <div style="animation:zoom 0.5s infinite alternate;">
+        ✨✨✨ ${reward.message} ✨✨✨
+      </div>
+      <div>New rank: ${getCurrentRank(playerLevel).name}</div>
+    `;
+    popup.style.background = "linear-gradient(135deg,#8A2BE2,#9370DB)";
+  } 
+  else {
+    content.textContent = reward.message;
+  }
+  
+  popup.style.display = 'block';
+}
                 }
                 if (hitObstacle) {
                     lasers.splice(i, 1);
