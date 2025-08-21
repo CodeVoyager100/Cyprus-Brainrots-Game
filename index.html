@@ -12,7 +12,14 @@
             color:rgb(255, 255, 255);
             padding-left: 20px;
         }
-
+ body{
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-image: url('images/background.png');
+            color:rgb(255, 255, 255);
+            padding-left: 20px;
+        }
         #coins-display {
             font-size: 30px;
             margin: 20px;
@@ -164,7 +171,6 @@
         <div id="rank-prize-message" style="margin-top:10px; color:#ffcc00;"></div>
         <button class="btn" onclick="closeRankings()" style="margin-top:16px;">Close</button>
     </div>
-
     <canvas id="gameCanvas"></canvas>
 
   <!-- HTML μέρος (βάζεις αυτό στο body σου) -->
@@ -193,6 +199,8 @@
         let unlockedSkins = JSON.parse(localStorage.getItem('unlockedSkins')) || [];
         const playerImg = new Image();
         playerImg.src = 'images/ScorpiosSouvlak.png';
+         const AIImg = new Image();
+        AIImg.src = 'images/pkiotisfournos.png';
         let gameStarted = false;
         let lasers = [];
         let aiLasers = [];
@@ -215,27 +223,33 @@
       message: "✨ RANK UP! ✨" 
     };
   }
-  else if (roll < 84) { // 3% chance (81-84)
-    const canLoseLevel = playerLevel > 1;
-    return {
-      type: "penalty",
-      amount: canLoseLevel ? -1 : 0,
-      message: canLoseLevel ? "😱 -1 Level" : "Level too low for penalty"
-    };
-  }
-  else { 
+  else if (roll < 90) { // 9% chance (81-90)
     return { 
       type: "coins", 
-      amount: 50,
-      message: "💰 +50 Coins! 💰" 
+      amount: 100,
+      message: "💰 +100 Coins! 💰" 
     };
   }
-}
+  else if (roll < 95) { // 5% chance (90-95)
+    return { 
+      type: "coins", 
+      amount: 200,
+      message: "💰 +200 Coins! 💰" 
+    };
+  }
+  else if (roll < 98) { // 3% chance (95-98)
+    return { 
+      type: "coins", 
+      amount: 500,
+      message: "💰 +500 Coins! 💰"
+  } 
+    };
+  }
         // Smaller player and AI size
         let player = {
             x: gameCanvas.width / 2,
             y: gameCanvas.height / 2,
-            size: 36, // smaller
+            size: 45, // smaller
             color: 'blue',
             speed: 4,
             hp: 10,
@@ -245,11 +259,11 @@
         let ai = {
             x: gameCanvas.width / 4,
             y: gameCanvas.height / 4,
-            size: 36, // smaller
+            size: 50, // smaller
             color: 'green',
             speed: 1.5, // a bit faster for random walk
-            hp: 7,
-            shootCooldown: 0,
+            hp: 5,
+            shootCooldown: 2,
             vx: 1.5, // random walk direction
             vy: 1.5
         };
@@ -267,12 +281,22 @@
             { x: 400, y: 500, width: 60, height: 40, type: 'lake' },
             { x: 250, y: 350, width: 30, height: 60, type: 'brick' },
             { x: 600, y: 400, width: 40, height: 30, type: 'brick' },
-            { x: 800, y: 600, width: 50, height: 50, type: 'brick' },
+            { x: 800, y: 600, width: 50, height: 50, type: 'lake' },
             { x: 350, y: 200, width: 30, height: 70, type: 'brick' },
-            { x: 500, y: 100, width: 40, height: 40, type: 'brick' },
+            { x: 500, y: 100, width: 40, height: 40, type: 'lake' },
             { x: 200, y: 600, width: 60, height: 30, type: 'brick' },
             { x: 900, y: 300, width: 40, height: 60, type: 'lake' },
+            { x: 100, y: 200, width: 60, height: 30, type: 'brick' },
+            { x: 300, y: 400, width: 50, height: 50, type: 'lake' },
+            { x: 700, y: 500, width: 30, height: 70, type: 'brick' },
+            { x: 600, y: 300, width: 40, height: 40, type: 'lake' },
+            { x: 800, y: 100, width: 60, height: 60, type: 'brick' },
+            { x: 400, y: 600, width: 50, height: 50, type: 'lake' },
+            { x: 200, y: 400, width: 30, height: 30, type: 'brick' },
+            { x: 500, y: 200, width: 40, height: 60, type: 'lake' },
+            { x: 900, y: 400, width: 60, height: 30, type: 'brick' },
             { x: 100, y: 500, width: 50, height: 50, type: 'lake' }
+
         ];
 
         function clearCanvas() {
@@ -350,8 +374,8 @@
         }
 
         function drawAI() {
-            if (playerImg.complete && playerImg.naturalWidth !== 0) {
-                ctx.drawImage(playerImg, ai.x, ai.y, ai.size, ai.size);
+            if (AIImg.complete && AIImg.naturalWidth !== 0) {
+                ctx.drawImage(AIImg, ai.x, ai.y, ai.size, ai.size);
             } else {
                 ctx.fillStyle = ai.color;
                 ctx.fillRect(ai.x, ai.y, ai.size, ai.size);
@@ -654,7 +678,7 @@
             gameStarted = false;
             document.getElementById('coins-display').style.display = 'block';
             document.querySelector('.menu').style.display = 'flex';
-            document.querySelector('.guide').style.display = 'flex';
+            document.querySelector('.guide').style.display = 'block';
             
             showCoins();
             player.hp = 13;
