@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>Cyprus Brainrot Game</title>
     <style>
         /* merged body rules to avoid duplicate declarations */
@@ -184,7 +185,7 @@
           .skin-card { width: calc(50% -28px); }
           /* make menu buttons wrap and stay visible */
           .menu { bottom:8px; gap:8px; flex-wrap: wrap; padding:6px; }
-          .btn { padding:8px12px; font-size:14px; }
+          .btn { padding:8px; font-size:14px; }
           .map-buttons-container { justify-content: center; }
         }
         @media (max-width:420px) {
@@ -277,11 +278,17 @@
         const ctx = gameCanvas.getContext('2d');
 
         function resizeCanvas() {
-            gameCanvas.width = window.innerWidth;
-            gameCanvas.height = window.innerHeight;
+            // support high DPI displays so the game scales and fits on phones/tablets
+            const dpr = window.devicePixelRatio ||1;
+            gameCanvas.style.width = window.innerWidth + 'px';
+            gameCanvas.style.height = window.innerHeight + 'px';
+            gameCanvas.width = Math.floor(window.innerWidth * dpr);
+            gameCanvas.height = Math.floor(window.innerHeight * dpr);
+            // scale the drawing context so1 unit ==1 CSS pixel
+            ctx.setTransform(dpr,0,0, dpr,0,0);
             // regenerate obstacles to cover new screen
             generateObstacles();
-            setDebug('resized: ' + gameCanvas.width + 'x' + gameCanvas.height);
+            setDebug('resized: ' + window.innerWidth + 'x' + window.innerHeight + ' dpr=' + dpr);
         }
 
         // declare obstacles early so generateObstacles() can be called during initialization
@@ -291,10 +298,19 @@
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
-        let playerCoins = parseInt(localStorage.getItem('coins'), 10) || 1000;
-        let unlockedSkins = JSON.parse(localStorage.getItem('unlockedSkins') || '[]');
-        let unlockedPlayers = JSON.parse(localStorage.getItem('unlockedPlayers') || '["default"]');
-        let selectedPlayerId = localStorage.getItem('selectedPlayerId') || 'default';
+        // Session defaults (reset every time the page loads)
+        let playerCoins =500; // give500 coins on each visit
+        try { localStorage.setItem('coins', String(playerCoins)); } catch (e) { /* ignore storage errors */ }
+        let unlockedSkins = []; // no skins unlocked by default
+        try { localStorage.setItem('unlockedSkins', JSON.stringify(unlockedSkins)); } catch (e) {}
+        let unlockedPlayers = ['default']; // only default player available
+        try { localStorage.setItem('unlockedPlayers', JSON.stringify(unlockedPlayers)); } catch (e) {}
+        let selectedPlayerId = 'default';
+        try { localStorage.setItem('selectedPlayerId', selectedPlayerId); } catch (e) {}
+
+        // reset rank/level on each visit
+        let playerLevel =1;
+        try { localStorage.setItem('playerLevel', String(playerLevel)); } catch (e) {}
 
         // compatibility: map old id 'speedster' to new 'tornader' if present in storage
         unlockedPlayers = unlockedPlayers.map(id => id === 'speedster' ? 'tornader' : id);
@@ -303,10 +319,10 @@
         unlockedPlayers = Array.from(new Set(unlockedPlayers));
 
         const playersData = {
-            default: { id: 'default', name: 'Scorpios', img: 'images/ScorpiosSouvlak.png', hp: 13, speed: 2.5, laserDamage: 1, size: 55, laserRange: 300, price: 0 },
-            tornader: { id: 'tornader', name: 'Tornader', img: 'images/rot2.png', hp: 16, speed: 9, laserDamage: 2, size: 55, laserRange: 300, price: 1500 },
-            lazerman: { id: 'lazerman', name: 'Lazerman', img: 'images/rot1.png', hp: 18, speed: 4, laserDamage: 1, size: 55, laserRange: 500, price: 500 },
-            kleftikomegazord: { id: 'kleftikomegazord', name: 'Kleftikomegazord', img: 'images/rot3.png', hp: 20, speed: 1.6, laserDamage: 3, size: 60, laserRange: 300, price: 2000 }
+            default: { id: 'default', name: 'soublakiscorpio', img: 'images/ScorpiosSouvlak.png', hp:13, speed:2.5, laserDamage:1, size:55, laserRange:300, price:0 },
+            tornader: { id: 'tornader', name: 'Tornader', img: 'images/rot2.png', hp:16, speed:4.0, laserDamage:2, size:55, laserRange:300, price:1300 },
+            lazerman: { id: 'lazerman', name: 'Lazerman', img: 'images/rot1.png', hp:18, speed:3.0, laserDamage:1, size:55, laserRange:500, price:500 },
+            kleftikomegazord: { id: 'kleftikomegazord', name: 'Kleftikomegazord', img: 'images/rot3.png', hp:20, speed:1.6, laserDamage:3, size:65, laserRange:300, price:2000 }
         };
 
         const playerImg = new Image();
@@ -323,13 +339,13 @@
         let lasers = [];
         let aiLasers = [];
 
-        let playerLevel = parseInt(localStorage.getItem('playerLevel'), 10) || 1;
+        // use the previously initialized `playerLevel` (session default set earlier)
 
         // helper: find a free spawn position (not colliding with obstacles)
         function getSpawnPosition(size, avoid, minDistance) {
             // try several times to find a random free cell near center first then anywhere
-            const maxAttempts = 700;
-            const padding = 10;
+            const maxAttempts =700;
+            const padding =10;
             // helper to test rect collision with obstacles and distance from avoid point
             function isFree(x, y) {
                 const rect = { x: x, y: y, size: size };
@@ -337,34 +353,86 @@
                     if (checkCollisionWithRect(rect, obs)) return false;
                 }
                 // keep some distance from edges
-                if (x < padding || y < padding || x + size > gameCanvas.width - padding || y + size > gameCanvas.height - padding) return false;
+                if (x < padding || y < padding || x + size > gameCanvas.width / (window.devicePixelRatio ||1) - padding || y + size > gameCanvas.height / (window.devicePixelRatio ||1) - padding) return false;
                 // if avoid point provided, ensure candidate center is at least minDistance away
                 if (avoid && typeof avoid === 'object' && typeof minDistance === 'number') {
-                    const cx = x + size / 2;
-                    const cy = y + size / 2;
-                    const dx = cx - (avoid.x || 0);
-                    const dy = cy - (avoid.y || 0);
+                    const cx = x + size /2;
+                    const cy = y + size /2;
+                    const dx = cx - (avoid.x ||0);
+                    const dy = cy - (avoid.y ||0);
                     if (Math.hypot(dx, dy) < minDistance) return false;
                 }
                 return true;
             }
 
             // try around center first (wider radius)
-            const centerX = Math.floor(gameCanvas.width / 2);
-            const centerY = Math.floor(gameCanvas.height / 2);
-            for (let i = 0; i < 200; i++) {
-                const rx = centerX + (Math.floor(Math.random() * 1001) - 500);
-                const ry = centerY + (Math.floor(Math.random() * 1001) - 500);
+            const centerX = Math.floor(gameCanvas.width /2);
+            const centerY = Math.floor(gameCanvas.height /2);
+            for (let i =0; i <200; i++) {
+                const rx = centerX + (Math.floor(Math.random() *1001) -500);
+                const ry = centerY + (Math.floor(Math.random() *1001) -500);
                 if (isFree(rx, ry)) return { x: rx, y: ry };
             }
             // fallback: random across canvas
-            for (let i = 0; i < maxAttempts; i++) {
-                const rx = Math.floor(Math.random() * (gameCanvas.width - size - padding * 2)) + padding;
-                const ry = Math.floor(Math.random() * (gameCanvas.height - size - padding * 2)) + padding;
+            for (let i =0; i < maxAttempts; i++) {
+                const rx = Math.floor(Math.random() * (gameCanvas.width - size - padding *2)) + padding;
+                const ry = Math.floor(Math.random() * (gameCanvas.height - size - padding *2)) + padding;
                 if (isFree(rx, ry)) return { x: rx, y: ry };
             }
             // last resort: return center clamped
             return { x: Math.max(padding, Math.min(centerX, gameCanvas.width - size - padding)), y: Math.max(padding, Math.min(centerY, gameCanvas.height - size - padding)) };
+        }
+
+        // helper to check if a rectangle is free from obstacles and inside bounds
+        function isRectFree(x, y, size) {
+            const rect = { x: x, y: y, size: size };
+            for (let obs of obstacles) {
+                if (checkCollisionWithRect(rect, obs)) return false;
+            }
+            const padding =10;
+            const cssWidth = parseInt(gameCanvas.style.width) || window.innerWidth;
+            const cssHeight = parseInt(gameCanvas.style.height) || window.innerHeight;
+            if (x < padding || y < padding || x + size > cssWidth - padding || y + size > cssHeight - padding) return false;
+            return true;
+        }
+
+        // Try to move an entity out of overlapping obstacle. Returns true if moved.
+        function resolveEntityOverlap(entity, avoidPoint) {
+            // if not overlapping anything, nothing to do
+            let overlapping = false;
+            for (let obs of obstacles) {
+                if (checkCollisionWithRect(entity, obs)) { overlapping = true; break; }
+            }
+            if (!overlapping) return false;
+
+            const cx = Math.round(entity.x + entity.size /2);
+            const cy = Math.round(entity.y + entity.size /2);
+            const maxRadius = Math.max(window.innerWidth, window.innerHeight);
+            for (let r =20; r < maxRadius; r +=20) {
+                const steps =16;
+                for (let s =0; s < steps; s++) {
+                    const ang = (s / steps) * Math.PI *2;
+                    const nx = Math.round(cx + Math.cos(ang) * r - entity.size /2);
+                    const ny = Math.round(cy + Math.sin(ang) * r - entity.size /2);
+                    if (nx <0 || ny <0) continue;
+                    if (!isRectFree(nx, ny, entity.size)) continue;
+                    if (avoidPoint && typeof avoidPoint.minDistance === 'number') {
+                        const dist = getDistance(nx + entity.size /2, ny + entity.size /2, avoidPoint.x, avoidPoint.y);
+                        if (dist < avoidPoint.minDistance) continue;
+                    }
+                    entity.x = nx; entity.y = ny; return true;
+                }
+            }
+            // fallback: use getSpawnPosition to find a free place
+            const sp = getSpawnPosition(entity.size, avoidPoint && { x: avoidPoint.x, y: avoidPoint.y }, avoidPoint && avoidPoint.minDistance);
+            entity.x = sp.x; entity.y = sp.y; return true;
+        }
+
+        // Ensure player is not inside an obstacle; move if necessary
+        function ensurePlayerNotInObstacle() {
+            const moved = resolveEntityOverlap(player, { x: ai.x + ai.size /2, y: ai.y + ai.size /2, minDistance:500 });
+            if (moved) setDebug('Player moved out of obstacle');
+            return moved;
         }
 
         // generate initial obstacles
@@ -418,7 +486,6 @@
 
         function openLootBox() {
             const roll = Math.random() * 100;
-            if (roll < 30) return { type: 'nothing', message: 'Better luck next time! \uD83C\uDF40' };
             if (roll < 80) return { type: 'levels', amount: 2, message: '\uD83D\uDD25 +2 Levels! \uD83D\uDD25' };
             if (roll < 81) return { type: 'rank', message: '✨ RANK UP! ✨' };
             if (roll < 90) return { type: 'coins', amount: 100, message: '\uD83D\uDCB0 +100 Coins! \uD83D\uDCB0' };
@@ -600,7 +667,7 @@
             }
         }
 
-        // improved AI: wander (does not chase player) until player enters 500px, then follow and shoot
+        // improved AI: wander (does not chase player) until player enters500px, then follow and shoot
         function updateAI() {
             // occasional pause to simulate human-like hesitation
             if (ai.pauseTimer > 0) { ai.pauseTimer--; return; }
@@ -647,7 +714,8 @@
                     const vx = Math.cos(noisyAngle) * speed;
                     const vy = Math.sin(noisyAngle) * speed;
                     aiLasers.push({ x: ai.x + ai.size/2, y: ai.y + ai.size/2, vx, vy, life: 60, damage: 1 });
-                    ai.shootCooldown = 12 + Math.floor(Math.random() * 28); // faster shooting when alerted
+                    // set cooldown ~3 seconds (assuming ~60fps) plus small random
+                    ai.shootCooldown =180 + Math.floor(Math.random() *60);
                 } else ai.shootCooldown--;
 
                 return; // skip wander logic
@@ -729,7 +797,18 @@
 
         gameCanvas.addEventListener('mousedown', function (e) { if (!gameStarted || player.shootCooldown > 0) return; const rect = gameCanvas.getBoundingClientRect(); const mouseX = e.clientX - rect.left; const mouseY = e.clientY - rect.top; const startX = player.x + player.size / 2; const startY = player.y + player.size / 2; const dx = mouseX - startX; const dy = mouseY - startY; const len = Math.sqrt(dx * dx + dy * dy) || 1; const speed = 12; const vx = dx / len * speed; const vy = dy / len * speed; const sel = playersData[selectedPlayerId] || playersData.default; const damage = sel.laserDamage || 1; const range = sel.laserRange || 300; lasers.push({ x: startX, y: startY, originX: startX, originY: startY, vx, vy, life: 60, damage: damage, range: range }); player.shootCooldown = 60; });
 
-        function drawLasers() { ctx.save(); ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 4; lasers.forEach(function (l) { ctx.beginPath(); ctx.moveTo(l.x, l.y); ctx.lineTo(l.x - l.vx * 2, l.y - l.vy * 2); ctx.stroke(); }); ctx.restore(); }
+        function drawLasers() {
+            ctx.save();
+            ctx.strokeStyle = '#00ffff';
+            ctx.lineWidth = 4;
+            lasers.forEach(function (l) {
+                ctx.beginPath();
+                ctx.moveTo(l.x, l.y);
+                ctx.lineTo(l.x - l.vx * 2, l.y - l.vy * 2);
+                ctx.stroke();
+            });
+            ctx.restore();
+        }
 
         function updateLasers() {
             for (let i = lasers.length - 1; i >= 0; i--) {
@@ -808,6 +887,8 @@
             clearCanvas();
             if (gameStarted) {
                 handleInputFrame();
+                // safety: if player collides with obstacle, resolve
+                ensurePlayerNotInObstacle();
                 drawObstacles(); drawPlayer(); drawAI(); drawHP(); updateAI(); updateCooldowns(); updateLasers(); drawLasers(); updateAILasers(); drawAILasers();
             }
             // update lastPlayerPos after AI uses previous frame's player movement
@@ -817,25 +898,27 @@
         }
 
         function startGame() { console.log('startGame called'); setDebug('start pressed'); document.getElementById('coins-display').style.display = 'block'; document.getElementById('skins-container').style.display = 'none'; document.getElementById('map-selection').style.display = 'none'; document.querySelector('.menu').style.display = 'none'; document.querySelector('.guide').style.display = 'none'; document.getElementById('rankings-container').style.display = 'none';
-            // regenerate obstacles to fill the screen and ensure player/ai start in clear area
-            generateObstacles();
-            // choose free spawn positions and ensure they spawn farther apart
-            const ppos = getSpawnPosition(player.size);
-            player.x = ppos.x; player.y = ppos.y;
-            // choose a spawn for AI that is at least 500px away from the player's center
-            let apos = getSpawnPosition(ai.size, { x: player.x + player.size / 2, y: player.y + player.size / 2 }, 500);
-            let attempts = 0;
-            // fallback loop if a valid distant spawn wasn't found
-            while (getDistance(apos.x + ai.size / 2, apos.y + ai.size / 2, player.x + player.size / 2, player.y + player.size / 2) < 500 && attempts < 200) {
-                apos = getSpawnPosition(ai.size, { x: player.x + player.size / 2, y: player.y + player.size / 2 }, 500);
-                attempts++;
-            }
-            ai.x = apos.x; ai.y = apos.y; ai.vx = ai.vy = 0; ai.pauseTimer = 0; ai.hp = 8;
-            player.hp = (playersData[selectedPlayerId] || playersData.default).hp;
-            lasers = []; aiLasers = []; ai.shootCooldown = 0; gameStarted = true; showCoins();
-            // draw immediate frame so user sees the scene even if animation frame delayed
-            clearCanvas(); drawObstacles(); drawPlayer(); drawAI(); drawHP();
-            gameLoop(); }
+ // regenerate obstacles to fill the screen and ensure player/ai start in clear area
+ generateObstacles();
+ // choose free spawn positions and ensure they spawn farther apart
+ const ppos = getSpawnPosition(player.size);
+ player.x = ppos.x; player.y = ppos.y;
+ // ensure player not in obstacle after spawn
+ resolveEntityOverlap(player, { x: ai.x + ai.size/2, y: ai.y + ai.size/2, minDistance:500 });
+ // choose a spawn for AI that is at least500px away from the player's center
+ let apos = getSpawnPosition(ai.size, { x: player.x + player.size /2, y: player.y + player.size /2 },500);
+ let attempts =0;
+ // fallback loop if a valid distant spawn wasn't found
+ while (getDistance(apos.x + ai.size / 2, apos.y + ai.size / 2, player.x + player.size / 2, player.y + player.size / 2) < 500 && attempts < 200) {
+     apos = getSpawnPosition(ai.size, { x: player.x + player.size / 2, y: player.y + player.size / 2 }, 500);
+     attempts++;
+ }
+ ai.x = apos.x; ai.y = apos.y; ai.vx = ai.vy =0; ai.pauseTimer =0; ai.hp =8;
+ player.hp = (playersData[selectedPlayerId] || playersData.default).hp;
+ lasers = []; aiLasers = []; ai.shootCooldown =0; gameStarted = true; showCoins();
+ // draw immediate frame so user sees the scene even if animation frame delayed
+ clearCanvas(); drawObstacles(); drawPlayer(); drawAI(); drawHP();
+ gameLoop(); }
 
         function endGame() { gameStarted = false; document.getElementById('coins-display').style.display = 'block'; document.querySelector('.menu').style.display = 'flex'; document.querySelector('.guide').style.display = 'block'; showCoins(); player.hp = (playersData[selectedPlayerId] || playersData.default).hp; ai.hp = 8; player.x = gameCanvas.width / 2; player.y = gameCanvas.height / 2; ai.x = gameCanvas.width / 4; ai.y = gameCanvas.height / 4; lasers = []; aiLasers = []; ai.shootCooldown = 0; }
 
