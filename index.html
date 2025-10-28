@@ -319,11 +319,13 @@
         unlockedPlayers = Array.from(new Set(unlockedPlayers));
 
         const playersData = {
-            default: { id: 'default', name: 'soublakiscorpio', img: 'images/ScorpiosSouvlak.png', hp:13, speed:2.5, laserDamage:1, size:55, laserRange:300, price:0 },
-            tornader: { id: 'tornader', name: 'Tornader', img: 'images/rot2.png', hp:16, speed:4.0, laserDamage:2, size:55, laserRange:300, price:1300 },
-            lazerman: { id: 'lazerman', name: 'Lazerman', img: 'images/rot1.png', hp:18, speed:3.0, laserDamage:1, size:55, laserRange:500, price:500 },
-            kleftikomegazord: { id: 'kleftikomegazord', name: 'Kleftikomegazord', img: 'images/rot3.png', hp:20, speed:1.6, laserDamage:3, size:65, laserRange:300, price:2000 }
-        };
+            default: { id: 'default', name: 'soublakiscorpio', img: 'images/ScorpiosSouvlak.png', hp:13, speed:2.5, laserDamage:2, size:55, laserRange:300, price:0 },
+            tornader: { id: 'tornader', name: 'Tornader', img: 'images/rot2.png', hp:16, speed:3.0, laserDamage:2, size:55, laserRange:300, price:1300 },
+            lazerman: { id: 'lazerman', name: 'Lazerman', img: 'images/rot1.png', hp:18, speed:2.0, laserDamage:1, size:55, laserRange:500, price:500 },
+            kleftikomegazord: { id: 'kleftikomegazord', name: 'Kleftikomegazord', img: 'images/rot3.png', hp: 20, speed: 1.6, laserDamage: 3, size: 65, laserRange: 300, price: 2000 },
+            baklavasbazookos: { id: 'baklavasbazookos', name: 'Baklavasbazookos', img: 'images/baklavasbazooka.png', hp: 16, speed: 2, laserDamage: 1.5, size: 55, laserRange: 350, price: 1000 },
+            fournakis: { id: 'fournakis', name: 'Fournakis', img: 'images/pkiotisfournos.png', hp: 17, speed: 3, laserDamage: 1, size: 55, laserRange: 400, price: 700 }
+        }
 
         const playerImg = new Image();
         playerImg.src = (playersData[selectedPlayerId] || playersData.default).img;
@@ -448,7 +450,7 @@
             color: 'blue',
             speed: selectedData.speed,
             hp: selectedData.hp,
-            shootCooldown: 0,
+            shootCooldown: 1,
             laserDamage: selectedData.laserDamage || 1,
             laserRange: selectedData.laserRange || 300
         };
@@ -463,7 +465,7 @@
             color: 'green',
             speed: 1.2, // slower to make it easier
             hp: 8,
-            shootCooldown: 0,
+            shootCooldown: 3,
             vx: 0,
             vy: 0,
             pauseTimer: 0,
