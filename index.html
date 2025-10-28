@@ -99,6 +99,25 @@
                 background-color: #666;
             }
 
+        /* modal panel used for Bazaar and Player menu */
+        .modal-panel {
+          display: none;
+          position: absolute;
+          left:50%;
+          top:70px;
+          transform: translateX(-50%);
+          background: rgba(0,0,0,0.85);
+          color: #fff;
+          padding:12px;
+          border-radius:12px;
+          z-index:1000;
+          max-width:92vw;
+          width:760px;
+          max-height:70vh;
+          overflow: auto;
+        }
+        .modal-panel h2 { margin-top:0; color: #ffcc00; text-align: center; }
+        .modal-close { display:block; margin:12px 0px; }
         #gameCanvas {
             width: 100vw;
             height: 100vh; /* ensure canvas fills viewport but not huge values */
@@ -183,7 +202,7 @@
           }
           /* reduce skin card width on small screens */
           .skin-card { width: calc(50% -28px); }
-          /* make menu buttons wrap and stay visible */
+          /* make menu buttons wrap and stay visible on small screens */
           .menu { bottom:8px; gap:8px; flex-wrap: wrap; padding:6px; }
           .btn { padding:8px; font-size:14px; }
           .map-buttons-container { justify-content: center; }
@@ -199,10 +218,11 @@
         <br><br><br><br><br><br><br><br><br>
     <p> Welcome to Cyprus Brainrot Game! 
         <br> Use the white joystick to move your character and red joystic to shoot at the Enemy. 
-        <br> Collect coins and unlock skins in the Bazaar! [Not yet available]
+        <br> Collect coins and unlock players in the Bazaar!
         <br> Click "battle!" to start a game.
         <br> Use the joystick on mobile or tablet devices.
         <br> Use arrow keys or WASD to move on desktop and mouse click to shoot.
+        <br> To switch players click Switch Player button.
         <br> Enjoy the game and have fun!
     </p>
     </div>
@@ -212,7 +232,12 @@
   <button id="lootbox-ok" style="background:#FFF; border:none; padding:10px 20px; border-radius:10px; font-weight:bold;">OK</button>
 </div>
     <div id="coins-display"></div>
-    <div id="skins-container"></div>
+    <div id="skins-container" class="modal-panel"></div>
+    <div id="player-menu" class="modal-panel" style="display:none;">
+      <h2>Players</h2>
+      <div id="player-list" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;"></div>
+      <button class="btn modal-close" id="close-player-menu">Close</button>
+    </div>
     <div id="map-selection" class="map-buttons-container"></div>
 
     <div class="menu">
@@ -222,7 +247,7 @@
         <button class="btn" id="switch-player-btn">🔁 Switch Player</button>
     </div> 
 
-    <div id="rankings-container" style="display:none; position:absolute; top:60px; left:50%; transform:translateX(-50%); background:#222; color:#fff; padding:24px 32px; border-radius:16px; z-index:20; min-width:320px; text-align:center;">
+    <div id="rankings-container" style="display:none; position:absolute; top:60px; left:50%; transform:translateX(-50%); background:#222; color:#fff; padding:24px 32px; border-radius:16px; z-index:1100; min-width:320px; text-align:center;">
         <h2>🏆 Glory Line</h2>
         <div id="owned-players" style="text-align:left; margin-bottom:12px;"></div>
         <ol id="ladder-list" style="text-align:left; margin:0 auto; max-width:300px;"></ol>
@@ -320,12 +345,15 @@
 
         const playersData = {
             default: { id: 'default', name: 'soublakiscorpio', img: 'images/ScorpiosSouvlak.png', hp:13, speed:2.5, laserDamage:2, size:55, laserRange:300, price:0 },
-            tornader: { id: 'tornader', name: 'Tornader', img: 'images/rot2.png', hp:16, speed:3.0, laserDamage:2, size:55, laserRange:300, price:1300 },
-            lazerman: { id: 'lazerman', name: 'Lazerman', img: 'images/rot1.png', hp:18, speed:2.0, laserDamage:1, size:55, laserRange:500, price:500 },
+            tornader: { id: 'tornader', name: 'Tornader', img: 'images/rot2.png', hp:16, speed:3, laserDamage:2, size:55, laserRange:300, price:1300 },
+            lazerman: { id: 'lazerman', name: 'Lazerman', img: 'images/rot1.png', hp:18, speed:2, laserDamage:1, size:55, laserRange:600, price:500 },
             kleftikomegazord: { id: 'kleftikomegazord', name: 'Kleftikomegazord', img: 'images/rot3.png', hp: 20, speed: 1.6, laserDamage: 3, size: 65, laserRange: 300, price: 2000 },
             baklavasbazookos: { id: 'baklavasbazookos', name: 'Baklavasbazookos', img: 'images/baklavasbazooka.png', hp: 16, speed: 2, laserDamage: 1.5, size: 55, laserRange: 350, price: 1000 },
-            fournakis: { id: 'fournakis', name: 'Fournakis', img: 'images/pkiotisfournos.png', hp: 17, speed: 3, laserDamage: 1, size: 55, laserRange: 400, price: 700 }
-        }
+            fournakis: { id: 'fournakis', name: 'Fournakis', img: 'images/pkiotisfournos.png', hp: 17, speed: 3, laserDamage: 1, size: 55, laserRange: 400, price: 700 },
+            megagrinos: { id: 'megagrinos', name: 'Megagrinos', img: 'images/megagrinos.png', hp: 17, speed: 2, laserDamage: 1, size: 65, laserRange: 350, price: 1000 },
+            boboshiros: { id: 'boboshiros', name: 'Boboshiros', img: 'images/boboshiros.png', hp: 17, speed: 3, laserDamage: 1, size: 55, laserRange: 400, price: 1000 },
+            boboshiros: { id: 'firekoupepy', name: 'Firekoupepy', img: 'images/firekoupepy.png', hp: 17, speed: 3, laserDamage: 2, size: 55, laserRange: 450, price: 500 } 
+        }   
 
         const playerImg = new Image();
         playerImg.src = (playersData[selectedPlayerId] || playersData.default).img;
@@ -340,6 +368,12 @@
         let gameStarted = false;
         let lasers = [];
         let aiLasers = [];
+        // invisibility flags when inside stealth box
+        let playerInvisible = false;
+        let aiInvisible = false;
+        // reveal timers (ms timestamp until which entity stays revealed after shooting/taking damage)
+        let playerRevealUntil =0;
+        let aiRevealUntil =0;
 
         // use the previously initialized `playerLevel` (session default set earlier)
 
@@ -386,9 +420,11 @@
         }
 
         // helper to check if a rectangle is free from obstacles and inside bounds
-        function isRectFree(x, y, size) {
+        // if ignoreStealth is true, stealth-type obstacles are ignored (used for player so they can pass through)
+        function isRectFree(x, y, size, ignoreStealth) {
             const rect = { x: x, y: y, size: size };
             for (let obs of obstacles) {
+                if (ignoreStealth && obs.type === 'stealth') continue;
                 if (checkCollisionWithRect(rect, obs)) return false;
             }
             const padding =10;
@@ -399,10 +435,13 @@
         }
 
         // Try to move an entity out of overlapping obstacle. Returns true if moved.
+        // For the player we allow passing through stealth boxes, so ignore them when testing freedom.
         function resolveEntityOverlap(entity, avoidPoint) {
             // if not overlapping anything, nothing to do
             let overlapping = false;
             for (let obs of obstacles) {
+                // allow player and AI to be inside stealth boxes
+                if ((entity === player || entity === ai) && obs.type === 'stealth') continue;
                 if (checkCollisionWithRect(entity, obs)) { overlapping = true; break; }
             }
             if (!overlapping) return false;
@@ -417,7 +456,9 @@
                     const nx = Math.round(cx + Math.cos(ang) * r - entity.size /2);
                     const ny = Math.round(cy + Math.sin(ang) * r - entity.size /2);
                     if (nx <0 || ny <0) continue;
-                    if (!isRectFree(nx, ny, entity.size)) continue;
+                    // if entity is player or AI, allow positions inside stealth boxes by setting ignoreStealth
+                    const ignoreStealth = (entity === player || entity === ai);
+                    if (!isRectFree(nx, ny, entity.size, ignoreStealth)) continue;
                     if (avoidPoint && typeof avoidPoint.minDistance === 'number') {
                         const dist = getDistance(nx + entity.size /2, ny + entity.size /2, avoidPoint.x, avoidPoint.y);
                         if (dist < avoidPoint.minDistance) continue;
@@ -425,7 +466,7 @@
                     entity.x = nx; entity.y = ny; return true;
                 }
             }
-            // fallback: use getSpawnPosition to find a free place
+            // fallback: use getSpawnPosition to find a free place (allow player through stealth)
             const sp = getSpawnPosition(entity.size, avoidPoint && { x: avoidPoint.x, y: avoidPoint.y }, avoidPoint && avoidPoint.minDistance);
             entity.x = sp.x; entity.y = sp.y; return true;
         }
@@ -488,11 +529,10 @@
 
         function openLootBox() {
             const roll = Math.random() * 100;
-            if (roll < 80) return { type: 'levels', amount: 2, message: '\uD83D\uDD25 +2 Levels! \uD83D\uDD25' };
-            if (roll < 81) return { type: 'rank', message: '✨ RANK UP! ✨' };
+            if (roll < 30) return { type: 'levels', amount: 1, message: '\uD83D\uDD25 +1 Levels! \uD83D\uDD25' };
             if (roll < 90) return { type: 'coins', amount: 100, message: '\uD83D\uDCB0 +100 Coins! \uD83D\uDCB0' };
             if (roll < 95) return { type: 'coins', amount: 200, message: '\uD83D\uDCB0 +200 Coins! \uD83D\uDCB0' };
-            return { type: 'coins', amount: 500, message: '\uD83D\uDCB0 +500 Coins! \uD83D\uDCB0' };
+            return { type: 'coins', amount: 300, message: '\uD83D\uDCB0 +300 Coins! \uD83D\uDCB0' };
         }
 
         function showLootBoxResults(reward) {
@@ -513,33 +553,68 @@
 
         // obstacles will be generated to fill the screen but be fewer and more chaotic
         function generateObstacles() {
-            obstacles.length = 0;
-            const cell = 100; // grid cell size (smaller than before to place smaller obstacles)
-            const cols = Math.ceil(gameCanvas.width / cell);
-            const rows = Math.ceil(gameCanvas.height / cell);
+            obstacles.length =0;
+            const cell =100; // grid cell size (used for density estimate)
+            const cssW = parseInt(gameCanvas.style.width) || window.innerWidth;
+            const cssH = parseInt(gameCanvas.style.height) || window.innerHeight;
+            const cols = Math.ceil(cssW / cell);
+            const rows = Math.ceil(cssH / cell);
             const totalCells = cols * rows;
-            // slightly more obstacles for denser maps
-            const count = Math.max(5, Math.floor(totalCells * 0.10)); // ~10% of grid
-            for (let i = 0; i < count; i++) {
-                // smaller and less variable obstacles
-                const w = Math.floor(Math.random() * 90) + 30; // 30..119
-                const h = Math.floor(Math.random() * 80) + 30; // 30..109
-                const x = Math.floor(Math.random() * Math.max(1, gameCanvas.width - w));
-                const y = Math.floor(Math.random() * Math.max(1, gameCanvas.height - h));
-                const type = Math.random() < 0.5 ? 'lake' : 'brick';
+            const count = Math.max(5, Math.floor(totalCells *0.10)); // ~10% of grid
+
+            // helper to avoid placing obstacles too close
+            function tooClose(x, y, w, h, minDist) {
+                const cx = x + w/2, cy = y + h/2;
+                for (let o of obstacles) {
+                    const ocx = o.x + o.width/2, ocy = o.y + o.height/2;
+                    const dist = Math.hypot(cx - ocx, cy - ocy);
+                    if (dist < minDist) return true;
+                }
+                return false;
+            }
+
+            const minCenterSpacing =100; // user requested minimum spacing
+            for (let i =0; i < count; i++) {
+                let placed = false;
+                for (let attempt =0; attempt <60; attempt++) {
+                    const w = Math.floor(Math.random() *90) +30;
+                    const h = Math.floor(Math.random() *80) +30;
+                    const x = Math.floor(Math.random() * Math.max(1, cssW - w));
+                    const y = Math.floor(Math.random() * Math.max(1, cssH - h));
+                    const type = Math.random() <0.5 ? 'lake' : 'brick';
+                    if (tooClose(x, y, w, h, minCenterSpacing)) continue;
+                    obstacles.push({ x, y, width: w, height: h, type });
+                    placed = true;
+                    break;
+                }
+                if (!placed) continue;
+            }
+
+            // add stealth boxes (green)70x70
+            const stealthCount = Math.max(1, Math.floor(totalCells *0.02));
+            for (let i =0; i < stealthCount; i++) {
+                for (let attempt =0; attempt <40; attempt++) {
+                    const w =70, h =70;
+                    const x = Math.floor(Math.random() * Math.max(1, cssW - w));
+                    const y = Math.floor(Math.random() * Math.max(1, cssH - h));
+                    if (tooClose(x, y, w, h, minCenterSpacing)) continue;
+                    obstacles.push({ x, y, width: w, height: h, type: 'stealth' });
+                    break;
+                }
+            }
+
+            // add some small debris
+            const smallCount = Math.max(4, Math.floor(totalCells *0.04));
+            for (let i =0; i < smallCount; i++) {
+                const w = Math.floor(Math.random() *35) +6;
+                const h = Math.floor(Math.random() *35) +6;
+                const x = Math.floor(Math.random() * Math.max(1, cssW - w));
+                const y = Math.floor(Math.random() * Math.max(1, cssH - h));
+                if (tooClose(x, y, w, h,30)) continue;
+                const type = Math.random() <0.5 ? 'lake' : 'brick';
                 obstacles.push({ x, y, width: w, height: h, type });
             }
-            // add more small chaotic debris pieces for variety
-            const smallCount = Math.max(4, Math.floor(totalCells * 0.04));
-            for (let i = 0; i < smallCount; i++) {
-                const w = Math.floor(Math.random() * 35) + 6;
-                const h = Math.floor(Math.random() * 35) + 6;
-                const x = Math.floor(Math.random() * Math.max(1, gameCanvas.width - w));
-                const y = Math.floor(Math.random() * Math.max(1, gameCanvas.height - h));
-                const type = Math.random() < 0.5 ? 'lake' : 'brick';
-                obstacles.push({ x, y, width: w, height: h, type });
-            }
-            // debug: log obstacle count and show on-screen
+
             console.log('generateObstacles: created', obstacles.length, 'obstacles');
             setDebug('obstacles: ' + obstacles.length);
         }
@@ -555,9 +630,16 @@
             const container = document.getElementById('skins-container');
             if (!container) return;
             container.innerHTML = '';
+            // add header and close button
+            const title = document.createElement('h2'); title.textContent = 'Bazaar';
+            container.appendChild(title);
+            const closeBtn = document.createElement('button'); closeBtn.className = 'btn modal-close'; closeBtn.id = 'close-skins-btn'; closeBtn.textContent = 'Close Bazaar';
+            closeBtn.addEventListener('click', function () { container.style.display = 'none'; });
+            // will append close button at end after content
             try {
                 const res = await fetch('skins.json');
                 const skins = await res.json();
+                const grid = document.createElement('div'); grid.style.display = 'flex'; grid.style.flexWrap = 'wrap'; grid.style.justifyContent = 'center';
                 skins.forEach(function (skin) {
                     const div = document.createElement('div');
                     div.className = 'skin-card';
@@ -565,21 +647,25 @@
                     const h3 = document.createElement('h3'); h3.textContent = skin.name;
                     const p = document.createElement('p'); p.textContent = skin.character;
                     const btn = document.createElement('button');
-                    if (unlockedSkins.includes(skin.id) || skin.price === 0) {
+                    if (unlockedSkins.includes(skin.id) || skin.price ===0) {
                         btn.textContent = '✔️ Owned'; btn.disabled = true;
                     } else {
                         btn.textContent = 'Buy for ' + skin.price + ' coins';
                         btn.addEventListener('click', function () { buySkin(skin.id, skin.price); });
                     }
                     div.appendChild(img); div.appendChild(h3); div.appendChild(p); div.appendChild(btn);
-                    container.appendChild(div);
+                    grid.appendChild(div);
                 });
+                container.appendChild(grid);
+                container.appendChild(closeBtn);
             } catch (e) {
                 // ignore missing skins.json
                 console.warn('loadSkins failed', e);
             }
 
             // Add player purchase cards for available characters
+            const playersSection = document.createElement('div'); playersSection.style.display = 'flex'; playersSection.style.flexWrap = 'wrap'; playersSection.style.justifyContent = 'center';
+            container.appendChild(document.createElement('hr'));
             Object.keys(playersData).forEach(function (pid) {
                 if (pid === 'default') return;
                 const pdata = playersData[pid];
@@ -588,11 +674,12 @@
                 const h3El = document.createElement('h3'); h3El.textContent = pdata.name;
                 const pEl = document.createElement('p'); pEl.textContent = 'Speed: ' + pdata.speed + ', HP: ' + pdata.hp + ', Damage: ' + pdata.laserDamage + ', Range: ' + pdata.laserRange + '.';
                 const btnEl = document.createElement('button');
-                if (unlockedPlayers.includes(pdata.id)) { btnEl.textContent = '✔️ Owned'; btnEl.disabled = true; }
-                else { btnEl.textContent = 'Buy ' + pdata.name + ' for ' + (pdata.price || 1000) + ' coins'; btnEl.addEventListener('click', function () { buyPlayer(pdata.id, pdata.price || 1000); }); }
+                if (unlockedPlayers.includes(pdata.id)) { btnEl.textContent = 'Equip'; btnEl.addEventListener('click', function () { selectedPlayerId = pdata.id; updatePlayerFromSelection(); container.style.display = 'none'; }); }
+                else { btnEl.textContent = 'Buy ' + pdata.name + ' for ' + (pdata.price ||1000) + ' coins'; btnEl.addEventListener('click', function () { buyPlayer(pdata.id, pdata.price ||1000); }); }
                 playerDiv.appendChild(imgEl); playerDiv.appendChild(h3El); playerDiv.appendChild(pEl); playerDiv.appendChild(btnEl);
-                container.appendChild(playerDiv);
+                playersSection.appendChild(playerDiv);
             });
+            container.appendChild(playersSection);
         }
 
         function buySkin(id, price) {
@@ -654,7 +741,12 @@
 
         function drawPlayer() { if (playerImg.complete && playerImg.naturalWidth !== 0) ctx.drawImage(playerImg, player.x, player.y, player.size, player.size); else { ctx.fillStyle = player.color; ctx.fillRect(player.x, player.y, player.size, player.size); } }
 
-        function drawAI() { if (AIImg.complete && AIImg.naturalWidth !== 0) ctx.drawImage(AIImg, ai.x, ai.y, ai.size, ai.size); else { ctx.fillStyle = ai.color; ctx.fillRect(ai.x, ai.y, ai.size, ai.size); } }
+        function drawAI() {
+        // do not render AI when invisible
+        if (aiInvisible) return;
+        if (AIImg.complete && AIImg.naturalWidth !==0) ctx.drawImage(AIImg, ai.x, ai.y, ai.size, ai.size);
+        else { ctx.fillStyle = ai.color; ctx.fillRect(ai.x, ai.y, ai.size, ai.size); }
+        }
 
         function drawHP() { if (!gameStarted) return; ctx.save(); ctx.fillStyle = 'white'; ctx.font = '20px Arial'; ctx.fillText('Your HP: ' + player.hp, 10, 25); ctx.fillText('Enemy HP: ' + ai.hp, 10, 90); ctx.restore(); }
 
@@ -678,7 +770,8 @@
             const centerPx = player.x + player.size/2; const centerPy = player.y + player.size/2;
             const distToPlayer = getDistance(centerAx, centerAy, centerPx, centerPy);
 
-            if (distToPlayer <= 300) { // detection range reduced from 500 to 200
+            // if player is invisible (inside stealth), AI should not detect or shoot
+            if (!playerInvisible && distToPlayer <=300) {
                 // enter 'alert' mode: follow the player (player-like movement) and shoot more frequently
                 // set a closer target (player pos)
                 let dxRaw = centerPx - centerAx;
@@ -694,9 +787,9 @@
                 const mag = Math.hypot(mvx, mvy);
                 if (mag > 1) { mvx /= mag; mvy /= mag; }
                 ai.x += mvx * ai.speed * 1.1; // slightly faster while chasing
-                for (let obs of obstacles) { if (checkCollisionWithRect(ai, obs)) { ai.x = oldX; break; } }
+                for (let obs of obstacles) { if (obs.type === 'stealth') continue; if (checkCollisionWithRect(ai, obs)) { ai.x = oldX; break; } }
                 ai.y += mvy * ai.speed * 1.1;
-                for (let obs of obstacles) { if (checkCollisionWithRect(ai, obs)) { ai.y = oldY; break; } }
+                for (let obs of obstacles) { if (obs.type === 'stealth') continue; if (checkCollisionWithRect(ai, obs)) { ai.y = oldY; break; } }
 
                 // shooting behavior: more aggressive but still limited accuracy
                 if (ai.shootCooldown <= 0) {
@@ -715,7 +808,9 @@
                     const speed = 12;
                     const vx = Math.cos(noisyAngle) * speed;
                     const vy = Math.sin(noisyAngle) * speed;
-                    aiLasers.push({ x: ai.x + ai.size/2, y: ai.y + ai.size/2, vx, vy, life: 60, damage: 1 });
+                    aiLasers.push({ x: ai.x + ai.size/2, y: ai.y + ai.size/2, vx, vy, life:60, damage:1 });
+                    // AI shooting reveals AI briefly
+                    aiRevealUntil = Date.now() +3000;
                     // set cooldown ~3 seconds (assuming ~60fps) plus small random
                     ai.shootCooldown =180 + Math.floor(Math.random() *60);
                 } else ai.shootCooldown--;
@@ -752,11 +847,11 @@
 
             const oldX2 = ai.x, oldY2 = ai.y;
             ai.x += mvx * ai.speed;
-            // horizontal collision
-            for (let obs of obstacles) { if (checkCollisionWithRect(ai, obs)) { ai.x = oldX2; break; } }
+            // horizontal collision (stealth boxes are passable for AI)
+            for (let obs of obstacles) { if (obs.type === 'stealth') continue; if (checkCollisionWithRect(ai, obs)) { ai.x = oldX2; break; } }
             ai.y += mvy * ai.speed;
             // vertical collision
-            for (let obs of obstacles) { if (checkCollisionWithRect(ai, obs)) { ai.y = oldY2; break; } }
+            for (let obs of obstacles) { if (obs.type === 'stealth') continue; if (checkCollisionWithRect(ai, obs)) { ai.y = oldY2; break; } }
 
             // occasional small random jitter
             if (Math.random() < 0.02) {
@@ -768,9 +863,9 @@
             for (let obs of obstacles) {
                 if (checkCollisionWithRect(ai, obs)) {
                     ai.x = oldX2; ai.y = oldY2;
-                    ai.x += (Math.random() - 0.5) * ai.speed * 4;
-                    ai.y += (Math.random() - 0.5) * ai.speed * 4;
-                    if (Math.random() < 0.6) ai.pauseTimer = 6 + Math.floor(Math.random() * 12);
+                    ai.x += (Math.random() -0.5) * ai.speed *4;
+                    ai.y += (Math.random() -0.5) * ai.speed *4;
+                    if (Math.random() <0.6) ai.pauseTimer =6 + Math.floor(Math.random() *12);
                     break;
                 }
             }
@@ -794,10 +889,10 @@
         let shootDragging = false; let shootCenterX = 0, shootCenterY = 0; let shootDirection = { x: 0, y: 0 }; let lastShootTime = 0; const shootCooldown = 500;
         function updateShootStickPosition(x, y) { const dx = x - shootCenterX; const dy = y - shootCenterY; const distance = Math.min(Math.sqrt(dx * dx + dy * dy), 40); const angle = Math.atan2(dy, dx); const newX = Math.cos(angle) * distance; const newY = Math.sin(angle) * distance; if (shootStick) { shootStick.style.left = (30 + newX) + 'px'; shootStick.style.top = (30 + newY) + 'px'; } shootDirection = { x: newX / 40, y: newY / 40 }; const now = Date.now(); if (distance > 10 && now - lastShootTime > shootCooldown && player.shootCooldown <= 0) { autoShoot(); lastShootTime = now; } }
         function resetShootStick() { if (shootStick) { shootStick.style.left = '30px'; shootStick.style.top = '30px'; } shootDirection = { x: 0, y: 0 }; }
-        function autoShoot() { if (!gameStarted || player.shootCooldown > 0) return; const speed = 12; const sel = playersData[selectedPlayerId] || playersData.default; const damage = sel.laserDamage || 1; const range = sel.laserRange || 300; const ox = player.x + player.size / 2; const oy = player.y + player.size / 2; lasers.push({ x: ox, y: oy, originX: ox, originY: oy, vx: shootDirection.x * speed, vy: shootDirection.y * speed, life: 60, damage: damage, range: range }); player.shootCooldown = 20; }
+        function autoShoot() { if (!gameStarted || player.shootCooldown >0) return; const speed =12; const sel = playersData[selectedPlayerId] || playersData.default; const damage = sel.laserDamage ||1; const range = sel.laserRange ||300; const ox = player.x + player.size /2; const oy = player.y + player.size /2; lasers.push({ x: ox, y: oy, originX: ox, originY: oy, vx: shootDirection.x * speed, vy: shootDirection.y * speed, life:60, damage: damage, range: range }); player.shootCooldown =20; playerRevealUntil = Date.now() +3000; setDebug('Player revealed (shot)'); }
         if (shootBase) { shootBase.addEventListener('touchstart', function (e) { shootDragging = true; const rect = shootBase.getBoundingClientRect(); shootCenterX = rect.left + rect.width / 2; shootCenterY = rect.top + rect.height / 2; }); shootBase.addEventListener('touchmove', function (e) { if (shootDragging) { e.preventDefault(); updateShootStickPosition(e.touches[0].clientX, e.touches[0].clientY); } }); shootBase.addEventListener('touchend', function () { shootDragging = false; resetShootStick(); }); }
 
-        gameCanvas.addEventListener('mousedown', function (e) { if (!gameStarted || player.shootCooldown > 0) return; const rect = gameCanvas.getBoundingClientRect(); const mouseX = e.clientX - rect.left; const mouseY = e.clientY - rect.top; const startX = player.x + player.size / 2; const startY = player.y + player.size / 2; const dx = mouseX - startX; const dy = mouseY - startY; const len = Math.sqrt(dx * dx + dy * dy) || 1; const speed = 12; const vx = dx / len * speed; const vy = dy / len * speed; const sel = playersData[selectedPlayerId] || playersData.default; const damage = sel.laserDamage || 1; const range = sel.laserRange || 300; lasers.push({ x: startX, y: startY, originX: startX, originY: startY, vx, vy, life: 60, damage: damage, range: range }); player.shootCooldown = 60; });
+        gameCanvas.addEventListener('mousedown', function (e) { if (!gameStarted || player.shootCooldown >0) return; const rect = gameCanvas.getBoundingClientRect(); const mouseX = e.clientX - rect.left; const mouseY = e.clientY - rect.top; const startX = player.x + player.size /2; const startY = player.y + player.size /2; const dx = mouseX - startX; const dy = mouseY - startY; const len = Math.sqrt(dx * dx + dy * dy) ||1; const speed =12; const vx = dx / len * speed; const vy = dy / len * speed; const sel = playersData[selectedPlayerId] || playersData.default; const damage = sel.laserDamage ||1; const range = sel.laserRange ||300; lasers.push({ x: startX, y: startY, originX: startX, originY: startY, vx, vy, life:60, damage: damage, range: range }); player.shootCooldown =60; playerRevealUntil = Date.now() +3000; setDebug('Player revealed (shot)'); });
 
         function drawLasers() {
             ctx.save();
@@ -813,14 +908,21 @@
         }
 
         function updateLasers() {
-            for (let i = lasers.length - 1; i >= 0; i--) {
+            for (let i = lasers.length -1; i >=0; i--) {
                 lasers[i].x += lasers[i].vx; lasers[i].y += lasers[i].vy; lasers[i].life--;
+                // lasers pass through lakes and stealth boxes for player (can shoot while in stealth), but are blocked by bricks
                 let hitObstacle = false;
-                for (let obs of obstacles) { if (checkCollisionWithRect({ x: lasers[i].x, y: lasers[i].y, size: 4 }, obs)) { hitObstacle = true; break; } }
-                if (hitObstacle) { lasers.splice(i, 1); continue; }
-                if (checkCollision(lasers[i], ai)) {
-                    ai.hp -= (lasers[i].damage || 1);
-                    lasers.splice(i, 1);
+                for (let obs of obstacles) {
+                    if (obs.type === 'lake' || obs.type === 'stealth') continue; // player lasers pass through water and stealth
+                    if (checkCollisionWithRect({ x: lasers[i].x, y: lasers[i].y, size:4 }, obs)) { hitObstacle = true; break; }
+                }
+                if (hitObstacle) { lasers.splice(i,1); continue; }
+                // player lasers should not hit AI while AI is invisible
+                if (!aiInvisible && checkCollision(lasers[i], ai)) {
+                    ai.hp -= (lasers[i].damage ||1);
+                    // hitting AI reveals it briefly
+                    aiRevealUntil = Date.now() +3000;
+                    lasers.splice(i,1);
                     if (ai.hp <= 0) {
                         playerCoins += 100; playerLevel += 1; const reward = openLootBox(); if (reward.type === 'coins') playerCoins += reward.amount || 0; else if (reward.type === 'levels') playerLevel += reward.amount || 0; else if (reward.type === 'rank') playerLevel += 1; saveState(); showCoins(); showLootBoxResults(reward); setTimeout(function () { endGame(); }, 500); return;
                     }
@@ -837,15 +939,41 @@
         function drawAILasers() { ctx.save(); ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 4; aiLasers.forEach(function (l) { ctx.beginPath(); ctx.moveTo(l.x, l.y); ctx.lineTo(l.x - l.vx * 2, l.y - l.vy * 2); ctx.stroke(); }); ctx.restore(); }
 
         function updateAILasers() {
-            for (let i = aiLasers.length - 1; i >= 0; i--) {
-                aiLasers[i].x += aiLasers[i].vx; aiLasers[i].y += aiLasers[i].vy; aiLasers[i].life--; let hitObstacle = false; for (let obs of obstacles) { if (checkCollisionWithRect({ x: aiLasers[i].x, y: aiLasers[i].y, size: 4 }, obs)) { hitObstacle = true; break; } } if (hitObstacle) { aiLasers.splice(i, 1); continue; } if (checkCollision(aiLasers[i], player)) { player.hp -= (aiLasers[i].damage || 1); aiLasers.splice(i, 1); if (player.hp <= 0) { alert('Game Over! You Lose!'); endGame(); } continue; } if (aiLasers[i].x < 0 || aiLasers[i].x > gameCanvas.width || aiLasers[i].y < 0 || aiLasers[i].y > gameCanvas.height || aiLasers[i].life <= 0 || getDistance(aiLasers[i].x, aiLasers[i].y, ai.x + ai.size / 2, ai.y + ai.size / 2) > 300) { aiLasers.splice(i, 1); } }
+            for (let i = aiLasers.length -1; i >=0; i--) {
+                aiLasers[i].x += aiLasers[i].vx; aiLasers[i].y += aiLasers[i].vy; aiLasers[i].life--;
+                let hitObstacle = false;
+                for (let obs of obstacles) {
+                    if (obs.type === 'lake') continue;
+                    if (checkCollisionWithRect({ x: aiLasers[i].x, y: aiLasers[i].y, size:4 }, obs)) { hitObstacle = true; break; }
+                }
+                if (hitObstacle) { aiLasers.splice(i,1); continue; }
+                // AI lasers do not hit the player when player is invisible
+                if (!playerInvisible && checkCollision(aiLasers[i], player)) {
+                    player.hp -= (aiLasers[i].damage || 1);
+                    // taking damage reveals the player briefly
+                    playerRevealUntil = Date.now() +3000;
+                    aiLasers.splice(i, 1);
+                    if (player.hp <= 0) { alert('Game Over! You Lose!'); endGame(); }
+                    continue;
+                }
+                if (aiLasers[i].x < 0 || aiLasers[i].x > gameCanvas.width || aiLasers[i].y < 0 || aiLasers[i].y > gameCanvas.height || aiLasers[i].life <= 0 || getDistance(aiLasers[i].x, aiLasers[i].y, ai.x + ai.size /2, ai.y + ai.size /2) >300) { aiLasers.splice(i,1); }
+            }
         }
 
         function getDistance(x1, y1, x2, y2) { return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2)); }
         function checkCollision(laser, target) { return laser.x >= target.x && laser.x <= target.x + target.size && laser.y >= target.y && laser.y <= target.y + target.size; }
         function checkCollisionWithRect(rect1, rect2) { return rect1.x < rect2.x + rect2.width && rect1.x + (rect1.size || 0) > rect2.x && rect1.y < rect2.y + rect2.height && rect1.y + (rect1.size || 0) > rect2.y; }
 
-        function drawObstacles() { ctx.save(); for (let obs of obstacles) { ctx.fillStyle = obs.type === 'lake' ? '#0077aa' : '#8B0000'; ctx.fillRect(obs.x, obs.y, obs.width, obs.height); } ctx.restore(); }
+        function drawObstacles() {
+        ctx.save();
+        for (let obs of obstacles) {
+        if (obs.type === 'lake') ctx.fillStyle = '#0077aa';
+        else if (obs.type === 'stealth') ctx.fillStyle = '#008000';
+        else ctx.fillStyle = '#8B0000';
+        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+        }
+        ctx.restore();
+        }
 
         // Add missing clearCanvas function so gameLoop can run without error
         function clearCanvas() { ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height); }
@@ -874,6 +1002,8 @@
                 player.y = Math.max(0, Math.min(player.y, gameCanvas.height - player.size));
 
                 for (let obs of obstacles) {
+                    // player can pass through stealth boxes
+                    if (obs.type === 'stealth') continue;
                     if (checkCollisionWithRect(player, obs)) {
                         // revert
                         player.x = oldX; player.y = oldY;
@@ -882,7 +1012,83 @@
                     }
                 }
             }
+            // update invisibility status after movement
+            updatePlayerInvisibility();
         }
+
+        // detect if player is inside any stealth box and set playerInvisible
+        function updatePlayerInvisibility() {
+            // If recently revealed (shot or damaged), remain visible until timer expires
+            if (Date.now() < playerRevealUntil) { playerInvisible = false; return; }
+            let inside = false;
+            for (let obs of obstacles) {
+                if (obs.type !== 'stealth') continue;
+                if (player.x + player.size/2 >= obs.x && player.x + player.size/2 <= obs.x + obs.width && player.y + player.size/2 >= obs.y && player.y + player.size/2 <= obs.y + obs.height) { inside = true; break; }
+            }
+            playerInvisible = inside;
+            if (playerInvisible) setDebug('Player invisible');
+        }
+
+        function updateAIInvisibility() {
+            if (Date.now() < aiRevealUntil) { aiInvisible = false; return; }
+            let inside = false;
+            for (let obs of obstacles) {
+                if (obs.type !== 'stealth') continue;
+                if (ai.x + ai.size/2 >= obs.x && ai.x + ai.size/2 <= obs.x + obs.width && ai.y + ai.size/2 >= obs.y && ai.y + ai.size/2 <= obs.y + obs.height) { inside = true; break; }
+            }
+            aiInvisible = inside;
+            if (aiInvisible) setDebug('AI invisible');
+        }
+
+        // ladder ranks and ranking UI (moved early to ensure available before showCoins)
+ const ladderRanks = [
+ { name: 'Bronze', min:1, prize:0 },
+ { name: 'Silver', min:3, prize:200 },
+ { name: 'Gold', min:6, prize:500 },
+ { name: 'Platinum', min:10, prize:1000 },
+ { name: 'Diamond', min:15, prize:2000 }
+ ];
+
+ function getCurrentRank(level) {
+ let current = ladderRanks[0];
+ for (let i =0; i < ladderRanks.length; i++) {
+ if (level >= ladderRanks[i].min) current = ladderRanks[i];
+ }
+ return current;
+ }
+
+ function showRankings() {
+   try {
+    setDebug('showRankings called'); console.log('showRankings called');
+    const container = document.getElementById('rankings-container');
+    const list = document.getElementById('ladder-list');
+    const prizeMsg = document.getElementById('rank-prize-message');
+    const ownedDiv = document.getElementById('owned-players');
+    if (!container || !list) { console.warn('rankings elements missing'); setDebug('rank UI missing'); return; }
+    list.innerHTML = '';
+    prizeMsg.innerText = '';
+    ownedDiv.innerHTML = '<strong>Owned Players:</strong> ' + (Array.isArray(unlockedPlayers) ? unlockedPlayers.map(function (id) { return playersData[id] ? playersData[id].name : id; }).join(', ') : 'none');
+    let lastRank = localStorage.getItem('lastRank') || ladderRanks[0].name;
+    let currentRank = getCurrentRank(playerLevel ||1);
+    ladderRanks.forEach(function (rank) {
+      const li = document.createElement('li');
+      li.innerHTML = rank.name + ' (Level ' + rank.min + ')';
+      if (currentRank.name === rank.name) { li.style.color = '#ffcc00'; li.style.fontWeight = 'bold'; li.innerHTML += ' ← You are there!'; }
+      list.appendChild(li);
+    });
+    if (currentRank.name !== lastRank) {
+      if (currentRank.prize >0) { playerCoins = (playerCoins ||0) + currentRank.prize; saveState(); showCoins(); prizeMsg.innerText = 'Congratulations! You reached ' + currentRank.name + ' rank and won ' + currentRank.prize + ' coins!'; }
+      else { prizeMsg.innerText = 'You reached ' + currentRank.name + ' rank!'; }
+      localStorage.setItem('lastRank', currentRank.name);
+    }
+    // ensure it's visible above other panels
+    container.style.zIndex =1200; container.style.display = 'block'; container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // ensure close button works
+    const closeBtn = document.getElementById('close-rank-btn'); if (closeBtn) closeBtn.onclick = closeRankings;
+   } catch (err) { console.error('showRankings error', err); setDebug('showRankings error: ' + (err && err.message)); }
+ }
+
+ function closeRankings() { var c = document.getElementById('rankings-container'); if (c) c.style.display = 'none'; }
 
         function gameLoop() {
             if (!loopStarted) { console.log('gameLoop started'); loopStarted = true; setDebug('running'); }
@@ -891,6 +1097,9 @@
                 handleInputFrame();
                 // safety: if player collides with obstacle, resolve
                 ensurePlayerNotInObstacle();
+                // update invisibility states
+                updatePlayerInvisibility();
+                updateAIInvisibility();
                 drawObstacles(); drawPlayer(); drawAI(); drawHP(); updateAI(); updateCooldowns(); updateLasers(); drawLasers(); updateAILasers(); drawAILasers();
             }
             // update lastPlayerPos after AI uses previous frame's player movement
@@ -900,6 +1109,8 @@
         }
 
         function startGame() { console.log('startGame called'); setDebug('start pressed'); document.getElementById('coins-display').style.display = 'block'; document.getElementById('skins-container').style.display = 'none'; document.getElementById('map-selection').style.display = 'none'; document.querySelector('.menu').style.display = 'none'; document.querySelector('.guide').style.display = 'none'; document.getElementById('rankings-container').style.display = 'none';
+ // ensure any open modals close
+ var pm = document.getElementById('player-menu'); if (pm) pm.style.display = 'none';
  // regenerate obstacles to fill the screen and ensure player/ai start in clear area
  generateObstacles();
  // choose free spawn positions and ensure they spawn farther apart
@@ -926,26 +1137,31 @@
 
         function openShop() { document.getElementById('skins-container').style.display = 'block'; loadSkins(); }
 
-        const ladderRanks = [ { name: 'Bronze', min: 1, prize: 0 }, { name: 'Silver', min: 3, prize: 200 }, { name: 'Gold', min: 6, prize: 500 }, { name: 'Platinum', min: 10, prize: 1000 }, { name: 'Diamond', min: 15, prize: 2000 } ];
-        function getCurrentRank(level) { let current = ladderRanks[0]; for (let i = 0; i < ladderRanks.length; i++) { if (level >= ladderRanks[i].min) current = ladderRanks[i]; } return current; }
+        // open player menu should hide skins and show player modal
+ function openPlayerMenu() {
+ document.getElementById('skins-container').style.display = 'none';
+ const pm = document.getElementById('player-menu');
+ // populate if empty
+ const list = document.getElementById('player-list'); list.innerHTML = '';
+ Object.keys(playersData).forEach(function(pid) {
+ const pdata = playersData[pid];
+ const div = document.createElement('div'); div.className = 'skin-card';
+ const img = document.createElement('img'); img.src = pdata.img; img.className = 'skin-img';
+ const h = document.createElement('h3'); h.textContent = pdata.name;
+ const btn = document.createElement('button'); btn.textContent = unlockedPlayers.includes(pid) ? 'Equip' : 'Locked';
+ btn.onclick = function() { if (!unlockedPlayers.includes(pid)) { alert('Locked'); return; } selectedPlayerId = pid; updatePlayerFromSelection(); pm.style.display = 'none'; };
+ div.appendChild(img); div.appendChild(h); div.appendChild(btn);
+ list.appendChild(div);
+ });
+ pm.style.display = 'block';
+ }
 
-        function showRankings() {
-            const container = document.getElementById('rankings-container'); const list = document.getElementById('ladder-list'); const prizeMsg = document.getElementById('rank-prize-message'); const ownedDiv = document.getElementById('owned-players'); list.innerHTML = ''; prizeMsg.innerText = ''; ownedDiv.innerHTML = '';
-            ownedDiv.innerHTML = '<strong>Owned Players:</strong> ' + unlockedPlayers.map(function (id) { return playersData[id] ? playersData[id].name : id; }).join(', ');
-            let lastRank = localStorage.getItem('lastRank') || ladderRanks[0].name; let currentRank = getCurrentRank(playerLevel);
-            ladderRanks.forEach(function (rank) { const li = document.createElement('li'); li.innerHTML = rank.name + ' (Level ' + rank.min + ')'; if (currentRank.name === rank.name) { li.style.color = '#ffcc00'; li.style.fontWeight = 'bold'; li.innerHTML += ' ← You are there!'; } list.appendChild(li); });
-            if (currentRank.name !== lastRank) { if (currentRank.prize > 0) { playerCoins += currentRank.prize; saveState(); showCoins(); prizeMsg.innerText = 'Congratulations! You reached ' + currentRank.name + ' rank and won ' + currentRank.prize + ' coins!'; } else { prizeMsg.innerText = 'You reached ' + currentRank.name + ' rank!'; } localStorage.setItem('lastRank', currentRank.name); }
-            container.style.display = 'block';
-        }
-
-        function closeRankings() { document.getElementById('rankings-container').style.display = 'none'; }
-
-        // Attach UI button handlers
         document.getElementById('start-btn').addEventListener('click', startGame);
-        document.getElementById('shop-btn').addEventListener('click', openShop);
-        document.getElementById('rank-btn').addEventListener('click', showRankings);
+        document.getElementById('shop-btn').addEventListener('click', function(){ openShop(); document.getElementById('player-menu').style.display = 'none'; });
+        document.getElementById('rank-btn').addEventListener('click', function(){ document.getElementById('skins-container').style.display = 'none'; document.getElementById('player-menu').style.display = 'none'; showRankings(); });
         document.getElementById('close-rank-btn').addEventListener('click', closeRankings);
-        document.getElementById('switch-player-btn').addEventListener('click', switchPlayer);
+        document.getElementById('switch-player-btn').addEventListener('click', function(){ openPlayerMenu(); document.getElementById('skins-container').style.display = 'none'; });
+        document.getElementById('close-player-menu').addEventListener('click', function(){ document.getElementById('player-menu').style.display = 'none'; });
 
         function switchPlayer() {
             // cycle through unlocked players
