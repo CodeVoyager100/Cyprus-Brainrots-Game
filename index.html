@@ -5,29 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>Cyprus Brainrot Game</title>
     <style>
-        /* merged body rules to avoid duplicate declarations */
+        /* Your existing CSS styles remain the same */
         body, html {
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background-image: url('images/background.png');
             background-color: #000;
-            color: rgb(255, 255, 255);
-            padding-left: 20px;
+            color: white;
+            font-family: Arial, sans-serif;
         }
 
         .guide {
-            color: white;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 15px;
+            max-width: 400px;
+            text-align: center;
+            border: 2px solid #ffcc00;
         }
 
         #coins-display {
-            font-size: 30px;
-            margin: 20px;
-            color: white;
+            font-size: 18px;
+            color: gold;
             position: absolute;
             top: 10px;
             left: 10px;
             z-index: 10;
+            background: rgba(0,0,0,0.7);
+            padding: 8px 12px;
+            border-radius: 8px;
         }
 
         .skin-card {
@@ -42,38 +53,18 @@
             color: #000;
         }
 
-        /* ensure headings and descriptions inside skin cards are black */
-        .skin-card h3,
-        .skin-card p {
-            color: #000;
-            margin: 6px 0;
-        }
+            .skin-card h3,
+            .skin-card p {
+                color: #000;
+                margin: 6px 0;
+            }
 
         .skin-img {
             width: 100%;
             border-radius: 10px;
+            height: 120px;
+            object-fit: cover;
         }
-
-        .map-buttons-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            padding: 10px;
-        }
-
-        .map-button {
-            padding: 10px 20px;
-            background-color: #ffcc00;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-            .map-button:hover {
-                transform: scale(1.1);
-            }
 
         .menu {
             position: absolute;
@@ -81,46 +72,74 @@
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 20px;
+            gap: 10px;
             z-index: 10;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 10px;
         }
 
         .btn {
             background-color: #444;
             color: #fff;
             border: none;
-            padding: 12px 24px;
+            padding: 10px 15px;
             border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
+            transition: all 0.3s ease;
         }
 
             .btn:hover {
                 background-color: #666;
+                transform: scale(1.05);
             }
 
-        /* modal panel used for Bazaar and Player menu */
+            .btn:disabled {
+                background-color: #777;
+                cursor: not-allowed;
+                transform: none;
+            }
+
         .modal-panel {
-          display: none;
-          position: absolute;
-          left:50%;
-          top:70px;
-          transform: translateX(-50%);
-          background: rgba(0,0,0,0.85);
-          color: #fff;
-          padding:12px;
-          border-radius:12px;
-          z-index:1000;
-          max-width:92vw;
-          width:760px;
-          max-height:70vh;
-          overflow: auto;
+            display: none;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95);
+            color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            z-index: 1000;
+            max-width: 90vw;
+            width: 800px;
+            max-height: 80vh;
+            overflow: auto;
+            border: 2px solid #ffcc00;
+            box-shadow: 0 0 30px rgba(255, 204, 0, 0.3);
         }
-        .modal-panel h2 { margin-top:0; color: #ffcc00; text-align: center; }
-        .modal-close { display:block; margin:12px 0px; }
+
+            .modal-panel h2 {
+                margin-top: 0;
+                color: #ffcc00;
+                text-align: center;
+                font-size: 24px;
+            }
+
+        .modal-close {
+            display: block;
+            margin: 15px auto 0;
+            background: #ff4444;
+        }
+
+            .modal-close:hover {
+                background: #ff6666;
+            }
+
         #gameCanvas {
             width: 100vw;
-            height: 100vh; /* ensure canvas fills viewport but not huge values */
+            height: 100vh;
             display: block;
         }
 
@@ -132,1060 +151,1770 @@
         }
 
         #joystick-base {
-            width: 120px;
-            height: 120px;
+            width: 100px;
+            height: 100px;
             background: rgba(0, 0, 0, 0.3);
             border-radius: 50%;
             position: relative;
             touch-action: none;
-        }
-
-        @keyframes zoom {
-            0% {
-                transform: scale(1);
-            }
-
-            100% {
-                transform: scale(1.2);
-            }
-        }
-
-        .confetti {
-            position: absolute;
-            width: 10px;
-            height: 10px;
-            background-color: #f00;
-            opacity: 0.7;
+            border: 2px solid rgba(255,255,255,0.5);
         }
 
         #joystick-stick {
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             background: rgba(255, 255, 255, 0.8);
             border-radius: 50%;
             position: absolute;
-            left: 30px;
-            top: 30px;
+            left: 25px;
+            top: 25px;
             touch-action: none;
+            transition: transform 0.1s;
         }
 
+        #shoot-joystick-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 9999;
+        }
+
+        #shoot-joystick-base {
+            width: 100px;
+            height: 100px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+            position: relative;
+            touch-action: none;
+            border: 2px solid rgba(255,100,100,0.5);
+        }
+
+        #shoot-joystick-stick {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 100, 100, 0.8);
+            border-radius: 50%;
+            position: absolute;
+            left: 25px;
+            top: 25px;
+            touch-action: none;
+            transition: transform 0.1s;
+        }
+
+        /* Add this to your existing CSS */
+        @media (max-width: 768px) {
+            #joystick-container, #shoot-joystick-container {
+                display: block !important;
+            }
+        }
+
+        @media (min-width: 769px) {
+            #joystick-container, #shoot-joystick-container {
+                display: none !important;
+            }
+        }
         #debug-status {
             position: fixed;
             right: 10px;
-            top: 10px;
+            top: 50px;
             background: rgba(0,0,0,0.6);
             color: #fff;
             padding: 8px 10px;
             font-family: monospace;
-            font-size: 14px;
+            font-size: 12px;
             border-radius: 6px;
             z-index: 99999;
-            max-width: 320px;
+            max-width: 300px;
             pointer-events: none;
         }
 
-        /* Responsive: ensure Bazaar, map buttons and menu are visible and usable on small screens */
-        @media (max-width:800px) {
-          /* make skins and map selection panels scrollable and visible */
-          #skins-container, #map-selection {
-            display: block !important;
-            position: absolute;
-            left:8px;
-            right:8px;
-            top:70px;
-            background: rgba(0,0,0,0.6);
-            padding:8px;
-            border-radius:12px;
-            max-height:40vh;
-            overflow: auto;
-            z-index:50;
-          }
-          /* reduce skin card width on small screens */
-          .skin-card { width: calc(50% -28px); }
-          /* make menu buttons wrap and stay visible on small screens */
-          .menu { bottom:8px; gap:8px; flex-wrap: wrap; padding:6px; }
-          .btn { padding:8px; font-size:14px; }
-          .map-buttons-container { justify-content: center; }
+        #lootbox-popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #FFD700, #FFAA00);
+            padding: 30px;
+            border-radius: 20px;
+            border: 5px solid white;
+            z-index: 1000;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255,215,0,0.7);
         }
-        @media (max-width:420px) {
-          .skin-card { width: calc(100% -28px); }
+
+        .game-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 24px;
+            text-align: center;
+        }
+
+        .health-pack {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
     </style>
 </head>
 <body>
-    <div id="html-part">
-    <div class="guide">    
-        <br><br><br><br><br><br><br><br><br>
-    <p> Welcome to Cyprus Brainrot Game! 
-        <br> Use the white joystick to move your character and red joystic to shoot at the Enemy. 
-        <br> Collect coins and unlock players in the Bazaar!
-        <br> Click "battle!" to start a game.
-        <br> Use the joystick on mobile or tablet devices.
-        <br> Use arrow keys or WASD to move on desktop and mouse click to shoot.
-        <br> To switch players click Switch Player button.
-        <br> Enjoy the game and have fun!
-    </p>
+    <div class="guide">
+        <h2 style="color: #ffcc00; margin-top: 0;">Welcome to Cyprus Brainrot Game!</h2>
+        <p>
+            🎮 Use arrow keys or WASD to move<br>
+            🖱️ Click mouse to shoot<br>
+            ⚔️ Click "Battle!" to start a game<br>
+            🛒 Collect coins and unlock players in the Bazaar!<br>
+            ❤️ Collect green health packs to heal!<br>
+            🔁 Switch players between matches
+        </p>
+        <p style="color: #ffcc00; font-weight: bold;">Good luck and have fun! 🎯</p>
     </div>
-    <div id="lootbox-popup" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:linear-gradient(135deg,#FFD700,#FFAA00); padding:30px; border-radius:20px; border:5px solid white; z-index:1000; text-align:center; box-shadow:0 0 30px rgba(255,215,0,0.7);">
-  <h2 style="color:#FFF; text-shadow:2px 2px 4px #000;">LOOT BOX REWARD!</h2>
-  <div id="lootbox-content" style="font-size:24px; margin:20px 0;"></div>
-  <button id="lootbox-ok" style="background:#FFF; border:none; padding:10px 20px; border-radius:10px; font-weight:bold;">OK</button>
-</div>
-    <div id="coins-display"></div>
-    <div id="skins-container" class="modal-panel"></div>
-    <div id="player-menu" class="modal-panel" style="display:none;">
-      <h2>Players</h2>
-      <div id="player-list" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;"></div>
-      <button class="btn modal-close" id="close-player-menu">Close</button>
+
+    <div id="lootbox-popup">
+        <h2 style="color:#FFF; text-shadow:2px 2px 4px #000;">LOOT BOX REWARD!</h2>
+        <div id="lootbox-content" style="font-size:24px; margin:20px 0;"></div>
+        <button id="lootbox-ok" style="background:#FFF; border:none; padding:10px 20px; border-radius:10px; font-weight:bold;">OK</button>
     </div>
-    <div id="map-selection" class="map-buttons-container"></div>
+
+    <div id="game-over-overlay" class="game-overlay">
+        <div style="background: rgba(0,0,0,0.9); padding: 40px; border-radius: 20px; border: 3px solid #ffcc00;">
+            <h2 id="game-over-title" style="color: #ffcc00;">Game Over</h2>
+            <p id="game-over-message" style="margin: 20px 0;"></p>
+            <button id="return-to-menu" class="btn" style="background: #ffcc00; color: black; font-size: 18px; padding: 10px 20px;">
+                Return to Menu
+            </button>
+        </div>
+    </div>
+
+    <div id="coins-display">💰 Coins: 500<br>🏆 Level: 1</div>
+
+    <div id="skins-container" class="modal-panel">
+        <h2>🛒 Bazaar</h2>
+        <div id="bazaar-items" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;"></div>
+        <button class="btn modal-close" id="close-bazaar">Close</button>
+    </div>
+
+    <div id="player-menu" class="modal-panel">
+        <h2>Players</h2>
+        <div id="player-list" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;"></div>
+        <button class="btn modal-close" id="close-player-menu">Close</button>
+    </div>
+
+    <div id="game-modes-container" class="modal-panel">
+        <h2>🎮 Select Game Mode</h2>
+        <div class="game-modes-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0;">
+            <div class="mode-card" data-mode="showdown">
+                <h3>👑 Showdown</h3>
+                <p>Battle Royale - Last player standing wins!</p>
+                <div style="background: rgba(255, 204, 0, 0.2); padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">1-4 Players</div>
+            </div>
+            <div class="mode-card" data-mode="3v3">
+                <h3>⚔️ 3v3 Team Battle</h3>
+                <p>Team up and defeat the enemy team!</p>
+                <div style="background: rgba(255, 204, 0, 0.2); padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">4 Players</div>
+            </div>
+        </div>
+        <button class="btn modal-close" id="close-modes-btn">Close</button>
+    </div>
 
     <div class="menu">
-        <button class="btn" id="start-btn">🎮 battle!</button>
+        <button class="btn" id="game-mode-btn">🎮 Game Modes</button>
+        <button class="btn" id="start-btn">⚔️ Battle!</button>
         <button class="btn" id="shop-btn">🛒 Bazaar</button>
-        <button class="btn" id="rank-btn">🏆 Glory Line</button>
         <button class="btn" id="switch-player-btn">🔁 Switch Player</button>
-    </div> 
-
-    <div id="rankings-container" style="display:none; position:absolute; top:60px; left:50%; transform:translateX(-50%); background:#222; color:#fff; padding:24px 32px; border-radius:16px; z-index:1100; min-width:320px; text-align:center;">
-        <h2>🏆 Glory Line</h2>
-        <div id="owned-players" style="text-align:left; margin-bottom:12px;"></div>
-        <ol id="ladder-list" style="text-align:left; margin:0 auto; max-width:300px;"></ol>
-        <div id="rank-prize-message" style="margin-top:10px; color:#ffcc00;"></div>
-        <button class="btn" id="close-rank-btn" style="margin-top:16px;">Close</button>
     </div>
+
     <canvas id="gameCanvas"></canvas>
 
-  <!-- HTML μέρος (βάζεις αυτό στο body σου) -->
-<div id="joystick-container" style="display: block;">
-  <div id="joystick-base">
-    <div id="joystick-stick"></div>
-  </div>
-</div>
-
-<!-- Add to your HTML -->
-<div id="shoot-joystick-container" style="display: block; position: fixed; bottom: 30px; right: 30px; z-index: 9999;">
-  <div id="shoot-joystick-base" style="width: 120px; height: 120px; background: rgba(0, 0, 0, 0.3); border-radius: 50%; position: relative; touch-action: none;">
-    <div id="shoot-joystick-stick" style="width: 60px; height: 60px; background: rgba(255, 100, 100, 0.8); border-radius: 50%; position: absolute; left: 30px; top: 30px; touch-action: none;"></div>
-  </div>
-</div>
-
-<!-- debug status box -->
-<div id="debug-status">loading...</div>
+    <div id="joystick-container">
+        <div id="joystick-base">
+            <div id="joystick-stick"></div>
+        </div>
     </div>
 
+    <div id="shoot-joystick-container">
+        <div id="shoot-joystick-base">
+            <div id="shoot-joystick-stick"></div>
+        </div>
+    </div>
+
+    <div id="debug-status">Loading...</div>
+
     <script>
-    (function () {
-        'use strict';
-
-        function setDebug(msg) {
-            try { var el = document.getElementById('debug-status'); if (el) el.textContent = msg; } catch (e) { console.warn('setDebug failed', e); }
-        }
-
-        // global error handler to surface errors to user
-        window.onerror = function (message, source, lineno, colno, error) {
-            console.error('Window error:', message, 'at', source + ':' + lineno + ':' + colno, error);
-            setDebug('Script error: ' + message);
-            try {
-                var disp = document.getElementById('coins-display');
-                if (disp) disp.innerText = 'Script error: ' + message;
-            } catch (e) {}
-            return false; // allow default handling too
-        };
-
-        try {
-
-        setDebug('script loaded');
-        console.log('game script loaded');
-
+        // Game initialization
         const gameCanvas = document.getElementById('gameCanvas');
-        if (!gameCanvas) throw new Error('Missing canvas element with id "gameCanvas"');
         const ctx = gameCanvas.getContext('2d');
 
-        function resizeCanvas() {
-            // support high DPI displays so the game scales and fits on phones/tablets
-            const dpr = window.devicePixelRatio ||1;
-            gameCanvas.style.width = window.innerWidth + 'px';
-            gameCanvas.style.height = window.innerHeight + 'px';
-            gameCanvas.width = Math.floor(window.innerWidth * dpr);
-            gameCanvas.height = Math.floor(window.innerHeight * dpr);
-            // scale the drawing context so1 unit ==1 CSS pixel
-            ctx.setTransform(dpr,0,0, dpr,0,0);
-            // regenerate obstacles to cover new screen
-            generateObstacles();
-            setDebug('resized: ' + window.innerWidth + 'x' + window.innerHeight + ' dpr=' + dpr);
-        }
-
-        // declare obstacles early so generateObstacles() can be called during initialization
-        let loopStarted = false; // flag for debug logging
+        // Game variables
         let obstacles = [];
-
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
-
-        // Session defaults (reset every time the page loads)
-        let playerCoins =500; // give500 coins on each visit
-        try { localStorage.setItem('coins', String(playerCoins)); } catch (e) { /* ignore storage errors */ }
-        let unlockedSkins = []; // no skins unlocked by default
-        try { localStorage.setItem('unlockedSkins', JSON.stringify(unlockedSkins)); } catch (e) {}
-        let unlockedPlayers = ['default']; // only default player available
-        try { localStorage.setItem('unlockedPlayers', JSON.stringify(unlockedPlayers)); } catch (e) {}
-        let selectedPlayerId = 'default';
-        try { localStorage.setItem('selectedPlayerId', selectedPlayerId); } catch (e) {}
-
-        // reset rank/level on each visit
-        let playerLevel =1;
-        try { localStorage.setItem('playerLevel', String(playerLevel)); } catch (e) {}
-
-        // compatibility: map old id 'speedster' to new 'tornader' if present in storage
-        unlockedPlayers = unlockedPlayers.map(id => id === 'speedster' ? 'tornader' : id);
-        if (selectedPlayerId === 'speedster') selectedPlayerId = 'tornader';
-        // ensure uniqueness
-        unlockedPlayers = Array.from(new Set(unlockedPlayers));
-
-        const playersData = {
-            default: { id: 'default', name: 'soublakiscorpio', img: 'images/ScorpiosSouvlak.png', hp:13, speed:2.5, laserDamage:2, size:55, laserRange:300, price:0 },
-            tornader: { id: 'tornader', name: 'Tornader', img: 'images/rot2.png', hp:16, speed:3, laserDamage:2, size:55, laserRange:300, price:1300 },
-            lazerman: { id: 'lazerman', name: 'Lazerman', img: 'images/rot1.png', hp:18, speed:2, laserDamage:1, size:55, laserRange:600, price:500 },
-            kleftikomegazord: { id: 'kleftikomegazord', name: 'Kleftikomegazord', img: 'images/rot3.png', hp: 20, speed: 1.6, laserDamage: 3, size: 65, laserRange: 300, price: 2000 },
-            baklavasbazookos: { id: 'baklavasbazookos', name: 'Baklavasbazookos', img: 'images/baklavasbazooka.png', hp: 16, speed: 2, laserDamage: 1.5, size: 55, laserRange: 350, price: 1000 },
-            fournakis: { id: 'fournakis', name: 'Fournakis', img: 'images/pkiotisfournos.png', hp: 17, speed: 3, laserDamage: 1, size: 55, laserRange: 400, price: 700 },
-            megagrinos: { id: 'megagrinos', name: 'Megagrinos', img: 'images/megagrinos.png', hp: 17, speed: 2, laserDamage: 1, size: 65, laserRange: 350, price: 1000 },
-            boboshiros: { id: 'boboshiros', name: 'Boboshiros', img: 'images/boboshiros.png', hp: 17, speed: 3, laserDamage: 1, size: 55, laserRange: 400, price: 1000 },
-            boboshiros: { id: 'firekoupepy', name: 'Firekoupepy', img: 'images/firekoupepiy.png', hp: 17, speed: 3, laserDamage: 2, size: 55, laserRange: 450, price: 500 } 
-        }   
-
-        const playerImg = new Image();
-        playerImg.src = (playersData[selectedPlayerId] || playersData.default).img;
-        // preload new player images from images folder
-        const rot1Img = new Image(); rot1Img.src = 'images/rot1.png';
-        const rot2Img = new Image(); rot2Img.src = 'images/rot2.png';
-        const rot3Img = new Image(); rot3Img.src = 'images/rot3.png';
-        const scorpImg = new Image(); scorpImg.src = 'images/ScorpiosSouvlak.png';
-        const AIImg = new Image();
-        AIImg.src = 'images/pkiotisfournos.png';
-
         let gameStarted = false;
         let lasers = [];
         let aiLasers = [];
-        // invisibility flags when inside stealth box
-        let playerInvisible = false;
-        let aiInvisible = false;
-        // reveal timers (ms timestamp until which entity stays revealed after shooting/taking damage)
-        let playerRevealUntil =0;
-        let aiRevealUntil =0;
+        let healthPacks = [];
+        let players = [];
+        let bots = [];
+        let player = null;
 
-        // use the previously initialized `playerLevel` (session default set earlier)
+        // Camera system
+        let camera = { x: 0, y: 0, width: 0, height: 0 };
+        const MAP_WIDTH = 2000;
+        const MAP_HEIGHT = 2000;
 
-        // helper: find a free spawn position (not colliding with obstacles)
-        function getSpawnPosition(size, avoid, minDistance) {
-            // try several times to find a random free cell near center first then anywhere
-            const maxAttempts =700;
-            const padding =10;
-            // helper to test rect collision with obstacles and distance from avoid point
-            function isFree(x, y) {
-                const rect = { x: x, y: y, size: size };
-                for (let obs of obstacles) {
-                    if (checkCollisionWithRect(rect, obs)) return false;
-                }
-                // keep some distance from edges
-                if (x < padding || y < padding || x + size > gameCanvas.width / (window.devicePixelRatio ||1) - padding || y + size > gameCanvas.height / (window.devicePixelRatio ||1) - padding) return false;
-                // if avoid point provided, ensure candidate center is at least minDistance away
-                if (avoid && typeof avoid === 'object' && typeof minDistance === 'number') {
-                    const cx = x + size /2;
-                    const cy = y + size /2;
-                    const dx = cx - (avoid.x ||0);
-                    const dy = cy - (avoid.y ||0);
-                    if (Math.hypot(dx, dy) < minDistance) return false;
-                }
-                return true;
-            }
+        // Game state
+        let playerCoins = 500;
+        let unlockedPlayers = ['default'];
+        let selectedPlayerId = 'default';
+        let playerLevel = 1;
+        let currentGameMode = 'showdown';
 
-            // try around center first (wider radius)
-            const centerX = Math.floor(gameCanvas.width /2);
-            const centerY = Math.floor(gameCanvas.height /2);
-            for (let i =0; i <200; i++) {
-                const rx = centerX + (Math.floor(Math.random() *1001) -500);
-                const ry = centerY + (Math.floor(Math.random() *1001) -500);
-                if (isFree(rx, ry)) return { x: rx, y: ry };
+        // Image cache for all game images
+        const imageCache = {};
+
+        function loadImage(src) {
+            if (!imageCache[src]) {
+                imageCache[src] = new Image();
+                imageCache[src].src = src;
+                imageCache[src].onerror = function () {
+                    console.warn('Failed to load image:', src);
+                    // Create a colored fallback
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 100;
+                    canvas.height = 100;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#ff00ff';
+                    ctx.fillRect(0, 0, 100, 100);
+                    ctx.fillStyle = '#000';
+                    ctx.font = '12px Arial';
+                    ctx.fillText('No Image', 10, 50);
+                    imageCache[src].src = canvas.toDataURL();
+                };
             }
-            // fallback: random across canvas
-            for (let i =0; i < maxAttempts; i++) {
-                const rx = Math.floor(Math.random() * (gameCanvas.width - size - padding *2)) + padding;
-                const ry = Math.floor(Math.random() * (gameCanvas.height - size - padding *2)) + padding;
-                if (isFree(rx, ry)) return { x: rx, y: ry };
-            }
-            // last resort: return center clamped
-            return { x: Math.max(padding, Math.min(centerX, gameCanvas.width - size - padding)), y: Math.max(padding, Math.min(centerY, gameCanvas.height - size - padding)) };
+            return imageCache[src];
         }
 
-        // helper to check if a rectangle is free from obstacles and inside bounds
-        // if ignoreStealth is true, stealth-type obstacles are ignored (used for player so they can pass through)
-        function isRectFree(x, y, size, ignoreStealth) {
-            const rect = { x: x, y: y, size: size };
-            for (let obs of obstacles) {
-                if (ignoreStealth && obs.type === 'stealth') continue;
-                if (checkCollisionWithRect(rect, obs)) return false;
+        // Preload all images when game starts
+        function preloadImages() {
+            console.log('Preloading images...');
+
+            // Preload background
+            loadImage('images/background.png');
+
+            // Preload player images
+            Object.values(playersData).forEach(player => {
+                if (player.img) {
+                    loadImage(player.img);
+                }
+            });
+        }
+
+        const playersData = {
+            default: {
+                id: 'default',
+                name: 'soublakiscorpio',
+                img: 'images/ScorpiosSouvlak.png',
+                color: '#4a86e8',
+                hp: 20,
+                speed: 4,
+                laserDamage: 1,
+                size: 55,
+                laserRange: 250,
+                price: 0
+            },
+            tornader: {
+                id: 'tornader',
+                name: 'Tornader',
+                img: 'images/rot2.png',
+                color: '#e84a4a',
+                hp: 32,
+                speed: 5,
+                laserDamage: 3,
+                size: 55,
+                laserRange: 300,
+                price: 1200
+            },
+            lazerman: {
+                id: 'lazerman',
+                name: 'Lazerman',
+                img: 'images/rot1.png',
+                color: '#4ae84a',
+                hp: 37,
+                speed: 4,
+                laserDamage: 2,
+                size: 55,
+                laserRange: 800,
+                price: 500
+            },
+            fournakis: {
+                id: 'fournakis',
+                name: 'Fournakis',
+                img: 'images/pkiotisfournos.png',
+                color: '#e8e84a',
+                hp: 32,
+                speed: 5,
+                laserDamage: 2,
+                size: 55,
+                laserRange: 400,
+                price: 700
+            },
+            kleftikomegazord: {
+                id: 'kleftikomegazord',
+                name: 'Kleftikomegazord',
+                img: 'images/rot3.png',
+                color: '#e8e84a',
+                hp: 70,
+                speed: 3,
+                laserDamage: 6,
+                size: 65,
+                laserRange: 600,
+                price: 2000
+            },
+            baklavasbazookos: {
+                id: 'baklavasbazookos',
+                name: 'Baklavasbazookos',
+                img: 'images/baklavasbazooka.png',
+                color: '#e8e84a',
+                hp: 40,
+                speed: 5,
+                laserDamage: 3,
+                size: 55,
+                laserRange: 500,
+                price: 700
+            },
+            firekoupepy: {
+                id: 'firekoupepy',
+                name: 'Firekoupepy',
+                img: 'images/firekoupepiy.png',
+                color: '#e8e84a',
+                hp: 40,
+                speed: 5,
+                laserDamage: 3,
+                size: 55,
+                laserRange: 450,
+                price: 500
+            },
+            boboshiros: {
+                id: 'boboshiros',
+                name: 'Boboshiros',
+                img: 'images/boboshiros.png',
+                color: '#e8e84a',
+                hp: 45,
+                speed: 5,
+                laserDamage: 4,
+                size: 55,
+                laserRange: 550,
+                price: 700
+            },
+            megagrinos: {
+                id: 'megagrinos',
+                name: 'Megagrinos',
+                img: 'images/megagrinos.png',
+                color: '#e8e84a',
+                hp: 50,
+                speed: 4,
+                laserDamage: 4,
+                size: 60,
+                laserRange: 550,
+                price: 1000
+            },
+            kafekauboy: {
+                id: 'kafekauboy',
+                name: 'Kafekauboy',
+                img: 'images/kafechinocauboyno.png',
+                color: '#e8e84a',
+                hp: 45,
+                speed: 5,
+                laserDamage: 4,
+                size: 55,
+                laserRange: 550,
+                price: 800
             }
-            const padding =10;
-            const cssWidth = parseInt(gameCanvas.style.width) || window.innerWidth;
-            const cssHeight = parseInt(gameCanvas.style.height) || window.innerHeight;
-            if (x < padding || y < padding || x + size > cssWidth - padding || y + size > cssHeight - padding) return false;
+        };
+
+        const gameModes = {
+            showdown: { name: "Showdown", maxPlayers: 4, teams: false, fillBots: true },
+            '3v3': { name: "3v3 Team Battle", maxPlayers: 4, teams: true, teamSize: 2, fillBots: true }
+        };
+
+        // Input handling
+        const keysPressed = {};
+        window.addEventListener('keydown', (e) => {
+            const k = e.key.toLowerCase();
+            keysPressed[k] = true;
+        });
+        window.addEventListener('keyup', (e) => {
+            const k = e.key.toLowerCase();
+            keysPressed[k] = false;
+        });
+
+        // Core game functions
+        function resizeCanvas() {
+            gameCanvas.width = window.innerWidth;
+            gameCanvas.height = window.innerHeight;
+            camera.width = window.innerWidth;
+            camera.height = window.innerHeight;
+        }
+
+        // ADD MISSING CAMERA FUNCTION
+        function updateCamera() {
+            if (!player) return;
+
+            // Center camera on player
+            camera.x = player.x + player.size / 2 - camera.width / 2;
+            camera.y = player.y + player.size / 2 - camera.height / 2;
+
+            // Keep camera within map bounds
+            camera.x = Math.max(0, Math.min(camera.x, MAP_WIDTH - camera.width));
+            camera.y = Math.max(0, Math.min(camera.y, MAP_HEIGHT - camera.height));
+        }
+
+        function getDistance(x1, y1, x2, y2) {
+            return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+        }
+
+        function checkCollisionWithRect(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                rect1.x + rect1.size > rect2.x &&
+                rect1.y < rect2.y + rect2.height &&
+                rect1.y + rect1.size > rect2.y;
+        }
+
+        // NEW: Check if a position is valid (not inside obstacles)
+        function isValidSpawnPosition(x, y, size) {
+            for (let obs of obstacles) {
+                if (x < obs.x + obs.width &&
+                    x + size > obs.x &&
+                    y < obs.y + obs.height &&
+                    y + size > obs.y) {
+                    return false;
+                }
+            }
             return true;
         }
 
-        // Try to move an entity out of overlapping obstacle. Returns true if moved.
-        // For the player we allow passing through stealth boxes, so ignore them when testing freedom.
-        function resolveEntityOverlap(entity, avoidPoint) {
-            // if not overlapping anything, nothing to do
-            let overlapping = false;
-            for (let obs of obstacles) {
-                // allow player and AI to be inside stealth boxes
-                if ((entity === player || entity === ai) && obs.type === 'stealth') continue;
-                if (checkCollisionWithRect(entity, obs)) { overlapping = true; break; }
-            }
-            if (!overlapping) return false;
+        function getSpawnPosition(size) {
+            const padding = 100;
+            let attempts = 0;
+            let pos;
 
-            const cx = Math.round(entity.x + entity.size /2);
-            const cy = Math.round(entity.y + entity.size /2);
-            const maxRadius = Math.max(window.innerWidth, window.innerHeight);
-            for (let r =20; r < maxRadius; r +=20) {
-                const steps =16;
-                for (let s =0; s < steps; s++) {
-                    const ang = (s / steps) * Math.PI *2;
-                    const nx = Math.round(cx + Math.cos(ang) * r - entity.size /2);
-                    const ny = Math.round(cy + Math.sin(ang) * r - entity.size /2);
-                    if (nx <0 || ny <0) continue;
-                    // if entity is player or AI, allow positions inside stealth boxes by setting ignoreStealth
-                    const ignoreStealth = (entity === player || entity === ai);
-                    if (!isRectFree(nx, ny, entity.size, ignoreStealth)) continue;
-                    if (avoidPoint && typeof avoidPoint.minDistance === 'number') {
-                        const dist = getDistance(nx + entity.size /2, ny + entity.size /2, avoidPoint.x, avoidPoint.y);
-                        if (dist < avoidPoint.minDistance) continue;
-                    }
-                    entity.x = nx; entity.y = ny; return true;
-                }
-            }
-            // fallback: use getSpawnPosition to find a free place (allow player through stealth)
-            const sp = getSpawnPosition(entity.size, avoidPoint && { x: avoidPoint.x, y: avoidPoint.y }, avoidPoint && avoidPoint.minDistance);
-            entity.x = sp.x; entity.y = sp.y; return true;
+            // Keep trying until we find a valid position not inside obstacles
+            do {
+                pos = {
+                    x: padding + Math.random() * (MAP_WIDTH - padding * 2 - size),
+                    y: padding + Math.random() * (MAP_HEIGHT - padding * 2 - size)
+                };
+                attempts++;
+            } while (!isValidSpawnPosition(pos.x, pos.y, size) && attempts < 50);
+
+            return pos;
         }
 
-        // Ensure player is not inside an obstacle; move if necessary
-        function ensurePlayerNotInObstacle() {
-            const moved = resolveEntityOverlap(player, { x: ai.x + ai.size /2, y: ai.y + ai.size /2, minDistance:500 });
-            if (moved) setDebug('Player moved out of obstacle');
-            return moved;
-        }
-
-        // generate initial obstacles
-        generateObstacles();
-
-        // Initialize player and AI with safe spawn positions
-        const selectedData = playersData[selectedPlayerId] || playersData.default;
-        const initialPos = getSpawnPosition(selectedData.size);
-        let player = {
-            x: initialPos.x,
-            y: initialPos.y,
-            size: selectedData.size,
-            color: 'blue',
-            speed: selectedData.speed,
-            hp: selectedData.hp,
-            shootCooldown: 1,
-            laserDamage: selectedData.laserDamage || 1,
-            laserRange: selectedData.laserRange || 300
-        };
-
-        // ensure initial AI spawn is at least 500px away from the player center
-        const aiPos = getSpawnPosition(50, { x: initialPos.x + selectedData.size / 2, y: initialPos.y + selectedData.size / 2 }, 500);
-        // AI configured to wander (does not actively chase the player) and be easier
-        let ai = {
-            x: aiPos.x,
-            y: aiPos.y,
-            size: 50,
-            color: 'green',
-            speed: 1.2, // slower to make it easier
-            hp: 8,
-            shootCooldown: 3,
-            vx: 0,
-            vy: 0,
-            pauseTimer: 0,
-            accuracy: 0.35, // lower accuracy -> more misses
-            targetX: aiPos.x,
-            targetY: aiPos.y,
-            targetTimer: 0
-        };
-
-        // keep previous player position for simple velocity estimation used for aiming
-        let lastPlayerPos = { x: player.x, y: player.y };
-
-        function saveState() {
-            localStorage.setItem('coins', playerCoins);
-            localStorage.setItem('unlockedSkins', JSON.stringify(unlockedSkins));
-            localStorage.setItem('unlockedPlayers', JSON.stringify(unlockedPlayers));
-            localStorage.setItem('playerLevel', playerLevel);
-            localStorage.setItem('selectedPlayerId', selectedPlayerId);
-        }
-
-        function openLootBox() {
-            const roll = Math.random() * 100;
-            if (roll < 30) return { type: 'levels', amount: 1, message: '\uD83D\uDD25 +1 Levels! \uD83D\uDD25' };
-            if (roll < 90) return { type: 'coins', amount: 100, message: '\uD83D\uDCB0 +100 Coins! \uD83D\uDCB0' };
-            if (roll < 95) return { type: 'coins', amount: 200, message: '\uD83D\uDCB0 +200 Coins! \uD83D\uDCB0' };
-            return { type: 'coins', amount: 300, message: '\uD83D\uDCB0 +300 Coins! \uD83D\uDCB0' };
-        }
-
-        function showLootBoxResults(reward) {
-            const popup = document.getElementById('lootbox-popup');
-            const content = document.getElementById('lootbox-content');
-            const okBtn = document.getElementById('lootbox-ok');
-            if (!popup || !content) return;
-            if (reward.type === 'rank') {
-                content.innerHTML = '<div style="animation:zoom 0.5s infinite alternate;">' + reward.message + '</div><div>New rank: ' + getCurrentRank(playerLevel).name + '</div>';
-                popup.style.background = 'linear-gradient(135deg,#8A2BE2,#9370DB)';
-            } else {
-                content.textContent = reward.message || 'You got something!';
-                popup.style.background = 'linear-gradient(135deg,#FFD700,#FFAA00)';
-            }
-            okBtn.onclick = function () { popup.style.display = 'none'; };
-            popup.style.display = 'block';
-        }
-
-        // obstacles will be generated to fill the screen but be fewer and more chaotic
         function generateObstacles() {
-            obstacles.length =0;
-            const cell =100; // grid cell size (used for density estimate)
-            const cssW = parseInt(gameCanvas.style.width) || window.innerWidth;
-            const cssH = parseInt(gameCanvas.style.height) || window.innerHeight;
-            const cols = Math.ceil(cssW / cell);
-            const rows = Math.ceil(cssH / cell);
-            const totalCells = cols * rows;
-            const count = Math.max(5, Math.floor(totalCells *0.10)); // ~10% of grid
-
-            // helper to avoid placing obstacles too close
-            function tooClose(x, y, w, h, minDist) {
-                const cx = x + w/2, cy = y + h/2;
-                for (let o of obstacles) {
-                    const ocx = o.x + o.width/2, ocy = o.y + o.height/2;
-                    const dist = Math.hypot(cx - ocx, cy - ocy);
-                    if (dist < minDist) return true;
-                }
-                return false;
-            }
-
-            const minCenterSpacing =100; // user requested minimum spacing
-            for (let i =0; i < count; i++) {
-                let placed = false;
-                for (let attempt =0; attempt <60; attempt++) {
-                    const w = Math.floor(Math.random() *90) +30;
-                    const h = Math.floor(Math.random() *80) +30;
-                    const x = Math.floor(Math.random() * Math.max(1, cssW - w));
-                    const y = Math.floor(Math.random() * Math.max(1, cssH - h));
-                    const type = Math.random() <0.5 ? 'lake' : 'brick';
-                    if (tooClose(x, y, w, h, minCenterSpacing)) continue;
-                    obstacles.push({ x, y, width: w, height: h, type });
-                    placed = true;
-                    break;
-                }
-                if (!placed) continue;
-            }
-
-            // add stealth boxes (green)70x70
-            const stealthCount = Math.max(1, Math.floor(totalCells *0.02));
-            for (let i =0; i < stealthCount; i++) {
-                for (let attempt =0; attempt <40; attempt++) {
-                    const w =70, h =70;
-                    const x = Math.floor(Math.random() * Math.max(1, cssW - w));
-                    const y = Math.floor(Math.random() * Math.max(1, cssH - h));
-                    if (tooClose(x, y, w, h, minCenterSpacing)) continue;
-                    obstacles.push({ x, y, width: w, height: h, type: 'stealth' });
-                    break;
-                }
-            }
-
-            // add some small debris
-            const smallCount = Math.max(4, Math.floor(totalCells *0.04));
-            for (let i =0; i < smallCount; i++) {
-                const w = Math.floor(Math.random() *35) +6;
-                const h = Math.floor(Math.random() *35) +6;
-                const x = Math.floor(Math.random() * Math.max(1, cssW - w));
-                const y = Math.floor(Math.random() * Math.max(1, cssH - h));
-                if (tooClose(x, y, w, h,30)) continue;
-                const type = Math.random() <0.5 ? 'lake' : 'brick';
-                obstacles.push({ x, y, width: w, height: h, type });
-            }
-
-            console.log('generateObstacles: created', obstacles.length, 'obstacles');
-            setDebug('obstacles: ' + obstacles.length);
-        }
-
-        function showCoins() {
-            const rank = getCurrentRank(playerLevel);
-            const display = document.getElementById('coins-display');
-            if (display) display.innerText = '\uD83D\uDCB0 Coins: ' + playerCoins + '  |  \uD83C\uDFC5 Rank: ' + rank.name + '  |  \uD83D\uDD3C Level: ' + playerLevel;
-            display.style.display = 'block';
-        }
-
-        async function loadSkins() {
-            const container = document.getElementById('skins-container');
-            if (!container) return;
-            container.innerHTML = '';
-            // add header and close button
-            const title = document.createElement('h2'); title.textContent = 'Bazaar';
-            container.appendChild(title);
-            const closeBtn = document.createElement('button'); closeBtn.className = 'btn modal-close'; closeBtn.id = 'close-skins-btn'; closeBtn.textContent = 'Close Bazaar';
-            closeBtn.addEventListener('click', function () { container.style.display = 'none'; });
-            // will append close button at end after content
-            try {
-                const res = await fetch('skins.json');
-                const skins = await res.json();
-                const grid = document.createElement('div'); grid.style.display = 'flex'; grid.style.flexWrap = 'wrap'; grid.style.justifyContent = 'center';
-                skins.forEach(function (skin) {
-                    const div = document.createElement('div');
-                    div.className = 'skin-card';
-                    const img = document.createElement('img'); img.src = skin.image; img.className = 'skin-img';
-                    const h3 = document.createElement('h3'); h3.textContent = skin.name;
-                    const p = document.createElement('p'); p.textContent = skin.character;
-                    const btn = document.createElement('button');
-                    if (unlockedSkins.includes(skin.id) || skin.price ===0) {
-                        btn.textContent = '✔️ Owned'; btn.disabled = true;
-                    } else {
-                        btn.textContent = 'Buy for ' + skin.price + ' coins';
-                        btn.addEventListener('click', function () { buySkin(skin.id, skin.price); });
-                    }
-                    div.appendChild(img); div.appendChild(h3); div.appendChild(p); div.appendChild(btn);
-                    grid.appendChild(div);
+            obstacles = [];
+            for (let i = 0; i < 15; i++) {
+                obstacles.push({
+                    x: Math.random() * (MAP_WIDTH - 100),
+                    y: Math.random() * (MAP_HEIGHT - 100),
+                    width: 60 + Math.random() * 60,
+                    height: 60 + Math.random() * 60,
+                    type: Math.random() < 0.5 ? 'brick' : 'water'
                 });
-                container.appendChild(grid);
-                container.appendChild(closeBtn);
-            } catch (e) {
-                // ignore missing skins.json
-                console.warn('loadSkins failed', e);
-            }
-
-            // Add player purchase cards for available characters
-            const playersSection = document.createElement('div'); playersSection.style.display = 'flex'; playersSection.style.flexWrap = 'wrap'; playersSection.style.justifyContent = 'center';
-            container.appendChild(document.createElement('hr'));
-            Object.keys(playersData).forEach(function (pid) {
-                if (pid === 'default') return;
-                const pdata = playersData[pid];
-                const playerDiv = document.createElement('div'); playerDiv.className = 'skin-card';
-                const imgEl = document.createElement('img'); imgEl.src = pdata.img; imgEl.className = 'skin-img';
-                const h3El = document.createElement('h3'); h3El.textContent = pdata.name;
-                const pEl = document.createElement('p'); pEl.textContent = 'Speed: ' + pdata.speed + ', HP: ' + pdata.hp + ', Damage: ' + pdata.laserDamage + ', Range: ' + pdata.laserRange + '.';
-                const btnEl = document.createElement('button');
-                if (unlockedPlayers.includes(pdata.id)) { btnEl.textContent = 'Equip'; btnEl.addEventListener('click', function () { selectedPlayerId = pdata.id; updatePlayerFromSelection(); container.style.display = 'none'; }); }
-                else { btnEl.textContent = 'Buy ' + pdata.name + ' for ' + (pdata.price ||1000) + ' coins'; btnEl.addEventListener('click', function () { buyPlayer(pdata.id, pdata.price ||1000); }); }
-                playerDiv.appendChild(imgEl); playerDiv.appendChild(h3El); playerDiv.appendChild(pEl); playerDiv.appendChild(btnEl);
-                playersSection.appendChild(playerDiv);
-            });
-            container.appendChild(playersSection);
-        }
-
-        function buySkin(id, price) {
-            if (playerCoins >= price) {
-                playerCoins -= price;
-                unlockedSkins.push(id);
-                saveState();
-                showCoins();
-                loadSkins();
-                alert('Skin unlocked!');
-            } else {
-                alert('Not enough coins \uD83D\uDE22');
             }
         }
 
-        function buyPlayer(id, price) {
-            if (unlockedPlayers.includes(id)) return;
-            if (playerCoins >= price) {
-                playerCoins -= price;
-                unlockedPlayers.push(id);
-                saveState();
-                showCoins();
-                loadSkins();
-                alert('Player unlocked! Use Switch Player to equip.');
-            } else {
-                alert('Not enough coins \uD83D\uDE22');
+        function generateHealthPacks() {
+            healthPacks = [];
+            for (let i = 0; i < 8; i++) {
+                const pos = getSpawnPosition(30);
+                healthPacks.push({
+                    x: pos.x,
+                    y: pos.y,
+                    size: 30,
+                    healAmount: 10,
+                    active: true
+                });
             }
         }
 
-        async function loadMaps() {
-            try {
-                const res = await fetch('images/maps.json');
-                const maps = await res.json();
-                const mapContainer = document.getElementById('map-selection');
-                if (!mapContainer) return;
-                mapContainer.innerHTML = '';
-                maps.forEach(function (map) { const btn = document.createElement('button'); btn.className = 'map-button'; btn.innerText = map.name; btn.addEventListener('click', function () { selectMap(map); }); mapContainer.appendChild(btn); });
-            } catch (e) {
-                // ignore
-            }
-        }
-
-        function selectMap(map) { console.log('Selected map: ' + map.name); }
-
-        function updatePlayerFromSelection() {
-            const data = playersData[selectedPlayerId] || playersData.default;
-            // Update properties but keep position
-            const oldX = player.x, oldY = player.y;
-            player.size = data.size;
-            player.speed = data.speed;
-            player.hp = data.hp;
-            player.laserDamage = data.laserDamage || 1;
-            player.laserRange = data.laserRange || 300;
-            player.x = oldX;
-            player.y = oldY;
-            playerImg.src = data.img;
-            saveState();
-        }
-
-        function drawPlayer() { if (playerImg.complete && playerImg.naturalWidth !== 0) ctx.drawImage(playerImg, player.x, player.y, player.size, player.size); else { ctx.fillStyle = player.color; ctx.fillRect(player.x, player.y, player.size, player.size); } }
-
-        function drawAI() {
-        // do not render AI when invisible
-        if (aiInvisible) return;
-        if (AIImg.complete && AIImg.naturalWidth !==0) ctx.drawImage(AIImg, ai.x, ai.y, ai.size, ai.size);
-        else { ctx.fillStyle = ai.color; ctx.fillRect(ai.x, ai.y, ai.size, ai.size); }
-        }
-
-        function drawHP() { if (!gameStarted) return; ctx.save(); ctx.fillStyle = 'white'; ctx.font = '20px Arial'; ctx.fillText('Your HP: ' + player.hp, 10, 25); ctx.fillText('Enemy HP: ' + ai.hp, 10, 90); ctx.restore(); }
-
-        // Add obstacle hit alert throttling (non-blocking)
-        let lastObstacleAlert = 0;
-        function notifyObstacleHit() {
-            const now = Date.now();
-            if (now - lastObstacleAlert > 1000) { // throttle to 1s
-                lastObstacleAlert = now;
-                setDebug('Hit obstacle');
-                setTimeout(function () { setDebug('running'); }, 1000);
-            }
-        }
-
-        // improved AI: wander (does not chase player) until player enters500px, then follow and shoot
-        function updateAI() {
-            // occasional pause to simulate human-like hesitation
-            if (ai.pauseTimer > 0) { ai.pauseTimer--; return; }
-
-            const centerAx = ai.x + ai.size/2; const centerAy = ai.y + ai.size/2;
-            const centerPx = player.x + player.size/2; const centerPy = player.y + player.size/2;
-            const distToPlayer = getDistance(centerAx, centerAy, centerPx, centerPy);
-
-            // if player is invisible (inside stealth), AI should not detect or shoot
-            if (!playerInvisible && distToPlayer <=300) {
-                // enter 'alert' mode: follow the player (player-like movement) and shoot more frequently
-                // set a closer target (player pos)
-                let dxRaw = centerPx - centerAx;
-                let dyRaw = centerPy - centerAy;
-                const thresh = 6;
-                let inputX = 0, inputY = 0;
-                if (Math.abs(dxRaw) > thresh) inputX = dxRaw > 0 ? 1 : -1;
-                if (Math.abs(dyRaw) > thresh) inputY = dyRaw > 0 ? 1 : -1;
-
-                // move like a player (axis-aligned)
-                const oldX = ai.x, oldY = ai.y;
-                let mvx = inputX, mvy = inputY;
-                const mag = Math.hypot(mvx, mvy);
-                if (mag > 1) { mvx /= mag; mvy /= mag; }
-                ai.x += mvx * ai.speed * 1.1; // slightly faster while chasing
-                for (let obs of obstacles) { if (obs.type === 'stealth') continue; if (checkCollisionWithRect(ai, obs)) { ai.x = oldX; break; } }
-                ai.y += mvy * ai.speed * 1.1;
-                for (let obs of obstacles) { if (obs.type === 'stealth') continue; if (checkCollisionWithRect(ai, obs)) { ai.y = oldY; break; } }
-
-                // shooting behavior: more aggressive but still limited accuracy
-                if (ai.shootCooldown <= 0) {
-                    // predictive aim with modest lead
-                    const pvx = (player.x - lastPlayerPos.x);
-                    const pvy = (player.y - lastPlayerPos.y);
-                    const lead = 4;
-                    const aimX = centerPx + pvx * lead;
-                    const aimY = centerPy + pvy * lead;
-                    const aimDx = aimX - centerAx;
-                    const aimDy = aimY - centerAy;
-                    const aimAngle = Math.atan2(aimDy, aimDx);
-                    const maxSpread = 1.0;
-                    const spread = (1 - (ai.accuracy || 0.35)) * maxSpread * (distToPlayer / 700);
-                    const noisyAngle = aimAngle + (Math.random() - 0.5) * spread;
-                    const speed = 12;
-                    const vx = Math.cos(noisyAngle) * speed;
-                    const vy = Math.sin(noisyAngle) * speed;
-                    aiLasers.push({ x: ai.x + ai.size/2, y: ai.y + ai.size/2, vx, vy, life:60, damage:1 });
-                    // AI shooting reveals AI briefly
-                    aiRevealUntil = Date.now() +3000;
-                    // set cooldown ~3 seconds (assuming ~60fps) plus small random
-                    ai.shootCooldown =180 + Math.floor(Math.random() *60);
-                } else ai.shootCooldown--;
-
-                return; // skip wander logic
-            }
-
-            // wander logic (unchanged)
-            // If target expired or reached, pick a new wander target away from the player
-            ai.targetTimer = (ai.targetTimer || 0) - 1;
-            const reached = getDistance(ai.x, ai.y, ai.targetX, ai.targetY) < 12;
-            if (!ai.targetX || ai.targetTimer <= 0 || reached) {
-                let tries = 0;
-                do {
-                    const pos = getSpawnPosition(ai.size);
-                    ai.targetX = pos.x;
-                    ai.targetY = pos.y;
-                    tries++;
-                } while (getDistance(ai.targetX, ai.targetY, player.x, player.y) < 180 && tries < 10);
-                ai.targetTimer = 60 + Math.floor(Math.random() * 240);
-            }
-
-            // move toward target using player-like (axis-aligned) movement
-            const dx = ai.targetX - ai.x;
-            const dy = ai.targetY - ai.y;
-            let inputX = 0, inputY = 0;
-            const thresh = 6;
-            if (Math.abs(dx) > thresh) inputX = dx > 0 ? 1 : -1;
-            if (Math.abs(dy) > thresh) inputY = dy > 0 ? 1 : -1;
-
-            let mvx = inputX, mvy = inputY;
-            const mag = Math.hypot(mvx, mvy);
-            if (mag > 1) { mvx /= mag; mvy /= mag; }
-
-            const oldX2 = ai.x, oldY2 = ai.y;
-            ai.x += mvx * ai.speed;
-            // horizontal collision (stealth boxes are passable for AI)
-            for (let obs of obstacles) { if (obs.type === 'stealth') continue; if (checkCollisionWithRect(ai, obs)) { ai.x = oldX2; break; } }
-            ai.y += mvy * ai.speed;
-            // vertical collision
-            for (let obs of obstacles) { if (obs.type === 'stealth') continue; if (checkCollisionWithRect(ai, obs)) { ai.y = oldY2; break; } }
-
-            // occasional small random jitter
-            if (Math.random() < 0.02) {
-                ai.x += (Math.random() - 0.5) * ai.speed * 0.8;
-                ai.y += (Math.random() - 0.5) * ai.speed * 0.8;
-            }
-
-            // if ended up inside obstacle, revert and pause
+        // NEW: Check laser collision with obstacles
+        function checkLaserObstacleCollision(laser) {
             for (let obs of obstacles) {
-                if (checkCollisionWithRect(ai, obs)) {
-                    ai.x = oldX2; ai.y = oldY2;
-                    ai.x += (Math.random() -0.5) * ai.speed *4;
-                    ai.y += (Math.random() -0.5) * ai.speed *4;
-                    if (Math.random() <0.6) ai.pauseTimer =6 + Math.floor(Math.random() *12);
+                // Only check collision with brown bricks (not water)
+                if (obs.type === 'brick') {
+                    // Simple line-rectangle collision detection
+                    const laserStartX = laser.x;
+                    const laserStartY = laser.y;
+                    const laserEndX = laser.x + laser.vx;
+                    const laserEndY = laser.y + laser.vy;
+
+                    // Check if laser line intersects with obstacle rectangle
+                    if (lineIntersectsRect(laserStartX, laserStartY, laserEndX, laserEndY, obs)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        // NEW: Line-rectangle intersection detection
+        function lineIntersectsRect(x1, y1, x2, y2, rect) {
+            // Check if either end is inside the rectangle
+            if ((x1 >= rect.x && x1 <= rect.x + rect.width && y1 >= rect.y && y1 <= rect.y + rect.height) ||
+                (x2 >= rect.x && x2 <= rect.x + rect.width && y2 >= rect.y && y2 <= rect.y + rect.height)) {
+                return true;
+            }
+
+            // Check line intersections with rectangle edges
+            const left = lineIntersectsLine(x1, y1, x2, y2, rect.x, rect.y, rect.x, rect.y + rect.height);
+            const right = lineIntersectsLine(x1, y1, x2, y2, rect.x + rect.width, rect.y, rect.x + rect.width, rect.y + rect.height);
+            const top = lineIntersectsLine(x1, y1, x2, y2, rect.x, rect.y, rect.x + rect.width, rect.y);
+            const bottom = lineIntersectsLine(x1, y1, x2, y2, rect.x, rect.y + rect.height, rect.x + rect.width, rect.y + rect.height);
+
+            return left || right || top || bottom;
+        }
+
+        // NEW: Line-line intersection detection
+        function lineIntersectsLine(x1, y1, x2, y2, x3, y3, x4, y4) {
+            const denominator = ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1));
+            if (denominator === 0) return false;
+
+            const ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator;
+            const ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator;
+
+            return (ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1);
+        }
+
+        // Health pack collision
+        // SIMPLIFIED Health pack collision - no cooldown for now
+        function checkHealthPackCollision(entity) {
+            if (!entity) return;
+
+            for (let i = healthPacks.length - 1; i >= 0; i--) {
+                const pack = healthPacks[i];
+                if (!pack || !pack.active) continue;
+
+                // Simple rectangle collision
+                if (entity.x < pack.x + pack.size &&
+                    entity.x + entity.size > pack.x &&
+                    entity.y < pack.y + pack.size &&
+                    entity.y + entity.size > pack.y) {
+
+                    console.log("Health pack collision detected!");
+                    console.log("Before healing - HP:", entity.currentHp, "Max HP:", entity.maxHp);
+
+                    const healAmount = 10;
+
+                    // Only heal if not at full health
+                    if (entity.currentHp < entity.maxHp) {
+                        // Heal the entity
+                        entity.currentHp = Math.min(entity.maxHp, entity.currentHp + healAmount);
+                        entity.hp = entity.currentHp; // Keep them synchronized
+
+                        console.log("After healing - HP:", entity.currentHp);
+
+                        // Remove the health pack
+                        healthPacks.splice(i, 1);
+
+                        // Respawn health pack after 10 seconds
+                        setTimeout(() => {
+                            const newPos = getSpawnPosition(30);
+                            healthPacks.push({
+                                x: newPos.x,
+                                y: newPos.y,
+                                size: 30,
+                                healAmount: 10,
+                                active: true
+                            });
+                            console.log("Health pack respawned");
+                        }, 10000);
+
+                        if (entity.isHuman) {
+                            setDebug(`Healed +${healAmount} HP! Current: ${entity.currentHp}`);
+                        }
+                    } else {
+                        console.log("Already at full health, no healing needed");
+                    }
                     break;
                 }
             }
         }
 
-        const keysPressed = {};
-        window.addEventListener('keydown', function (e) { const k = (e.key || '').toLowerCase(); if (k === '1') { playerCoins += 500; saveState(); showCoins(); return; } keysPressed[k] = true; });
-        window.addEventListener('keyup', function (e) { keysPressed[(e.key || '').toLowerCase()] = false; });
-
-        // joystick handling (only if elements present)
-        const baseEl = document.getElementById('joystick-base');
-        const stickEl = document.getElementById('joystick-stick');
-        let dragging = false; let centerX = 0, centerY = 0; let movement = { x: 0, y: 0 };
-        function updateStickPosition(x, y) { const dx = x - centerX; const dy = y - centerY; const distance = Math.min(Math.sqrt(dx * dx + dy * dy), 40); const angle = Math.atan2(dy, dx); const newX = Math.cos(angle) * distance; const newY = Math.sin(angle) * distance; if (stickEl) { stickEl.style.left = (30 + newX) + 'px'; stickEl.style.top = (30 + newY) + 'px'; } movement = { x: newX / 40, y: newY / 40 }; }
-        function resetStick() { if (stickEl) { stickEl.style.left = '30px'; stickEl.style.top = '30px'; } movement = { x: 0, y: 0 }; }
-        if (baseEl) { baseEl.addEventListener('touchstart', function (e) { dragging = true; const rect = baseEl.getBoundingClientRect(); centerX = rect.left + rect.width / 2; centerY = rect.top + rect.height / 2; }); baseEl.addEventListener('touchmove', function (e) { if (dragging) { e.preventDefault(); updateStickPosition(e.touches[0].clientX, e.touches[0].clientY); } }); baseEl.addEventListener('touchend', function () { dragging = false; resetStick(); }); }
-
-        // shoot joystick
-        const shootBase = document.getElementById('shoot-joystick-base');
-        const shootStick = document.getElementById('shoot-joystick-stick');
-        let shootDragging = false; let shootCenterX = 0, shootCenterY = 0; let shootDirection = { x: 0, y: 0 }; let lastShootTime = 0; const shootCooldown = 500;
-        function updateShootStickPosition(x, y) { const dx = x - shootCenterX; const dy = y - shootCenterY; const distance = Math.min(Math.sqrt(dx * dx + dy * dy), 40); const angle = Math.atan2(dy, dx); const newX = Math.cos(angle) * distance; const newY = Math.sin(angle) * distance; if (shootStick) { shootStick.style.left = (30 + newX) + 'px'; shootStick.style.top = (30 + newY) + 'px'; } shootDirection = { x: newX / 40, y: newY / 40 }; const now = Date.now(); if (distance > 10 && now - lastShootTime > shootCooldown && player.shootCooldown <= 0) { autoShoot(); lastShootTime = now; } }
-        function resetShootStick() { if (shootStick) { shootStick.style.left = '30px'; shootStick.style.top = '30px'; } shootDirection = { x: 0, y: 0 }; }
-        function autoShoot() { if (!gameStarted || player.shootCooldown >0) return; const speed =12; const sel = playersData[selectedPlayerId] || playersData.default; const damage = sel.laserDamage ||1; const range = sel.laserRange ||300; const ox = player.x + player.size /2; const oy = player.y + player.size /2; lasers.push({ x: ox, y: oy, originX: ox, originY: oy, vx: shootDirection.x * speed, vy: shootDirection.y * speed, life:60, damage: damage, range: range }); player.shootCooldown =20; playerRevealUntil = Date.now() +3000; setDebug('Player revealed (shot)'); }
-        if (shootBase) { shootBase.addEventListener('touchstart', function (e) { shootDragging = true; const rect = shootBase.getBoundingClientRect(); shootCenterX = rect.left + rect.width / 2; shootCenterY = rect.top + rect.height / 2; }); shootBase.addEventListener('touchmove', function (e) { if (shootDragging) { e.preventDefault(); updateShootStickPosition(e.touches[0].clientX, e.touches[0].clientY); } }); shootBase.addEventListener('touchend', function () { shootDragging = false; resetShootStick(); }); }
-
-        gameCanvas.addEventListener('mousedown', function (e) { if (!gameStarted || player.shootCooldown >0) return; const rect = gameCanvas.getBoundingClientRect(); const mouseX = e.clientX - rect.left; const mouseY = e.clientY - rect.top; const startX = player.x + player.size /2; const startY = player.y + player.size /2; const dx = mouseX - startX; const dy = mouseY - startY; const len = Math.sqrt(dx * dx + dy * dy) ||1; const speed =12; const vx = dx / len * speed; const vy = dy / len * speed; const sel = playersData[selectedPlayerId] || playersData.default; const damage = sel.laserDamage ||1; const range = sel.laserRange ||300; lasers.push({ x: startX, y: startY, originX: startX, originY: startY, vx, vy, life:60, damage: damage, range: range }); player.shootCooldown =60; playerRevealUntil = Date.now() +3000; setDebug('Player revealed (shot)'); });
-
-        function drawLasers() {
-            ctx.save();
-            ctx.strokeStyle = '#00ffff';
-            ctx.lineWidth = 4;
-            lasers.forEach(function (l) {
-                ctx.beginPath();
-                ctx.moveTo(l.x, l.y);
-                ctx.lineTo(l.x - l.vx * 2, l.y - l.vy * 2);
-                ctx.stroke();
-            });
-            ctx.restore();
-        }
-
-        function updateLasers() {
-            for (let i = lasers.length -1; i >=0; i--) {
-                lasers[i].x += lasers[i].vx; lasers[i].y += lasers[i].vy; lasers[i].life--;
-                // lasers pass through lakes and stealth boxes for player (can shoot while in stealth), but are blocked by bricks
-                let hitObstacle = false;
-                for (let obs of obstacles) {
-                    if (obs.type === 'lake' || obs.type === 'stealth') continue; // player lasers pass through water and stealth
-                    if (checkCollisionWithRect({ x: lasers[i].x, y: lasers[i].y, size:4 }, obs)) { hitObstacle = true; break; }
-                }
-                if (hitObstacle) { lasers.splice(i,1); continue; }
-                // player lasers should not hit AI while AI is invisible
-                if (!aiInvisible && checkCollision(lasers[i], ai)) {
-                    ai.hp -= (lasers[i].damage ||1);
-                    // hitting AI reveals it briefly
-                    aiRevealUntil = Date.now() +3000;
-                    lasers.splice(i,1);
-                    if (ai.hp <= 0) {
-                        playerCoins += 100; playerLevel += 1; const reward = openLootBox(); if (reward.type === 'coins') playerCoins += reward.amount || 0; else if (reward.type === 'levels') playerLevel += reward.amount || 0; else if (reward.type === 'rank') playerLevel += 1; saveState(); showCoins(); showLootBoxResults(reward); setTimeout(function () { endGame(); }, 500); return;
-                    }
-                    continue;
-                }
-                // remove by range / life / out of bounds
-                const ox = lasers[i].originX !== undefined ? lasers[i].originX : player.x + player.size/2;
-                const oy = lasers[i].originY !== undefined ? lasers[i].originY : player.y + player.size/2;
-                const range = lasers[i].range || 300;
-                if (lasers[i].x < 0 || lasers[i].x > gameCanvas.width || lasers[i].y < 0 || lasers[i].y > gameCanvas.height || lasers[i].life <= 0 || getDistance(ox, oy, lasers[i].x, lasers[i].y) > range) { lasers.splice(i, 1); }
-            }
-        }
-
-        function drawAILasers() { ctx.save(); ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 4; aiLasers.forEach(function (l) { ctx.beginPath(); ctx.moveTo(l.x, l.y); ctx.lineTo(l.x - l.vx * 2, l.y - l.vy * 2); ctx.stroke(); }); ctx.restore(); }
-
-        function updateAILasers() {
-            for (let i = aiLasers.length -1; i >=0; i--) {
-                aiLasers[i].x += aiLasers[i].vx; aiLasers[i].y += aiLasers[i].vy; aiLasers[i].life--;
-                let hitObstacle = false;
-                for (let obs of obstacles) {
-                    if (obs.type === 'lake') continue;
-                    if (checkCollisionWithRect({ x: aiLasers[i].x, y: aiLasers[i].y, size:4 }, obs)) { hitObstacle = true; break; }
-                }
-                if (hitObstacle) { aiLasers.splice(i,1); continue; }
-                // AI lasers do not hit the player when player is invisible
-                if (!playerInvisible && checkCollision(aiLasers[i], player)) {
-                    player.hp -= (aiLasers[i].damage || 1);
-                    // taking damage reveals the player briefly
-                    playerRevealUntil = Date.now() +3000;
-                    aiLasers.splice(i, 1);
-                    if (player.hp <= 0) { alert('Game Over! You Lose!'); endGame(); }
-                    continue;
-                }
-                if (aiLasers[i].x < 0 || aiLasers[i].x > gameCanvas.width || aiLasers[i].y < 0 || aiLasers[i].y > gameCanvas.height || aiLasers[i].life <= 0 || getDistance(aiLasers[i].x, aiLasers[i].y, ai.x + ai.size /2, ai.y + ai.size /2) >300) { aiLasers.splice(i,1); }
-            }
-        }
-
-        function getDistance(x1, y1, x2, y2) { return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2)); }
-        function checkCollision(laser, target) { return laser.x >= target.x && laser.x <= target.x + target.size && laser.y >= target.y && laser.y <= target.y + target.size; }
-        function checkCollisionWithRect(rect1, rect2) { return rect1.x < rect2.x + rect2.width && rect1.x + (rect1.size || 0) > rect2.x && rect1.y < rect2.y + rect2.height && rect1.y + (rect1.size || 0) > rect2.y; }
-
-        function drawObstacles() {
-        ctx.save();
-        for (let obs of obstacles) {
-        if (obs.type === 'lake') ctx.fillStyle = '#0077aa';
-        else if (obs.type === 'stealth') ctx.fillStyle = '#008000';
-        else ctx.fillStyle = '#8B0000';
-        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-        }
-        ctx.restore();
-        }
-
-        // Add missing clearCanvas function so gameLoop can run without error
-        function clearCanvas() { ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height); }
-
-        function updateCooldowns() { if (player.shootCooldown > 0) player.shootCooldown--; if (ai.shootCooldown > 0) ai.shootCooldown--; }
-
-        // unified per-frame input handling
+        // Player movement and shooting
         function handleInputFrame() {
+            if (!player) return;
+
             let inputX = 0, inputY = 0;
             if (keysPressed['arrowup'] || keysPressed['w']) inputY -= 1;
             if (keysPressed['arrowdown'] || keysPressed['s']) inputY += 1;
             if (keysPressed['arrowleft'] || keysPressed['a']) inputX -= 1;
             if (keysPressed['arrowright'] || keysPressed['d']) inputX += 1;
-            // combine with touch movement
-            let vx = inputX + (movement.x || 0);
-            let vy = inputY + (movement.y || 0);
-            const mag = Math.hypot(vx, vy);
-            if (mag > 1) { vx /= mag; vy /= mag; }
-            if (vx !== 0 || vy !== 0) {
-                const oldX = player.x, oldY = player.y;
-                player.x += vx * player.speed;
-                player.y += vy * player.speed;
 
-                // clamp to canvas
-                player.x = Math.max(0, Math.min(player.x, gameCanvas.width - player.size));
-                player.y = Math.max(0, Math.min(player.y, gameCanvas.height - player.size));
+            if (inputX !== 0 && inputY !== 0) {
+                inputX *= 0.707;
+                inputY *= 0.707;
+            }
+
+            if (inputX !== 0 || inputY !== 0) {
+                const oldX = player.x, oldY = player.y;
+                player.x += inputX * player.speed;
+                player.y += inputY * player.speed;
+
+                player.x = Math.max(0, Math.min(player.x, MAP_WIDTH - player.size));
+                player.y = Math.max(0, Math.min(player.y, MAP_HEIGHT - player.size));
 
                 for (let obs of obstacles) {
-                    // player can pass through stealth boxes
-                    if (obs.type === 'stealth') continue;
                     if (checkCollisionWithRect(player, obs)) {
-                        // revert
-                        player.x = oldX; player.y = oldY;
-                        notifyObstacleHit();
+                        player.x = oldX;
+                        player.y = oldY;
                         break;
                     }
                 }
             }
-            // update invisibility status after movement
-            updatePlayerInvisibility();
+
+            // Check for health pack collision
+            checkHealthPackCollision(player);
+
+            if (player.shootCooldown > 0) player.shootCooldown--;
         }
 
-        // detect if player is inside any stealth box and set playerInvisible
-        function updatePlayerInvisibility() {
-            // If recently revealed (shot or damaged), remain visible until timer expires
-            if (Date.now() < playerRevealUntil) { playerInvisible = false; return; }
-            let inside = false;
+        function playerShoot(targetX, targetY) {
+            if (!player || player.shootCooldown > 0) return;
+
+            const startX = player.x + player.size / 2;
+            const startY = player.y + player.size / 2;
+            const dx = targetX - startX;
+            const dy = targetY - startY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance === 0) return;
+
+            const speed = 12;
+            lasers.push({
+                x: startX,
+                y: startY,
+                vx: (dx / distance) * speed,
+                vy: (dy / distance) * speed,
+                life: 90,
+                damage: player.laserDamage,
+                shooter: player // Track who shot this laser
+            });
+
+            player.shootCooldown = 15;
+        }
+
+        // IMPROVED AI SYSTEM - Bots fight each other and don't always chase player
+        function updateAllBots() {
+            bots.forEach(bot => {
+                if (bot.hp <= 0) return;
+
+                // Find closest target (could be player OR another bot in showdown mode)
+                let closestTarget = findClosestTarget(bot);
+
+                // Check for health packs when low health
+                if (bot.hp < bot.maxHp * 0.6) {
+                    const nearestHealthPack = findNearestHealthPack(bot);
+                    if (nearestHealthPack && getDistance(bot.x, bot.y, nearestHealthPack.x, nearestHealthPack.y) < 400) {
+                        // Move toward health pack
+                        const dx = nearestHealthPack.x - bot.x;
+                        const dy = nearestHealthPack.y - bot.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance > 15) {
+                            bot.vx = (dx / distance) * bot.speed;
+                            bot.vy = (dy / distance) * bot.speed;
+                        }
+                        checkHealthPackCollision(bot);
+                        return;
+                    }
+                }
+
+                // If no target, wander
+                if (!closestTarget) {
+                    wanderBehavior(bot);
+                    return;
+                }
+
+                const dx = closestTarget.x - bot.x;
+                const dy = closestTarget.y - bot.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // IMPROVED: Don't always chase - sometimes strafe or maintain distance
+                if (distance > 0) {
+                    // 30% chance to strafe instead of direct chase
+                    if (Math.random() < 0.3 && distance < bot.laserRange * 0.8) {
+                        // Strafe around target
+                        const strafeAngle = Math.atan2(dy, dx) + (Math.PI / 2);
+                        const strafeDir = Math.random() < 0.5 ? 1 : -1;
+                        bot.vx = Math.cos(strafeAngle) * bot.speed * 0.7 * strafeDir;
+                        bot.vy = Math.sin(strafeAngle) * bot.speed * 0.7 * strafeDir;
+                    } else {
+                        // Move toward target but maintain optimal distance
+                        const optimalDistance = bot.laserRange * 0.6;
+                        const moveDistance = Math.max(0, distance - optimalDistance);
+
+                        if (moveDistance > 20) {
+                            bot.vx = (dx / distance) * bot.speed * 0.8;
+                            bot.vy = (dy / distance) * bot.speed * 0.8;
+                        } else if (distance < optimalDistance - 20) {
+                            // Back away if too close
+                            bot.vx = (-dx / distance) * bot.speed * 0.6;
+                            bot.vy = (-dy / distance) * bot.speed * 0.6;
+                        } else {
+                            // Small random movements when at optimal distance
+                            bot.vx = (Math.random() - 0.5) * bot.speed * 0.3;
+                            bot.vy = (Math.random() - 0.5) * bot.speed * 0.3;
+                        }
+                    }
+                }
+
+                // Shooting - only shoot if target is in range and has line of sight
+                if (bot.shootCooldown <= 0 && distance < bot.laserRange &&
+                    hasLineOfSight(bot, closestTarget) && Math.random() < 0.03) {
+
+                    const aimDx = closestTarget.x - (bot.x + bot.size / 2);
+                    const aimDy = closestTarget.y - (bot.y + bot.size / 2);
+                    const aimDist = Math.sqrt(aimDx * aimDx + aimDy * aimDy);
+
+                    if (aimDist > 0) {
+                        aiLasers.push({
+                            x: bot.x + bot.size / 2,
+                            y: bot.y + bot.size / 2,
+                            vx: (aimDx / aimDist) * 10,
+                            vy: (aimDy / aimDist) * 10,
+                            life: 90,
+                            damage: bot.laserDamage,
+                            shooter: bot // Track who shot this laser
+                        });
+                        bot.shootCooldown = 30;
+                    }
+                }
+
+                if (bot.shootCooldown > 0) bot.shootCooldown--;
+
+                // Apply movement
+                const oldX = bot.x, oldY = bot.y;
+                bot.x += bot.vx;
+                bot.y += bot.vy;
+
+                bot.x = Math.max(0, Math.min(bot.x, MAP_WIDTH - bot.size));
+                bot.y = Math.max(0, Math.min(bot.y, MAP_HEIGHT - bot.size));
+
+                for (let obs of obstacles) {
+                    if (checkCollisionWithRect(bot, obs)) {
+                        bot.x = oldX;
+                        bot.y = oldY;
+                        break;
+                    }
+                }
+            });
+        }
+
+        // NEW: Find closest target (player OR other bots in showdown)
+        function findClosestTarget(bot) {
+            let closest = null;
+            let minDistance = Infinity;
+
+            players.forEach(other => {
+                if (other === bot || other.currentHp <= 0) return;
+
+                // In team modes, don't target teammates
+                if (bot.team && other.team === bot.team) return;
+
+                const dist = getDistance(bot.x, bot.y, other.x, other.y);
+
+                // Prefer closer targets, but add some randomness so they don't always target the same
+                const weightedDistance = dist * (0.8 + Math.random() * 0.4);
+
+                if (weightedDistance < minDistance && weightedDistance < 600) {
+                    minDistance = weightedDistance;
+                    closest = other;
+                }
+            });
+
+            return closest;
+        }
+
+        // NEW: Check line of sight for shooting (now considers obstacles)
+        function hasLineOfSight(shooter, target) {
+            const distance = getDistance(shooter.x, shooter.y, target.x, target.y);
+            if (distance > shooter.laserRange) return false;
+
+            // Check if there are any brown brick obstacles between shooter and target
             for (let obs of obstacles) {
-                if (obs.type !== 'stealth') continue;
-                if (player.x + player.size/2 >= obs.x && player.x + player.size/2 <= obs.x + obs.width && player.y + player.size/2 >= obs.y && player.y + player.size/2 <= obs.y + obs.height) { inside = true; break; }
+                if (obs.type === 'brick') {
+                    // Simple line of sight check using line-rectangle intersection
+                    if (lineIntersectsRect(
+                        shooter.x + shooter.size / 2, shooter.y + shooter.size / 2,
+                        target.x + target.size / 2, target.y + target.size / 2,
+                        obs
+                    )) {
+                        return false;
+                    }
+                }
             }
-            playerInvisible = inside;
-            if (playerInvisible) setDebug('Player invisible');
+            return true;
         }
 
-        function updateAIInvisibility() {
-            if (Date.now() < aiRevealUntil) { aiInvisible = false; return; }
-            let inside = false;
+        // NEW: Improved wandering behavior
+        function wanderBehavior(bot) {
+            if (!bot.wanderTarget || getDistance(bot.x, bot.y, bot.wanderTarget.x, bot.wanderTarget.y) < 30) {
+                // Set new wander target
+                bot.wanderTarget = getSpawnPosition(10);
+                bot.wanderTimer = 60 + Math.floor(Math.random() * 60);
+            }
+
+            const dx = bot.wanderTarget.x - bot.x;
+            const dy = bot.wanderTarget.y - bot.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance > 20) {
+                bot.vx = (dx / distance) * bot.speed * 0.5;
+                bot.vy = (dy / distance) * bot.speed * 0.5;
+            } else {
+                bot.vx = (Math.random() - 0.5) * bot.speed * 0.3;
+                bot.vy = (Math.random() - 0.5) * bot.speed * 0.3;
+            }
+        }
+
+        function findNearestHealthPack(bot) {
+            let nearest = null;
+            let minDistance = Infinity;
+
+            for (let pack of healthPacks) {
+                if (!pack.active) continue;
+                const dist = getDistance(bot.x, bot.y, pack.x, pack.y);
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    nearest = pack;
+                }
+            }
+            return nearest;
+        }
+
+        // Game setup
+        // Game setup
+        function setupGameMode(mode) {
+            const modeConfig = gameModes[mode];
+            players = [];
+            bots = [];
+            lasers = [];
+            aiLasers = [];
+
+            generateObstacles();
+           // generateHealthPacks();
+
+            // Create player
+            const playerData = playersData[selectedPlayerId];
+            const playerPos = getSpawnPosition(playerData.size);
+            player = {
+                ...playerData,
+                x: playerPos.x,
+                y: playerPos.y,
+                isHuman: true,
+                team: modeConfig.teams ? 'red' : null,
+                hp: playerData.hp,
+                maxHp: playerData.hp,
+                currentHp: playerData.hp,
+                shootCooldown: 0,
+                healCooldown: 0 // Initialize heal cooldown
+            };
+            players.push(player);
+
+            // Create bots
+            const botCount = modeConfig.maxPlayers - 1;
+            for (let i = 0; i < botCount; i++) {
+                const availableBots = Object.keys(playersData).filter(id => id !== selectedPlayerId);
+                const botPlayerId = availableBots[Math.floor(Math.random() * availableBots.length)];
+                const botData = playersData[botPlayerId];
+                const botPos = getSpawnPosition(botData.size);
+
+                const bot = {
+                    ...botData,
+                    id: `bot_${i}`,
+                    x: botPos.x,
+                    y: botPos.y,
+                    isBot: true,
+                    team: modeConfig.teams ? (i < Math.floor(botCount / 2) ? 'blue' : 'red') : null,
+                    hp: botData.hp,
+                    maxHp: botData.hp,
+                    currentHp: botData.hp,
+                    vx: 0,
+                    vy: 0,
+                    shootCooldown: 0,
+                    healCooldown: 0, // Initialize heal cooldown
+                    wanderTarget: null,
+                    wanderTimer: 0
+                };
+                players.push(bot);
+                bots.push(bot);
+            }
+
+            console.log(`Game setup complete: ${modeConfig.name} with ${players.length} players`);
+        }
+
+        // Drawing functions
+        function drawBackground() {
+            // Try to draw background image
+            const bgImage = imageCache['images/background.png'];
+            if (bgImage && bgImage.complete) {
+                // Create pattern for tiling
+                const pattern = ctx.createPattern(bgImage, 'repeat');
+                ctx.fillStyle = pattern;
+                ctx.fillRect(0 - camera.x, 0 - camera.y, MAP_WIDTH, MAP_HEIGHT);
+            } else {
+                // Fallback to gradient background
+                const gradient = ctx.createLinearGradient(0, 0, MAP_WIDTH, MAP_HEIGHT);
+                gradient.addColorStop(0, '#1a1a2e');
+                gradient.addColorStop(1, '#16213e');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0 - camera.x, 0 - camera.y, MAP_WIDTH, MAP_HEIGHT);
+            }
+        }
+
+        function drawObstacles() {
+            ctx.save();
             for (let obs of obstacles) {
-                if (obs.type !== 'stealth') continue;
-                if (ai.x + ai.size/2 >= obs.x && ai.x + ai.size/2 <= obs.x + obs.width && ai.y + ai.size/2 >= obs.y && ai.y + ai.size/2 <= obs.y + obs.height) { inside = true; break; }
+                if (obs.type === 'water') {
+                    ctx.fillStyle = '#0077aa';
+                    ctx.fillRect(obs.x - camera.x, obs.y - camera.y, obs.width, obs.height);
+
+                    // Water effect
+                    ctx.strokeStyle = '#00aaff';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(obs.x - camera.x, obs.y - camera.y, obs.width, obs.height);
+                } else {
+                    // Brick pattern
+                    ctx.fillStyle = '#8B4513';
+                    ctx.fillRect(obs.x - camera.x, obs.y - camera.y, obs.width, obs.height);
+
+                    ctx.strokeStyle = '#654321';
+                    ctx.lineWidth = 1;
+                    for (let i = 0; i < obs.width; i += 10) {
+                        ctx.beginPath();
+                        ctx.moveTo(obs.x - camera.x + i, obs.y - camera.y);
+                        ctx.lineTo(obs.x - camera.x + i, obs.y - camera.y + obs.height);
+                        ctx.stroke();
+                    }
+                    for (let i = 0; i < obs.height; i += 10) {
+                        ctx.beginPath();
+                        ctx.moveTo(obs.x - camera.x, obs.y - camera.y + i);
+                        ctx.lineTo(obs.x - camera.x + obs.width, obs.y - camera.y + i);
+                        ctx.stroke();
+                    }
+                }
             }
-            aiInvisible = inside;
-            if (aiInvisible) setDebug('AI invisible');
+            ctx.restore();
         }
 
-        // ladder ranks and ranking UI (moved early to ensure available before showCoins)
- const ladderRanks = [
- { name: 'Bronze', min:1, prize:0 },
- { name: 'Silver', min:3, prize:200 },
- { name: 'Gold', min:6, prize:500 },
- { name: 'Platinum', min:10, prize:1000 },
- { name: 'Diamond', min:15, prize:2000 }
- ];
+     /*   function drawHealthPacks() {
+            ctx.save();
+            for (let pack of healthPacks) {
+                if (!pack.active) continue;
 
- function getCurrentRank(level) {
- let current = ladderRanks[0];
- for (let i =0; i < ladderRanks.length; i++) {
- if (level >= ladderRanks[i].min) current = ladderRanks[i];
- }
- return current;
- }
+                // Pulsating effect
+                const pulse = Math.sin(Date.now() / 200) * 3 + 1;
+                const pulseSize = 30 * pulse;
 
- function showRankings() {
-   try {
-    setDebug('showRankings called'); console.log('showRankings called');
-    const container = document.getElementById('rankings-container');
-    const list = document.getElementById('ladder-list');
-    const prizeMsg = document.getElementById('rank-prize-message');
-    const ownedDiv = document.getElementById('owned-players');
-    if (!container || !list) { console.warn('rankings elements missing'); setDebug('rank UI missing'); return; }
-    list.innerHTML = '';
-    prizeMsg.innerText = '';
-    ownedDiv.innerHTML = '<strong>Owned Players:</strong> ' + (Array.isArray(unlockedPlayers) ? unlockedPlayers.map(function (id) { return playersData[id] ? playersData[id].name : id; }).join(', ') : 'none');
-    let lastRank = localStorage.getItem('lastRank') || ladderRanks[0].name;
-    let currentRank = getCurrentRank(playerLevel ||1);
-    ladderRanks.forEach(function (rank) {
-      const li = document.createElement('li');
-      li.innerHTML = rank.name + ' (Level ' + rank.min + ')';
-      if (currentRank.name === rank.name) { li.style.color = '#ffcc00'; li.style.fontWeight = 'bold'; li.innerHTML += ' ← You are there!'; }
-      list.appendChild(li);
-    });
-    if (currentRank.name !== lastRank) {
-      if (currentRank.prize >0) { playerCoins = (playerCoins ||0) + currentRank.prize; saveState(); showCoins(); prizeMsg.innerText = 'Congratulations! You reached ' + currentRank.name + ' rank and won ' + currentRank.prize + ' coins!'; }
-      else { prizeMsg.innerText = 'You reached ' + currentRank.name + ' rank!'; }
-      localStorage.setItem('lastRank', currentRank.name);
-    }
-    // ensure it's visible above other panels
-    container.style.zIndex =1200; container.style.display = 'block'; container.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    // ensure close button works
-    const closeBtn = document.getElementById('close-rank-btn'); if (closeBtn) closeBtn.onclick = closeRankings;
-   } catch (err) { console.error('showRankings error', err); setDebug('showRankings error: ' + (err && err.message)); }
- }
+                ctx.fillStyle = '#00ff00';
+                ctx.shadowColor = '#00ff00';
+                ctx.shadowBlur = 15;
 
- function closeRankings() { var c = document.getElementById('rankings-container'); if (c) c.style.display = 'none'; }
+                // Draw cross shape with pulse effect
+                const centerX = pack.x - camera.x + 15;
+                const centerY = pack.y - camera.y + 15;
 
+                ctx.fillRect(centerX - 5, centerY - 15, 10, 30);
+                ctx.fillRect(centerX - 15, centerY - 5, 30, 10);
+
+                // Draw healing symbol
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('+', centerX, centerY);
+
+                ctx.shadowBlur = 0;
+            }
+            ctx.restore();
+        }
+        */
+        // Debug function to test health pack collection
+        function testHealthPack() {
+            if (!player) return;
+
+            console.log("Testing health pack collection...");
+            console.log("Player HP before:", player.currentHp);
+
+            // Create a health pack right on the player
+            healthPacks.push({
+                x: player.x,
+                y: player.y,
+                size: 30,
+                healAmount: 10,
+                active: true
+            });
+
+            console.log("Health pack created at player position");
+        }
+
+        // Call this from console: testHealthPack()
+       // window.testHealthPack = testHealthPack;
+        function drawPlayers() {
+            players.forEach(p => {
+                if (p.currentHp <= 0) return;
+
+                ctx.save();
+
+                // Try to draw player image if available
+                if (p.img && imageCache[p.img] && imageCache[p.img].complete) {
+                    ctx.drawImage(
+                        imageCache[p.img],
+                        p.x - camera.x,
+                        p.y - camera.y,
+                        p.size,
+                        p.size
+                    );
+
+                    // Add glow effect for human player
+                    if (p.isHuman) {
+                        ctx.shadowColor = p.color;
+                        ctx.shadowBlur = 15;
+                        ctx.drawImage(
+                            imageCache[p.img],
+                            p.x - camera.x,
+                            p.y - camera.y,
+                            p.size,
+                            p.size
+                        );
+                        ctx.shadowBlur = 0;
+                    }
+                } else {
+                    // Fallback to colored rectangle
+                    ctx.fillStyle = p.color;
+                    if (p.isHuman) {
+                        ctx.shadowColor = p.color;
+                        ctx.shadowBlur = 15;
+                    }
+                    ctx.fillRect(p.x - camera.x, p.y - camera.y, p.size, p.size);
+                    ctx.shadowBlur = 0;
+                }
+
+                // HP bar background
+                ctx.fillStyle = '#333';
+                ctx.fillRect(p.x - camera.x, p.y - camera.y - 12, p.size, 6);
+
+                // HP bar - use currentHp instead of hp
+                const hpPercent = p.currentHp / p.maxHp;
+                ctx.fillStyle = hpPercent > 0.6 ? '#00ff00' : hpPercent > 0.3 ? '#ffff00' : '#ff0000';
+                ctx.fillRect(p.x - camera.x, p.y - camera.y - 12, p.size * hpPercent, 6);
+
+                // Name tag
+                if (p.isHuman) {
+                    ctx.fillStyle = 'white';
+                    ctx.font = '12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(p.name, p.x - camera.x + p.size / 2, p.y - camera.y - 20);
+                }
+
+                ctx.restore();
+            });
+        }
+
+        function drawLasers() {
+            ctx.save();
+            lasers.forEach(laser => {
+                ctx.strokeStyle = '#00ffff';
+                ctx.lineWidth = 3;
+                ctx.shadowColor = '#00ffff';
+                ctx.shadowBlur = 5;
+                ctx.beginPath();
+                ctx.moveTo(laser.x - camera.x, laser.y - camera.y);
+                ctx.lineTo(laser.x - camera.x - laser.vx * 2, laser.y - camera.y - laser.vy * 2);
+                ctx.stroke();
+            });
+
+            aiLasers.forEach(laser => {
+                ctx.strokeStyle = '#ff4444';
+                ctx.lineWidth = 3;
+                ctx.shadowColor = '#ff4444';
+                ctx.shadowBlur = 5;
+                ctx.beginPath();
+                ctx.moveTo(laser.x - camera.x, laser.y - camera.y);
+                ctx.lineTo(laser.x - camera.x - laser.vx * 2, laser.y - camera.y - laser.vy * 2);
+                ctx.stroke();
+            });
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        function drawHUD() {
+            if (!player) return;
+            ctx.save();
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(10, 10, 200, 80);
+
+            ctx.fillStyle = 'white';
+            ctx.font = '14px Arial';
+            ctx.fillText(`HP: ${player.currentHp}/${player.maxHp}`, 20, 30);
+            ctx.fillText(`Mode: ${gameModes[currentGameMode].name}`, 20, 50);
+            ctx.fillText(`Players: ${players.filter(p => p.currentHp > 0).length}/${players.length}`, 20, 70);
+            ctx.restore();
+        }
+
+        // FIXED LASER COLLISION SYSTEM - AI lasers can damage other AI players AND check obstacle collisions
+        function updateLasers() {
+            // Update player lasers
+            for (let i = lasers.length - 1; i >= 0; i--) {
+                const laser = lasers[i];
+                laser.x += laser.vx;
+                laser.y += laser.vy;
+                laser.life--;
+
+                // Check collision with brown brick obstacles
+                if (checkLaserObstacleCollision(laser)) {
+                    lasers.splice(i, 1);
+                    continue;
+                }
+
+                // Check collisions with all players (except the shooter)
+                let hit = false;
+                for (let j = 0; j < players.length; j++) {
+                    const targetPlayer = players[j];
+                    // Don't hit the shooter
+                    if (targetPlayer === laser.shooter) continue;
+
+                    if (laser.x >= targetPlayer.x && laser.x <= targetPlayer.x + targetPlayer.size &&
+                        laser.y >= targetPlayer.y && laser.y <= targetPlayer.y + targetPlayer.size) {
+
+                        // Use currentHp for damage calculation
+                        targetPlayer.currentHp -= laser.damage;
+                        hit = true;
+
+                        if (targetPlayer.currentHp <= 0) {
+                            players.splice(j, 1);
+                            if (targetPlayer.isBot) {
+                                const botIndex = bots.findIndex(b => b.id === targetPlayer.id);
+                                if (botIndex !== -1) bots.splice(botIndex, 1);
+                            }
+                        }
+                        break;
+                    }
+                }
+
+                if (hit || laser.life <= 0) {
+                    lasers.splice(i, 1);
+                }
+            }
+
+            // Update AI lasers - can hit ANY player (including other bots)
+            for (let i = aiLasers.length - 1; i >= 0; i--) {
+                const laser = aiLasers[i];
+                laser.x += laser.vx;
+                laser.y += laser.vy;
+                laser.life--;
+
+                // Check collision with brown brick obstacles
+                if (checkLaserObstacleCollision(laser)) {
+                    aiLasers.splice(i, 1);
+                    continue;
+                }
+
+                // Check collisions with all players (except the shooter)
+                let hit = false;
+                for (let j = 0; j < players.length; j++) {
+                    const targetPlayer = players[j];
+                    // Don't hit the shooter
+                    if (targetPlayer === laser.shooter) continue;
+
+                    if (laser.x >= targetPlayer.x && laser.x <= targetPlayer.x + targetPlayer.size &&
+                        laser.y >= targetPlayer.y && laser.y <= targetPlayer.y + targetPlayer.size) {
+
+                        // Use currentHp for damage calculation
+                        targetPlayer.currentHp -= laser.damage;
+                        hit = true;
+
+                        if (targetPlayer.currentHp <= 0) {
+                            players.splice(j, 1);
+                            if (targetPlayer.isBot) {
+                                const botIndex = bots.findIndex(b => b.id === targetPlayer.id);
+                                if (botIndex !== -1) bots.splice(botIndex, 1);
+                            }
+
+                            // Check if player died
+                            if (targetPlayer.isHuman) {
+                                endGame('Game Over! You were defeated!', false);
+                            }
+                        }
+                        break;
+                    }
+                }
+
+                if (hit || laser.life <= 0) {
+                    aiLasers.splice(i, 1);
+                }
+            }
+        }
+        /*********************************************************************/
+        //start joystick implementation
+        //******************************************************************* */
+        // Joystick Variables
+        let moveJoystickActive = false;
+        let shootJoystickActive = false;
+        let moveJoystick = { x: 0, y: 0, magnitude: 0 };
+        let shootJoystick = { x: 0, y: 0, magnitude: 0 };
+
+        // Initialize Joysticks
+        function initJoysticks() {
+            const moveBase = document.getElementById('joystick-base');
+            const moveStick = document.getElementById('joystick-stick');
+            const shootBase = document.getElementById('shoot-joystick-base');
+            const shootStick = document.getElementById('shoot-joystick-stick');
+
+            // Movement Joystick
+            moveBase.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                moveJoystickActive = true;
+                updateMoveJoystick(e);
+            });
+
+            moveBase.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (moveJoystickActive) {
+                    updateMoveJoystick(e);
+                }
+            });
+
+            moveBase.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                moveJoystickActive = false;
+                resetMoveJoystick();
+            });
+
+            // Shooting Joystick
+            shootBase.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                shootJoystickActive = true;
+                updateShootJoystick(e);
+            });
+
+            shootBase.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (shootJoystickActive) {
+                    updateShootJoystick(e);
+                }
+            });
+
+            shootBase.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                shootJoystickActive = false;
+                resetShootJoystick();
+            });
+
+            // Mouse events for desktop testing
+            moveBase.addEventListener('mousedown', (e) => {
+                moveJoystickActive = true;
+                updateMoveJoystick(e);
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (moveJoystickActive) {
+                    updateMoveJoystick(e);
+                }
+            });
+
+            document.addEventListener('mouseup', (e) => {
+                if (moveJoystickActive) {
+                    moveJoystickActive = false;
+                    resetMoveJoystick();
+                }
+            });
+
+            shootBase.addEventListener('mousedown', (e) => {
+                shootJoystickActive = true;
+                updateShootJoystick(e);
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (shootJoystickActive) {
+                    updateShootJoystick(e);
+                }
+            });
+
+            document.addEventListener('mouseup', (e) => {
+                if (shootJoystickActive) {
+                    shootJoystickActive = false;
+                    resetShootJoystick();
+                }
+            });
+        }
+
+        function updateMoveJoystick(event) {
+            const base = document.getElementById('joystick-base');
+            const stick = document.getElementById('joystick-stick');
+            const rect = base.getBoundingClientRect();
+            const baseCenterX = rect.left + rect.width / 2;
+            const baseCenterY = rect.top + rect.height / 2;
+
+            let clientX, clientY;
+
+            if (event.type.includes('touch')) {
+                clientX = event.touches[0].clientX;
+                clientY = event.touches[0].clientY;
+            } else {
+                clientX = event.clientX;
+                clientY = event.clientY;
+            }
+
+            const deltaX = clientX - baseCenterX;
+            const deltaY = clientY - baseCenterY;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            const maxDistance = rect.width / 2;
+
+            // Calculate normalized direction vector
+            if (distance > maxDistance) {
+                moveJoystick.x = deltaX / distance;
+                moveJoystick.y = deltaY / distance;
+                moveJoystick.magnitude = 1;
+
+                // Position stick at edge
+                stick.style.transform = `translate(${moveJoystick.x * maxDistance}px, ${moveJoystick.y * maxDistance}px)`;
+            } else {
+                moveJoystick.x = deltaX / maxDistance;
+                moveJoystick.y = deltaY / maxDistance;
+                moveJoystick.magnitude = distance / maxDistance;
+
+                // Position stick at touch point
+                stick.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+            }
+        }
+
+        function updateShootJoystick(event) {
+            const base = document.getElementById('shoot-joystick-base');
+            const stick = document.getElementById('shoot-joystick-stick');
+            const rect = base.getBoundingClientRect();
+            const baseCenterX = rect.left + rect.width / 2;
+            const baseCenterY = rect.top + rect.height / 2;
+
+            let clientX, clientY;
+
+            if (event.type.includes('touch')) {
+                clientX = event.touches[0].clientX;
+                clientY = event.touches[0].clientY;
+            } else {
+                clientX = event.clientX;
+                clientY = event.clientY;
+            }
+
+            const deltaX = clientX - baseCenterX;
+            const deltaY = clientY - baseCenterY;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            const maxDistance = rect.width / 2;
+
+            // Calculate normalized direction vector
+            if (distance > maxDistance) {
+                shootJoystick.x = deltaX / distance;
+                shootJoystick.y = deltaY / distance;
+                shootJoystick.magnitude = 1;
+
+                // Position stick at edge
+                stick.style.transform = `translate(${shootJoystick.x * maxDistance}px, ${shootJoystick.y * maxDistance}px)`;
+            } else {
+                shootJoystick.x = deltaX / maxDistance;
+                shootJoystick.y = deltaY / maxDistance;
+                shootJoystick.magnitude = distance / maxDistance;
+
+                // Position stick at touch point
+                stick.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+            }
+
+            // Auto-shoot when joystick is active
+            if (shootJoystickActive && player && player.shootCooldown <= 0) {
+                const targetX = player.x + player.size / 2 + shootJoystick.x * player.laserRange;
+                const targetY = player.y + player.size / 2 + shootJoystick.y * player.laserRange;
+                playerShoot(targetX, targetY);
+            }
+        }
+
+        function resetMoveJoystick() {
+            moveJoystick = { x: 0, y: 0, magnitude: 0 };
+            document.getElementById('joystick-stick').style.transform = 'translate(0px, 0px)';
+        }
+
+        function resetShootJoystick() {
+            shootJoystick = { x: 0, y: 0, magnitude: 0 };
+            document.getElementById('shoot-joystick-stick').style.transform = 'translate(0px, 0px)';
+        }
+
+        // Update the handleInputFrame function to use joystick input
+        function handleInputFrame() {
+            if (!player) return;
+
+            let inputX = 0, inputY = 0;
+
+            // Keyboard input (existing)
+            if (keysPressed['arrowup'] || keysPressed['w']) inputY -= 1;
+            if (keysPressed['arrowdown'] || keysPressed['s']) inputY += 1;
+            if (keysPressed['arrowleft'] || keysPressed['a']) inputX -= 1;
+            if (keysPressed['arrowright'] || keysPressed['d']) inputX += 1;
+
+            // Joystick input (new)
+            if (moveJoystickActive && moveJoystick.magnitude > 0.1) {
+                inputX += moveJoystick.x;
+                inputY += moveJoystick.y;
+            }
+
+            // Normalize input if both keyboard and joystick are used
+            if (inputX !== 0 && inputY !== 0) {
+                const length = Math.sqrt(inputX * inputX + inputY * inputY);
+                inputX /= length;
+                inputY /= length;
+            }
+
+            if (inputX !== 0 || inputY !== 0) {
+                const oldX = player.x, oldY = player.y;
+                player.x += inputX * player.speed;
+                player.y += inputY * player.speed;
+
+                player.x = Math.max(0, Math.min(player.x, MAP_WIDTH - player.size));
+                player.y = Math.max(0, Math.min(player.y, MAP_HEIGHT - player.size));
+
+                for (let obs of obstacles) {
+                    if (checkCollisionWithRect(player, obs)) {
+                        player.x = oldX;
+                        player.y = oldY;
+                        break;
+                    }
+                }
+            }
+
+            // Check for health pack collision
+           // checkHealthPackCollision(player);
+
+            if (player.shootCooldown > 0) player.shootCooldown--;
+        }
+        /************************************************** */
+        //end joystick implementation
+        /************************************************** */
+        function checkGameEnd() {
+            const alivePlayers = players.filter(p => p.currentHp > 0);
+
+            console.log("Game end check - Alive players:", alivePlayers.length);
+            console.log("Total players:", players.length);
+            players.forEach((p, i) => {
+                console.log(`Player ${i}: HP=${p.currentHp}, isHuman=${p.isHuman}, isBot=${p.isBot}`);
+            });
+
+            if (gameModes[currentGameMode].teams) {
+                const redAlive = alivePlayers.filter(p => p.team === 'red').length;
+                const blueAlive = alivePlayers.filter(p => p.team === 'blue').length;
+                console.log("Team check - Red:", redAlive, "Blue:", blueAlive);
+
+                if (redAlive === 0 || blueAlive === 0) {
+                    console.log("Team game ended!");
+                    endGame((redAlive > 0 ? 'Red' : 'Blue') + ' Team Wins!', redAlive > 0);
+                }
+            } else {
+                console.log("Showdown check - Alive:", alivePlayers.length);
+                if (alivePlayers.length === 1) {
+                    console.log("Showdown ended with 1 player left!");
+                    endGame(alivePlayers[0].isHuman ? 'You Win!' : 'Game Over!', alivePlayers[0].isHuman);
+                } else if (alivePlayers.length === 0) {
+                    console.log("Showdown ended with 0 players - Draw!");
+                    endGame('Draw!', false);
+                }
+            }
+        }
+
+        // Game loop
         function gameLoop() {
-            if (!loopStarted) { console.log('gameLoop started'); loopStarted = true; setDebug('running'); }
-            clearCanvas();
-            if (gameStarted) {
-                handleInputFrame();
-                // safety: if player collides with obstacle, resolve
-                ensurePlayerNotInObstacle();
-                // update invisibility states
-                updatePlayerInvisibility();
-                updateAIInvisibility();
-                drawObstacles(); drawPlayer(); drawAI(); drawHP(); updateAI(); updateCooldowns(); updateLasers(); drawLasers(); updateAILasers(); drawAILasers();
-            }
-            // update lastPlayerPos after AI uses previous frame's player movement
-            lastPlayerPos.x = player.x;
-            lastPlayerPos.y = player.y;
+            if (!gameStarted) return;
+
+            ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+            updateCamera();
+            handleInputFrame();
+
+            // REMOVED: healing cooldown updates since we simplified the system
+
+            updateAllBots();
+            updateLasers();
+            checkGameEnd();
+
+            drawBackground();
+            drawObstacles();
+           // drawHealthPacks();
+            drawPlayers();
+            drawLasers();
+            drawHUD();
+
             requestAnimationFrame(gameLoop);
         }
 
-        function startGame() { console.log('startGame called'); setDebug('start pressed'); document.getElementById('coins-display').style.display = 'block'; document.getElementById('skins-container').style.display = 'none'; document.getElementById('map-selection').style.display = 'none'; document.querySelector('.menu').style.display = 'none'; document.querySelector('.guide').style.display = 'none'; document.getElementById('rankings-container').style.display = 'none';
- // ensure any open modals close
- var pm = document.getElementById('player-menu'); if (pm) pm.style.display = 'none';
- // regenerate obstacles to fill the screen and ensure player/ai start in clear area
- generateObstacles();
- // choose free spawn positions and ensure they spawn farther apart
- const ppos = getSpawnPosition(player.size);
- player.x = ppos.x; player.y = ppos.y;
- // ensure player not in obstacle after spawn
- resolveEntityOverlap(player, { x: ai.x + ai.size/2, y: ai.y + ai.size/2, minDistance:500 });
- // choose a spawn for AI that is at least500px away from the player's center
- let apos = getSpawnPosition(ai.size, { x: player.x + player.size /2, y: player.y + player.size /2 },500);
- let attempts =0;
- // fallback loop if a valid distant spawn wasn't found
- while (getDistance(apos.x + ai.size / 2, apos.y + ai.size / 2, player.x + player.size / 2, player.y + player.size / 2) < 500 && attempts < 200) {
-     apos = getSpawnPosition(ai.size, { x: player.x + player.size / 2, y: player.y + player.size / 2 }, 500);
-     attempts++;
- }
- ai.x = apos.x; ai.y = apos.y; ai.vx = ai.vy =0; ai.pauseTimer =0; ai.hp =8;
- player.hp = (playersData[selectedPlayerId] || playersData.default).hp;
- lasers = []; aiLasers = []; ai.shootCooldown =0; gameStarted = true; showCoins();
- // draw immediate frame so user sees the scene even if animation frame delayed
- clearCanvas(); drawObstacles(); drawPlayer(); drawAI(); drawHP();
- gameLoop(); }
-
-        function endGame() { gameStarted = false; document.getElementById('coins-display').style.display = 'block'; document.querySelector('.menu').style.display = 'flex'; document.querySelector('.guide').style.display = 'block'; showCoins(); player.hp = (playersData[selectedPlayerId] || playersData.default).hp; ai.hp = 8; player.x = gameCanvas.width / 2; player.y = gameCanvas.height / 2; ai.x = gameCanvas.width / 4; ai.y = gameCanvas.height / 4; lasers = []; aiLasers = []; ai.shootCooldown = 0; }
-
-        function openShop() { document.getElementById('skins-container').style.display = 'block'; loadSkins(); }
-
-        // open player menu should hide skins and show player modal
- function openPlayerMenu() {
- document.getElementById('skins-container').style.display = 'none';
- const pm = document.getElementById('player-menu');
- // populate if empty
- const list = document.getElementById('player-list'); list.innerHTML = '';
- Object.keys(playersData).forEach(function(pid) {
- const pdata = playersData[pid];
- const div = document.createElement('div'); div.className = 'skin-card';
- const img = document.createElement('img'); img.src = pdata.img; img.className = 'skin-img';
- const h = document.createElement('h3'); h.textContent = pdata.name;
- const btn = document.createElement('button'); btn.textContent = unlockedPlayers.includes(pid) ? 'Equip' : 'Locked';
- btn.onclick = function() { if (!unlockedPlayers.includes(pid)) { alert('Locked'); return; } selectedPlayerId = pid; updatePlayerFromSelection(); pm.style.display = 'none'; };
- div.appendChild(img); div.appendChild(h); div.appendChild(btn);
- list.appendChild(div);
- });
- pm.style.display = 'block';
- }
-
-        document.getElementById('start-btn').addEventListener('click', startGame);
-        document.getElementById('shop-btn').addEventListener('click', function(){ openShop(); document.getElementById('player-menu').style.display = 'none'; });
-        document.getElementById('rank-btn').addEventListener('click', function(){ document.getElementById('skins-container').style.display = 'none'; document.getElementById('player-menu').style.display = 'none'; showRankings(); });
-        document.getElementById('close-rank-btn').addEventListener('click', closeRankings);
-        document.getElementById('switch-player-btn').addEventListener('click', function(){ openPlayerMenu(); document.getElementById('skins-container').style.display = 'none'; });
-        document.getElementById('close-player-menu').addEventListener('click', function(){ document.getElementById('player-menu').style.display = 'none'; });
-
-        function switchPlayer() {
-            // cycle through unlocked players
-            if (!Array.isArray(unlockedPlayers) || unlockedPlayers.length === 0) unlockedPlayers = ['default'];
-            // ensure default present
-            if (!unlockedPlayers.includes('default')) unlockedPlayers.unshift('default');
-            const idx = Math.max(0, unlockedPlayers.indexOf(selectedPlayerId));
-            const next = unlockedPlayers[(idx + 1) % unlockedPlayers.length];
-            selectedPlayerId = next;
-            updatePlayerFromSelection();
-            alert('Switched to ' + (playersData[selectedPlayerId] || playersData.default).name);
+        // UI Functions
+        function showCoins() {
+            document.getElementById('coins-display').innerHTML =
+                `💰 Coins: ${playerCoins}<br>🏆 Level: ${playerLevel}`;
         }
 
-        // initial load
-        updatePlayerFromSelection(); showCoins(); loadSkins(); loadMaps();
-
-        } catch (err) {
-            console.error('Initialization error:', err);
-            setDebug('Init error: ' + (err && err.message));
-            try { var disp = document.getElementById('coins-display'); if (disp) disp.innerText = 'Init error: ' + err.message; } catch (e) {}
-            // removed blocking alert to avoid interruption during initialization errors
+        function hideAllUI() {
+            document.querySelector('.guide').style.display = 'none';
+            document.querySelector('.menu').style.display = 'none';
+            document.getElementById('joystick-container').style.display = 'none';
+            document.getElementById('shoot-joystick-container').style.display = 'none';
+            document.getElementById('game-modes-container').style.display = 'none';
+            document.getElementById('skins-container').style.display = 'none';
+            document.getElementById('player-menu').style.display = 'none';
+            document.getElementById('game-over-overlay').style.display = 'none';
         }
 
-    })();
+        function showAllUI() {
+            document.querySelector('.guide').style.display = 'block';
+            document.querySelector('.menu').style.display = 'flex';
+            document.getElementById('joystick-container').style.display = 'block';
+            document.getElementById('shoot-joystick-container').style.display = 'block';
+            document.getElementById('game-over-overlay').style.display = 'none';
+        }
+
+        function startGame() {
+            hideAllUI();
+            setupGameMode(currentGameMode);
+            gameStarted = true;
+            gameLoop();
+        }
+
+        // Bazaar System
+        function initBazaar() {
+            document.getElementById('shop-btn').addEventListener('click', () => {
+                document.getElementById('skins-container').style.display = 'block';
+                renderBazaarItems();
+            });
+
+            document.getElementById('close-bazaar').addEventListener('click', () => {
+                document.getElementById('skins-container').style.display = 'none';
+            });
+        }
+
+        function renderBazaarItems() {
+            const container = document.getElementById('bazaar-items');
+            container.innerHTML = '';
+
+            Object.values(playersData).forEach(playerData => {
+                if (playerData.id === 'default') return;
+
+                const isUnlocked = unlockedPlayers.includes(playerData.id);
+                const canAfford = playerCoins >= playerData.price;
+
+                const card = document.createElement('div');
+                card.className = 'skin-card';
+
+                // Use image if available, otherwise use color
+                const imageHtml = playerData.img ?
+                    `<img src="${playerData.img}" class="skin-img" alt="${playerData.name}"
+                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                      style="width:100%; height:120px; object-fit:cover; border-radius:10px;">` :
+                    '';
+
+                const fallbackHtml = `<div style="background:${playerData.color}; height:120px; border-radius:10px;
+                                                  display:${playerData.img ? 'none' : 'flex'}; align-items:center;
+                                                  justify-content:center; color:white; font-weight:bold;">
+                                                  ${playerData.name}</div>`;
+
+                card.innerHTML = `
+                                ${imageHtml}
+                                ${fallbackHtml}
+                                <h3>${playerData.name}</h3>
+                                <p>HP: ${playerData.hp} | Damage: ${playerData.laserDamage}</p>
+                                <p>Speed: ${playerData.speed} | Range: ${playerData.laserRange}</p>
+                                <p><strong>💰 ${playerData.price} coins</strong></p>
+                                <button class="btn buy-btn" ${isUnlocked || !canAfford ? 'disabled' : ''}>
+                                    ${isUnlocked ? '✅ Owned' : (!canAfford ? '❌ Need Coins' : 'Buy Now')}
+                                </button>
+                            `;
+
+                const buyBtn = card.querySelector('.buy-btn');
+                if (!isUnlocked && canAfford) {
+                    buyBtn.addEventListener('click', () => buyPlayer(playerData.id));
+                }
+
+                container.appendChild(card);
+            });
+        }
+
+        function buyPlayer(playerId) {
+            const playerData = playersData[playerId];
+            if (playerCoins >= playerData.price && !unlockedPlayers.includes(playerId)) {
+                playerCoins -= playerData.price;
+                unlockedPlayers.push(playerId);
+                showLootboxPopup(`Unlocked ${playerData.name}!`);
+                showCoins();
+                renderBazaarItems();
+            }
+        }
+
+        function showLootboxPopup(message) {
+            document.getElementById('lootbox-content').textContent = message;
+            document.getElementById('lootbox-popup').style.display = 'block';
+            document.getElementById('lootbox-ok').onclick = () => {
+                document.getElementById('lootbox-popup').style.display = 'none';
+            };
+        }
+
+        // Player Menu
+        function initPlayerMenu() {
+            document.getElementById('switch-player-btn').addEventListener('click', () => {
+                document.getElementById('player-menu').style.display = 'block';
+                updatePlayerMenu();
+            });
+
+            document.getElementById('close-player-menu').addEventListener('click', () => {
+                document.getElementById('player-menu').style.display = 'none';
+            });
+        }
+
+        function updatePlayerMenu() {
+            const container = document.getElementById('player-list');
+            container.innerHTML = '';
+
+            unlockedPlayers.forEach(playerId => {
+                const playerData = playersData[playerId];
+                const isSelected = selectedPlayerId === playerId;
+
+                const card = document.createElement('div');
+                card.className = 'skin-card';
+                card.style.border = isSelected ? '3px solid #ffcc00' : '2px solid #ccc';
+                card.style.background = isSelected ? 'rgba(255, 204, 0, 0.1)' : '';
+
+                // Use image if available, otherwise use color
+                const imageHtml = playerData.img ?
+                    `<img src="${playerData.img}" class="skin-img" alt="${playerData.name}"
+                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                      style="width:100%; height:120px; object-fit:cover; border-radius:10px;">` :
+                    '';
+
+                const fallbackHtml = `<div style="background:${playerData.color}; height:120px; border-radius:10px;
+                                                  display:${playerData.img ? 'none' : 'flex'}; align-items:center;
+                                                  justify-content:center; color:white; font-weight:bold;">
+                                                  ${playerData.name}</div>`;
+
+                card.innerHTML = `
+                                ${imageHtml}
+                                ${fallbackHtml}
+                                <h3>${playerData.name}</h3>
+                                <p>HP: ${playerData.hp} | Damage: ${playerData.laserDamage}</p>
+                                <button class="btn select-btn" ${isSelected ? 'disabled' : ''}>
+                                    ${isSelected ? '✅ Selected' : 'Select'}
+                                </button>
+                            `;
+
+                const selectBtn = card.querySelector('.select-btn');
+                if (!isSelected) {
+                    selectBtn.addEventListener('click', () => {
+                        selectedPlayerId = playerId;
+                        updatePlayerMenu();
+                        document.getElementById('player-menu').style.display = 'none';
+                        showLootboxPopup(`Switched to ${playerData.name}!`);
+                    });
+                }
+
+                container.appendChild(card);
+            });
+        }
+
+        // Game Modes
+        function initGameModes() {
+            document.getElementById('game-mode-btn').addEventListener('click', () => {
+                document.getElementById('game-modes-container').style.display = 'block';
+            });
+
+            document.getElementById('close-modes-btn').addEventListener('click', () => {
+                document.getElementById('game-modes-container').style.display = 'none';
+            });
+
+            document.querySelectorAll('.mode-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.mode-card').forEach(c => c.style.background = '');
+                    card.style.background = 'rgba(255, 204, 0, 0.3)';
+                    currentGameMode = card.dataset.mode;
+                });
+            });
+        }
+
+        // Mouse shooting
+        function initMouseShooting() {
+            gameCanvas.addEventListener('mousedown', (e) => {
+                if (!gameStarted || !player) return;
+                const rect = gameCanvas.getBoundingClientRect();
+                const targetX = e.clientX - rect.left + camera.x;
+                const targetY = e.clientY - rect.top + camera.y;
+                playerShoot(targetX, targetY);
+            });
+        }
+
+        // Initialize everything
+        function initGame() {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            preloadImages(); // Preload images first
+            initJoysticks(); // Add this line to initialize joysticks
+            initGameModes();
+            initMouseShooting();
+            initBazaar();
+            initPlayerMenu();
+            showCoins();
+
+           
+
+            // Start game button
+            document.getElementById('start-btn').addEventListener('click', startGame);
+
+            // Return to menu button
+            document.getElementById('return-to-menu').addEventListener('click', () => {
+                showAllUI();
+            });
+
+            // Debug
+            function setDebug(msg) {
+                document.getElementById('debug-status').textContent = msg;
+            }
+            setDebug('Game Ready - Click Battle!');
+            function debugGameState() {
+                console.log("=== GAME STATE DEBUG ===");
+                console.log("Game started:", gameStarted);
+                console.log("Player:", player);
+                console.log("Players alive:", players.filter(p => p.currentHp > 0).length);
+                console.log("Lasers:", lasers.length);
+                console.log("AI Lasers:", aiLasers.length);
+                console.log("Health packs:", healthPacks.filter(p => p.active).length, "active");
+                console.log("========================");
+            }
+
+            // You can call this from the console anytime by typing: debugGameState()
+            window.debugGameState = debugGameState;
+            console.log('Game initialized successfully');
+        }
+
+        // Start the game when page loads
+        window.addEventListener('load', initGame);
     </script>
 </body>
 </html>
