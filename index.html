@@ -201,18 +201,25 @@
             transition: transform 0.1s;
         }
 
-        /* Add this to your existing CSS */
+        /* Improved joystick visibility - hide by default */
+        #joystick-container, #shoot-joystick-container {
+            display: none !important;
+        }
+
+        /* Show joysticks only when game is active on touch devices or small screens */
+        .game-active #joystick-container,
+        .game-active #shoot-joystick-container {
+            display: block !important;
+        }
+
+        /* Fallback for older browsers */
         @media (max-width: 1024px) {
-            #joystick-container, #shoot-joystick-container {
+            .game-active #joystick-container,
+            .game-active #shoot-joystick-container {
                 display: block !important;
             }
         }
 
-        @media (min-width: 1025px) {
-            #joystick-container, #shoot-joystick-container {
-                display: none !important;
-            }
-        }
         #debug-status {
             position: fixed;
             right: 10px;
@@ -1763,6 +1770,16 @@
             hideAllUI();
             setupGameMode(currentGameMode);
             gameStarted = true;
+            
+            // Add game-active class to body to show joysticks
+            document.body.classList.add('game-active');
+
+            // Show joysticks when game starts (if on mobile/tablet)
+            if (window.innerWidth <= 1024 || ('ontouchstart' in window)) {
+                document.getElementById('joystick-container').style.display = 'block';
+                document.getElementById('shoot-joystick-container').style.display = 'block';
+            }
+
             gameLoop();
         }
 
@@ -1954,6 +1971,20 @@
 
             // Return to menu button
             document.getElementById('return-to-menu').addEventListener('click', () => {
+                // Hide game over overlay
+                document.getElementById('game-over-overlay').style.display = 'none';
+
+                // Remove game-active class to hide joysticks
+                document.body.classList.remove('game-active');
+
+                // Show main menu UI
+                document.querySelector('.guide').style.display = 'block';
+                document.querySelector('.menu').style.display = 'flex';
+
+                // Hide joysticks explicitly
+                document.getElementById('joystick-container').style.display = 'none';
+                document.getElementById('shoot-joystick-container').style.display = 'none';
+
                 showAllUI();
             });
 
