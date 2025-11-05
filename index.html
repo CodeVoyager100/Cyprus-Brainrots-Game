@@ -282,11 +282,11 @@
     <div class="guide">
         <h2 style="color: #ffcc00; margin-top: 0;">Welcome to Cyprus Brainrot Game!</h2>
         <p>
-            🎮 Use arrow keys or WASD to move<br>
-            🖱️ Click mouse to shoot<br>
+            🎮 Use arrow keys or WASD or white joystick to move<br>
+            🖱️ Click mouse or red joistick or touch screen to shoot<br>
             ⚔️ Click "Battle!" to start a game<br>
-            🛒 Collect coins and unlock players in the Bazaar!<br>
-            ❤️ Collect green health packs to heal!<br>
+            🛒 Collect coins and buy players in the Bazaar!<br>
+         <!--   ❤️ Collect green health packs to heal!<br> -->
             🔁 Switch players between matches
         </p>
         <p style="color: #ffcc00; font-weight: bold;">Good luck and have fun! 🎯</p>
@@ -1636,7 +1636,7 @@
             } else {
                 console.log("Showdown check - Alive:", alivePlayers.length);
                 if (alivePlayers.length === 1) {
-                    console.log("Showdown ended with 1 player left!");
+                    console.log("L1: Showdown ended with 1 player left!");
                     endGame(alivePlayers[0].isHuman ? 'You Win!' : 'Game Over!', alivePlayers[0].isHuman);
                 } else if (alivePlayers.length === 0) {
                     console.log("Showdown ended with 0 players - Draw!");
@@ -1645,6 +1645,70 @@
             }
         }
 
+        // ADD THIS MISSING FUNCTION - Game end handler
+        function endGame(message, isVictory) {
+            console.log("Game ended:", message, "Victory:", isVictory);
+
+            gameStarted = false;
+
+            // Show game over overlay
+            const overlay = document.getElementById('game-over-overlay');
+            const title = document.getElementById('game-over-title');
+            const messageEl = document.getElementById('game-over-message');
+
+            // Set victory or defeat styling
+            if (isVictory) {
+                title.textContent = 'Victory!';
+                title.style.color = '#ffcc00';
+                messageEl.textContent = message;
+
+                // Reward coins for victory
+                const coinsEarned = 100;
+                playerCoins += coinsEarned;
+                showCoins();
+                messageEl.innerHTML += `<br><br>🎉 You earned ${coinsEarned} coins!`;
+            } else {
+                title.textContent = 'Game Over';
+                title.style.color = '#ff4444';
+                messageEl.textContent = message;
+
+                // Small consolation reward
+                const coinsEarned = 25;
+                playerCoins += coinsEarned;
+                showCoins();
+                messageEl.innerHTML += `<br><br>💫 You earned ${coinsEarned} consolation coins!`;
+            }
+
+            // Show the overlay
+            overlay.style.display = 'flex';
+
+            // Reset game state but keep player progress
+            players = [];
+            bots = [];
+            lasers = [];
+            aiLasers = [];
+            healthPacks = [];
+
+            console.log("Game over screen shown");
+        }
+
+        // Also update the return to menu button handler to properly reset the game
+        document.getElementById('return-to-menu').addEventListener('click', () => {
+            // Hide game over overlay
+            document.getElementById('game-over-overlay').style.display = 'none';
+
+            // Show main menu UI
+            document.querySelector('.guide').style.display = 'block';
+            document.querySelector('.menu').style.display = 'flex';
+
+            // Reset camera
+            camera = { x: 0, y: 0, width: gameCanvas.width, height: gameCanvas.height };
+
+            // Clear the canvas
+            ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+            console.log("Returned to menu");
+        });
         // Game loop
         function gameLoop() {
             if (!gameStarted) return;
