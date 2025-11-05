@@ -202,13 +202,13 @@
         }
 
         /* Add this to your existing CSS */
-        @media (max-width: 768px) {
+        @media (max-width: 1024px) {
             #joystick-container, #shoot-joystick-container {
                 display: block !important;
             }
         }
 
-        @media (min-width: 769px) {
+        @media (min-width: 1025px) {
             #joystick-container, #shoot-joystick-container {
                 display: none !important;
             }
@@ -1881,8 +1881,9 @@
             initBazaar();
             initPlayerMenu();
             showCoins();
-
-           
+            //hide joystick on first screen
+            document.getElementById('joystick-container').style.display = 'none';
+            document.getElementById('shoot-joystick-container').style.display = 'none';
 
             // Start game button
             document.getElementById('start-btn').addEventListener('click', startGame);
