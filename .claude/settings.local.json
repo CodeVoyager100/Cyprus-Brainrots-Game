@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/Work/Sotiris/CyprusBrainRotGame/Cyprus-Brainrots-Game -name .git* -o -name package.json -o -name *.config*)"
+    ]
+  }
+}
