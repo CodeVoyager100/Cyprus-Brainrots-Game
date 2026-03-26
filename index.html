@@ -39,6 +39,51 @@
             background: rgba(0,0,0,0.7);
             padding: 8px 12px;
             border-radius: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #coins-display:hover {
+            background: rgba(40,30,0,0.9);
+            border: 1px solid gold;
+        }
+
+        .reward-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin: 4px 0;
+            font-size: 15px;
+            color: #ccc;
+        }
+
+        .reward-row.reached {
+            color: #888;
+            text-decoration: line-through;
+            opacity: 0.5;
+        }
+
+        .reward-row.current {
+            background: rgba(255,204,0,0.15);
+            border: 1px solid #ffcc00;
+            color: #ffcc00;
+            font-weight: bold;
+        }
+
+        .reward-row.next {
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+        }
+
+        .reward-level-badge {
+            min-width: 36px;
+            text-align: center;
+            font-weight: bold;
+            background: rgba(0,0,0,0.4);
+            padding: 2px 6px;
+            border-radius: 6px;
         }
 
         .skin-card {
@@ -311,7 +356,7 @@
             🖱️ Click mouse or red joistick or touch screen to shoot<br>
             ⚔️ Click "Battle!" to start a game<br>
             🛒 Collect coins and buy players in the Bazaar!<br>
-         <!--   ❤️ Collect green health packs to heal!<br> -->
+            ❤️ Collect green health packs to heal!<br>
             🔁 Switch players between matches
         </p>
         <p style="color: #ffcc00; font-weight: bold;">Good luck and have fun! 🎯</p>
@@ -334,6 +379,13 @@
     </div>
 
     <div id="coins-display">💰 Coins: 500<br>🏆 Level: 1</div>
+
+    <div id="level-rewards-panel" class="modal-panel" style="width:420px;">
+        <h2>🏆 Level Rewards</h2>
+        <p style="color:#aaa; text-align:center; margin-top:-10px; font-size:13px;">Click your level badge anytime to check progress</p>
+        <div id="level-rewards-list" style="margin: 16px 0;"></div>
+        <button class="btn modal-close" id="close-level-rewards">Close</button>
+    </div>
 
     <div id="skins-container" class="modal-panel">
         <h2>🛒 Bazaar</h2>
@@ -423,6 +475,7 @@
         }
 
         let levelUpMessage = null; // { text, timer }
+        let healMessage = null;    // { text, timer }
 
         function awardXP(amount) {
             const oldLevel = Math.floor(playerXP / 10) + 1;
@@ -463,7 +516,6 @@
 
         // Preload all images when game starts
         function preloadImages() {
-            console.log('Preloading images...');
 
             // Preload background
             loadImage('images/background.png');
@@ -600,8 +652,9 @@
         };
 
         const gameModes = {
-            showdown: { name: "Showdown", maxPlayers: 4, teams: false, fillBots: true },
-            '3v3': { name: "3v3 Team Battle", maxPlayers: 6, teams: true, teamSize: 3, fillBots: true }
+            showdown: { name: "Showdown", maxPlayers: 8, teams: false, fillBots: true },
+            '3v3': { name: "3v3 Team Battle", maxPlayers: 6, teams: true, teamSize: 3, fillBots: true },
+            '2v2': { name: "2v2 Team Battle", maxPlayers: 8, teams: true, teamSize: 2, fillBots: true }
         };
 
         // Input handling
@@ -693,12 +746,12 @@
         function generateHealthPacks() {
             healthPacks = [];
             for (let i = 0; i < 8; i++) {
-                const pos = getSpawnPosition(30);
+                const pos = getSpawnPosition(40);
                 healthPacks.push({
                     x: pos.x,
                     y: pos.y,
-                    size: 30,
-                    healAmount: 10,
+                    size: 40,
+                    healAmount: 15,
                     active: true
                 });
             }
@@ -767,83 +820,36 @@
                     entity.y < pack.y + pack.size &&
                     entity.y + entity.size > pack.y) {
 
-                    console.log("Health pack collision detected!");
-                    console.log("Before healing - HP:", entity.currentHp, "Max HP:", entity.maxHp);
+                    const boostAmount = 10;
 
-                    const healAmount = 10;
-
-                    // Only heal if not at full health
-                    if (entity.currentHp < entity.maxHp) {
-                        // Heal the entity
-                        entity.currentHp = Math.min(entity.maxHp, entity.currentHp + healAmount);
-                        entity.hp = entity.currentHp; // Keep them synchronized
-
-                        console.log("After healing - HP:", entity.currentHp);
-
-                        // Remove the health pack
-                        healthPacks.splice(i, 1);
-
-                        // Respawn health pack after 10 seconds
-                        setTimeout(() => {
-                            const newPos = getSpawnPosition(30);
-                            healthPacks.push({
-                                x: newPos.x,
-                                y: newPos.y,
-                                size: 30,
-                                healAmount: 10,
-                                active: true
-                            });
-                            console.log("Health pack respawned");
-                        }, 10000);
-
-                        if (entity.isHuman) {
-                            setDebug(`Healed +${healAmount} HP! Current: ${entity.currentHp}`);
-                        }
+                    // Increase max HP and current HP for this match
+                    if (entity.isHuman) {
+                        entity.maxHp += boostAmount;
+                        entity.currentHp += boostAmount;
+                        healMessage = { text: `+${boostAmount} Max HP!`, timer: 90 };
                     } else {
-                        console.log("Already at full health, no healing needed");
+                        // Bots just heal normally
+                        entity.currentHp = Math.min(entity.maxHp, entity.currentHp + boostAmount);
                     }
+
+                    // Always consume the pack
+                    healthPacks.splice(i, 1);
+                    setTimeout(() => {
+                        if (!gameStarted) return;
+                        const newPos = getSpawnPosition(40);
+                        healthPacks.push({
+                            x: newPos.x,
+                            y: newPos.y,
+                            size: 40,
+                            healAmount: 10,
+                            active: true
+                        });
+                    }, 10000);
                     break;
                 }
             }
         }
 
-        // Player movement and shooting
-        function handleInputFrame() {
-            if (!player) return;
-
-            let inputX = 0, inputY = 0;
-            if (keysPressed['arrowup'] || keysPressed['w']) inputY -= 1;
-            if (keysPressed['arrowdown'] || keysPressed['s']) inputY += 1;
-            if (keysPressed['arrowleft'] || keysPressed['a']) inputX -= 1;
-            if (keysPressed['arrowright'] || keysPressed['d']) inputX += 1;
-
-            if (inputX !== 0 && inputY !== 0) {
-                inputX *= 0.707;
-                inputY *= 0.707;
-            }
-
-            if (inputX !== 0 || inputY !== 0) {
-                const oldX = player.x, oldY = player.y;
-                player.x += inputX * player.speed;
-                player.y += inputY * player.speed;
-
-                player.x = Math.max(0, Math.min(player.x, MAP_WIDTH - player.size));
-                player.y = Math.max(0, Math.min(player.y, MAP_HEIGHT - player.size));
-
-                for (let obs of obstacles) {
-                    if (checkCollisionWithRect(player, obs)) {
-                        player.x = oldX;
-                        player.y = oldY;
-                        break;
-                    }
-                }
-            }
-
-            // Check for health pack collision
-            checkHealthPackCollision(player);
-
-            if (player.shootCooldown > 0) player.shootCooldown--;
-        }
 
         function playerShoot(targetX, targetY) {
             if (!player || player.shootCooldown > 0) return;
@@ -873,13 +879,13 @@
         // IMPROVED AI SYSTEM - Bots fight each other and don't always chase player
         function updateAllBots() {
             bots.forEach(bot => {
-                if (bot.hp <= 0) return;
+                if (bot.currentHp <= 0) return;
 
                 // Find closest target (could be player OR another bot in showdown mode)
                 let closestTarget = findClosestTarget(bot);
 
                 // Check for health packs when low health
-                if (bot.hp < bot.maxHp * 0.6) {
+                if (bot.currentHp < bot.maxHp * 0.6) {
                     const nearestHealthPack = findNearestHealthPack(bot);
                     if (nearestHealthPack && getDistance(bot.x, bot.y, nearestHealthPack.x, nearestHealthPack.y) < 400) {
                         // Move toward health pack
@@ -903,72 +909,76 @@
                     const dy = closestTarget.y - bot.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
 
-                    // Don't always chase - sometimes strafe or maintain distance
                     if (distance > 0) {
-                        // 30% chance to strafe instead of direct chase
-                        if (Math.random() < 0.3 && distance < bot.laserRange * 0.8) {
-                            // Strafe around target
-                            const strafeAngle = Math.atan2(dy, dx) + (Math.PI / 2);
-                            const strafeDir = Math.random() < 0.5 ? 1 : -1;
-                            bot.vx = Math.cos(strafeAngle) * bot.speed * 0.7 * strafeDir;
-                            bot.vy = Math.sin(strafeAngle) * bot.speed * 0.7 * strafeDir;
-                        } else {
-                            // Move toward target but maintain optimal distance
-                            const optimalDistance = bot.laserRange * 0.6;
-                            const moveDistance = Math.max(0, distance - optimalDistance);
+                        const optimalDistance = bot.laserRange * 0.6;
 
-                            if (moveDistance > 20) {
-                                bot.vx = (dx / distance) * bot.speed * 0.8;
-                                bot.vy = (dy / distance) * bot.speed * 0.8;
-                            } else if (distance < optimalDistance - 20) {
-                                // Back away if too close
-                                bot.vx = (-dx / distance) * bot.speed * 0.6;
-                                bot.vy = (-dy / distance) * bot.speed * 0.6;
-                            } else {
-                                // Small random movements when at optimal distance
-                                bot.vx = (Math.random() - 0.5) * bot.speed * 0.3;
-                                bot.vy = (Math.random() - 0.5) * bot.speed * 0.3;
-                            }
+                        if (distance > optimalDistance + 20) {
+                            // Chase target
+                            bot.vx = (dx / distance) * bot.speed * 0.55;
+                            bot.vy = (dy / distance) * bot.speed * 0.55;
+                        } else if (distance < optimalDistance - 30) {
+                            // Back away
+                            bot.vx = (-dx / distance) * bot.speed * 0.45;
+                            bot.vy = (-dy / distance) * bot.speed * 0.45;
+                        } else {
+                            // Strafe at optimal distance, change direction occasionally
+                            if (!bot.strafeDir || Math.random() < 0.015) bot.strafeDir = Math.random() < 0.5 ? 1 : -1;
+                            const strafeAngle = Math.atan2(dy, dx) + Math.PI / 2;
+                            bot.vx = Math.cos(strafeAngle) * bot.speed * 0.45 * bot.strafeDir;
+                            bot.vy = Math.sin(strafeAngle) * bot.speed * 0.45 * bot.strafeDir;
                         }
                     }
 
-                    // Shooting - only shoot if target is in range and has line of sight
+                    // Shoot when ready — 40% chance per frame so bots miss sometimes
                     if (bot.shootCooldown <= 0 && distance < bot.laserRange &&
-                        hasLineOfSight(bot, closestTarget) && Math.random() < 0.03) {
+                        hasLineOfSight(bot, closestTarget) && Math.random() < 0.4) {
 
-                        const aimDx = closestTarget.x - (bot.x + bot.size / 2);
-                        const aimDy = closestTarget.y - (bot.y + bot.size / 2);
-                        const aimDist = Math.sqrt(aimDx * aimDx + aimDy * aimDy);
+                        const laserSpeed = 10;
+                        const timeToHit = distance / laserSpeed;
 
-                        if (aimDist > 0) {
-                            aiLasers.push({
-                                x: bot.x + bot.size / 2,
-                                y: bot.y + bot.size / 2,
-                                vx: (aimDx / aimDist) * 10,
-                                vy: (aimDy / aimDist) * 10,
-                                life: 90,
-                                damage: bot.laserDamage,
-                                shooter: bot
-                            });
-                            bot.shootCooldown = 30;
-                        }
+                        // Mild lead shot — slight prediction, not perfect
+                        const targetVx = closestTarget.vx || 0;
+                        const targetVy = closestTarget.vy || 0;
+                        const predictedX = closestTarget.x + closestTarget.size / 2 + targetVx * timeToHit * 0.25;
+                        const predictedY = closestTarget.y + closestTarget.size / 2 + targetVy * timeToHit * 0.25;
+
+                        const aimDx = predictedX - (bot.x + bot.size / 2);
+                        const aimDy = predictedY - (bot.y + bot.size / 2);
+                        const aimDist = Math.sqrt(aimDx * aimDx + aimDy * aimDy) || 1;
+
+                        // Aim spread increases with distance
+                        const spread = (distance / bot.laserRange) * 0.25;
+                        const spreadAngle = (Math.random() - 0.5) * spread;
+                        const cos = Math.cos(spreadAngle), sin = Math.sin(spreadAngle);
+                        const dirX = aimDx / aimDist;
+                        const dirY = aimDy / aimDist;
+
+                        aiLasers.push({
+                            x: bot.x + bot.size / 2,
+                            y: bot.y + bot.size / 2,
+                            vx: (dirX * cos - dirY * sin) * laserSpeed,
+                            vy: (dirX * sin + dirY * cos) * laserSpeed,
+                            life: 90,
+                            damage: bot.laserDamage,
+                            shooter: bot
+                        });
+                        bot.shootCooldown = 30;
                     }
                 }
 
                 if (bot.shootCooldown > 0) bot.shootCooldown--;
 
-                // Apply movement
+                // Apply movement — stop on obstacle collision
                 const oldX = bot.x, oldY = bot.y;
-                bot.x += bot.vx;
-                bot.y += bot.vy;
-
-                bot.x = Math.max(0, Math.min(bot.x, MAP_WIDTH - bot.size));
-                bot.y = Math.max(0, Math.min(bot.y, MAP_HEIGHT - bot.size));
+                bot.x = Math.max(0, Math.min(bot.x + bot.vx, MAP_WIDTH - bot.size));
+                bot.y = Math.max(0, Math.min(bot.y + bot.vy, MAP_HEIGHT - bot.size));
 
                 for (let obs of obstacles) {
                     if (checkCollisionWithRect(bot, obs)) {
                         bot.x = oldX;
                         bot.y = oldY;
+                        bot.vx = 0;
+                        bot.vy = 0;
                         break;
                     }
                 }
@@ -988,7 +998,7 @@
 
                 const dist = getDistance(bot.x, bot.y, other.x, other.y);
 
-                // Prefer closer targets, but add some randomness so they don't always target the same
+                // Prefer closer targets, slight randomness so they don't all fixate on same target
                 const weightedDistance = dist * (0.8 + Math.random() * 0.4);
 
                 if (weightedDistance < minDistance) {
@@ -1067,7 +1077,7 @@
             aiLasers = [];
 
             generateObstacles();
-           // generateHealthPacks();
+            generateHealthPacks();
 
             // Create player
             const playerData = playersData[selectedPlayerId];
@@ -1078,11 +1088,16 @@
                 y: playerPos.y,
                 isHuman: true,
                 team: modeConfig.teams ? 'red' : null,
-                hp: playerData.hp,
                 maxHp: playerData.hp,
                 currentHp: playerData.hp,
-                shootCooldown: 0,
-                healCooldown: 0 // Initialize heal cooldown
+                shootCooldown: 1,
+                healCooldown: 1,
+                regenCooldown: 0,
+                regenTimer: 0,
+                vx: 0,
+                vy: 0,
+                prevX: playerPos.x,
+                prevY: playerPos.y
             };
             players.push(player);
 
@@ -1101,7 +1116,6 @@
                     y: botPos.y,
                     isBot: true,
                     team: modeConfig.teams ? (i < modeConfig.teamSize - 1 ? 'red' : 'blue') : null,
-                    hp: botData.hp,
                     maxHp: botData.hp,
                     currentHp: botData.hp,
                     vx: 0,
@@ -1116,7 +1130,6 @@
             }
 
             totalPlayersAtStart = players.length;
-            console.log(`Game setup complete: ${modeConfig.name} with ${players.length} players`);
         }
 
         // Drawing functions
@@ -1173,59 +1186,32 @@
             ctx.restore();
         }
 
-     /*   function drawHealthPacks() {
+        function drawHealthPacks() {
             ctx.save();
+            const pulse = 1 + Math.sin(Date.now() / 300) * 0.15;
             for (let pack of healthPacks) {
                 if (!pack.active) continue;
+                const cx = pack.x - camera.x + pack.size / 2;
+                const cy = pack.y - camera.y + pack.size / 2;
+                const r = (pack.size / 2) * pulse;
 
-                // Pulsating effect
-                const pulse = Math.sin(Date.now() / 200) * 3 + 1;
-                const pulseSize = 30 * pulse;
+                // Background circle
+                ctx.fillStyle = 'rgba(0, 180, 60, 0.25)';
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.fill();
 
-                ctx.fillStyle = '#00ff00';
-                ctx.shadowColor = '#00ff00';
-                ctx.shadowBlur = 15;
-
-                // Draw cross shape with pulse effect
-                const centerX = pack.x - camera.x + 15;
-                const centerY = pack.y - camera.y + 15;
-
-                ctx.fillRect(centerX - 5, centerY - 15, 10, 30);
-                ctx.fillRect(centerX - 15, centerY - 5, 30, 10);
-
-                // Draw healing symbol
-                ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 16px Arial';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('+', centerX, centerY);
-
+                // Cross shape
+                ctx.fillStyle = '#00ff66';
+                ctx.shadowColor = '#00ff66';
+                ctx.shadowBlur = 14;
+                ctx.fillRect(cx - 5, cy - 14, 10, 28);
+                ctx.fillRect(cx - 14, cy - 5, 28, 10);
                 ctx.shadowBlur = 0;
             }
             ctx.restore();
         }
-        */
-        // Debug function to test health pack collection
-        function testHealthPack() {
-            if (!player) return;
 
-            console.log("Testing health pack collection...");
-            console.log("Player HP before:", player.currentHp);
-
-            // Create a health pack right on the player
-            healthPacks.push({
-                x: player.x,
-                y: player.y,
-                size: 30,
-                healAmount: 10,
-                active: true
-            });
-
-            console.log("Health pack created at player position");
-        }
-
-        // Call this from console: testHealthPack()
-       // window.testHealthPack = testHealthPack;
         function drawPlayers() {
             players.forEach(p => {
                 if (p.currentHp <= 0) return;
@@ -1282,11 +1268,15 @@
                     ctx.fill();
                 }
 
-                // Name tag
+                // HP number + name tag above HP bar
+                ctx.font = '11px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = 'white';
+                ctx.fillText(`${Math.ceil(p.currentHp)}/${p.maxHp}`, px + p.size / 2, py - 15);
+
                 if (p.isHuman) {
-                    ctx.fillStyle = 'white';
                     ctx.font = '12px Arial';
-                    ctx.textAlign = 'center';
+                    ctx.fillStyle = 'white';
                     ctx.fillText(p.name, px + p.size / 2, py - 28);
                 }
 
@@ -1355,6 +1345,22 @@
             }
 
             ctx.restore();
+        }
+
+        function drawHealMessage() {
+            if (!healMessage || healMessage.timer <= 0) return;
+            const alpha = Math.min(1, healMessage.timer / 30);
+            const y = gameCanvas.height / 2 + 20 - (1 - healMessage.timer / 90) * 30;
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.font = 'bold 28px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#00ff88';
+            ctx.shadowColor = '#00cc44';
+            ctx.shadowBlur = 15;
+            ctx.fillText(healMessage.text, gameCanvas.width / 2, y);
+            ctx.restore();
+            healMessage.timer--;
         }
 
         function drawLevelUp() {
@@ -1450,6 +1456,12 @@
                         // Use currentHp for damage calculation
                         targetPlayer.currentHp -= laser.damage;
                         hit = true;
+
+                        // Reset regen on damage
+                        if (targetPlayer.isHuman) {
+                            targetPlayer.regenCooldown = 180;
+                            targetPlayer.regenTimer = 0;
+                        }
 
                         if (targetPlayer.currentHp <= 0) {
                             players.splice(j, 1);
@@ -1705,8 +1717,13 @@
                 }
             }
 
-            // Check for health pack collision
-           // checkHealthPackCollision(player);
+            // Track velocity for bot lead-shot prediction
+            player.vx = player.x - player.prevX;
+            player.vy = player.y - player.prevY;
+            player.prevX = player.x;
+            player.prevY = player.y;
+
+            checkHealthPackCollision(player);
 
             if (player.shootCooldown > 0) player.shootCooldown--;
         }
@@ -1716,28 +1733,17 @@
         function checkGameEnd() {
             const alivePlayers = players.filter(p => p.currentHp > 0);
 
-            console.log("Game end check - Alive players:", alivePlayers.length);
-            console.log("Total players:", players.length);
-            players.forEach((p, i) => {
-                console.log(`Player ${i}: HP=${p.currentHp}, isHuman=${p.isHuman}, isBot=${p.isBot}`);
-            });
-
             if (gameModes[currentGameMode].teams) {
                 const redAlive = alivePlayers.filter(p => p.team === 'red').length;
                 const blueAlive = alivePlayers.filter(p => p.team === 'blue').length;
-                console.log("Team check - Red:", redAlive, "Blue:", blueAlive);
 
                 if (redAlive === 0 || blueAlive === 0) {
-                    console.log("Team game ended!");
                     endGame((redAlive > 0 ? 'Red' : 'Blue') + ' Team Wins!', redAlive > 0);
                 }
             } else {
-                console.log("Showdown check - Alive:", alivePlayers.length);
                 if (alivePlayers.length === 1) {
-                    console.log("L1: Showdown ended with 1 player left!");
                     endGame(alivePlayers[0].isHuman ? 'You Win!' : 'Game Over!', alivePlayers[0].isHuman);
                 } else if (alivePlayers.length === 0) {
-                    console.log("Showdown ended with 0 players - Draw!");
                     endGame('Draw!', false);
                 }
             }
@@ -1745,7 +1751,7 @@
 
         // ADD THIS MISSING FUNCTION - Game end handler
         function endGame(message, isVictory) {
-            console.log("Game ended:", message, "Victory:", isVictory);
+            if (!gameStarted) return; // Guard against double calls
 
             gameStarted = false;
 
@@ -1754,28 +1760,33 @@
             const title = document.getElementById('game-over-title');
             const messageEl = document.getElementById('game-over-message');
 
-            // Set victory or defeat styling
+            // Scale rewards by game mode (3v3 is harder = more reward)
+            const is3v3 = currentGameMode === '3v3';
+            const winCoins  = is3v3 ? 150 : 100;
+            const loseCoins = is3v3 ? 50  : 25;
+            const winXP     = is3v3 ? 12   : 8;
+            const loseXP    = 1;
+
             if (isVictory) {
                 title.textContent = 'Victory!';
                 title.style.color = '#ffcc00';
                 messageEl.textContent = message;
 
-                // Reward coins and XP for victory
-                const coinsEarned = 100;
-                playerCoins += coinsEarned;
-                awardXP(2);
-                messageEl.innerHTML += `<br><br>🎉 You earned ${coinsEarned} coins and 2 XP!`;
+                playerCoins += winCoins;
+                awardXP(winXP);
+                saveProgress();
+                showCoins();
+                messageEl.innerHTML += `<br><br>🎉 You earned ${winCoins} coins and ${winXP} XP!`;
             } else {
                 title.textContent = 'Game Over';
                 title.style.color = '#ff4444';
                 messageEl.textContent = message;
 
-                // Small consolation reward
-                const coinsEarned = 25;
-                playerCoins += coinsEarned;
+                playerCoins += loseCoins;
+                awardXP(loseXP);
                 saveProgress();
                 showCoins();
-                messageEl.innerHTML += `<br><br>💫 You earned ${coinsEarned} consolation coins!`;
+                messageEl.innerHTML += `<br><br>💫 You earned ${loseCoins} coins and ${loseXP} XP!`;
             }
 
             // Show the overlay
@@ -1788,7 +1799,6 @@
             aiLasers = [];
             healthPacks = [];
 
-            console.log("Game over screen shown");
         }
 
         // Also update the return to menu button handler to properly reset the game
@@ -1807,9 +1817,18 @@
             // Clear the canvas
             ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
 
-            console.log("Returned to menu");
         });
         // Game loop
+        function updatePlayerRegen() {
+            if (!player || player.currentHp <= 0 || player.currentHp >= player.maxHp) return;
+            if (player.regenCooldown > 0) { player.regenCooldown--; return; }
+            player.regenTimer++;
+            if (player.regenTimer >= 90) {
+                player.currentHp = Math.min(player.maxHp, player.currentHp + 1);
+                player.regenTimer = 0;
+            }
+        }
+
         function gameLoop() {
             if (!gameStarted) return;
 
@@ -1817,8 +1836,7 @@
 
             updateCamera();
             handleInputFrame();
-
-            // REMOVED: healing cooldown updates since we simplified the system
+            updatePlayerRegen();
 
             updateAllBots();
             updateLasers();
@@ -1826,20 +1844,91 @@
 
             drawBackground();
             drawObstacles();
-           // drawHealthPacks();
+            drawHealthPacks();
             drawPlayers();
             drawLasers();
             drawHUD();
+            drawHealMessage();
             drawLevelUp();
 
             requestAnimationFrame(gameLoop);
         }
 
         // UI Functions
+        const levelRewards = [
+            { level: 2,  reward: '50 coins',  icon: '💰' },
+            { level: 3,  reward: '75 coins',  icon: '💰' },
+            { level: 5,  reward: '100 coins', icon: '💰' },
+            { level: 7,  reward: '150 coins', icon: '💰' },
+            { level: 10, reward: '150 coins', icon: '💰' },
+            { level: 12, reward: '200 coins', icon: '💰' },
+            { level: 15, reward: '200 coins', icon: '💰' },
+            { level: 20, reward: '250 coins', icon: '💰' },
+            { level: 25, reward: '250 coins', icon: '💰' },
+            { level: 30, reward: '300 coins', icon: '💰' },
+        ];
+
+        function claimLevelRewards() {
+            for (const milestone of levelRewards) {
+                if (playerLevel >= milestone.level && !milestone.claimed) {
+                    milestone.claimed = true;
+                    const amount = parseInt(milestone.reward);
+                    playerCoins += amount;
+                }
+            }
+            saveProgress();
+        }
+
         function showCoins() {
             const xpIntoLevel = playerXP % 10;
+            // Check and auto-claim any newly reached rewards
+            claimLevelRewards();
             document.getElementById('coins-display').innerHTML =
                 `💰 Coins: ${playerCoins}<br>🏆 Level: ${playerLevel} &nbsp;(${xpIntoLevel}/10 XP)`;
+        }
+
+        function renderLevelRewards() {
+            const list = document.getElementById('level-rewards-list');
+            list.innerHTML = '';
+
+            // Show a window around the current level: all unclaimed + last 2 claimed
+            const claimed = levelRewards.filter(r => r.claimed);
+            const unclaimed = levelRewards.filter(r => !r.claimed);
+            const toShow = [...claimed.slice(-2), ...unclaimed.slice(0, 6)];
+
+            if (toShow.length === 0) {
+                list.innerHTML = '<p style="text-align:center;color:#aaa;">All rewards claimed! More coming soon.</p>';
+                return;
+            }
+
+            toShow.forEach(milestone => {
+                const row = document.createElement('div');
+                const isNext = !milestone.claimed && unclaimed[0] === milestone;
+                row.className = 'reward-row' +
+                    (milestone.claimed ? ' reached' : isNext ? ' current' : ' next');
+
+                const xpNeeded = (milestone.level - 1) * 10;
+                const xpLeft = Math.max(0, xpNeeded - playerXP);
+
+                row.innerHTML = `
+                    <span class="reward-level-badge">Lv ${milestone.level}</span>
+                    <span style="flex:1">${milestone.icon} ${milestone.reward}</span>
+                    <span style="font-size:12px; color:${milestone.claimed ? '#555' : isNext ? '#ffcc00' : '#777'}">
+                        ${milestone.claimed ? '✅ Claimed' : xpLeft === 0 ? '🎉 Ready!' : `${xpLeft} XP away`}
+                    </span>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        function initLevelRewards() {
+            document.getElementById('coins-display').addEventListener('click', () => {
+                renderLevelRewards();
+                document.getElementById('level-rewards-panel').style.display = 'block';
+            });
+            document.getElementById('close-level-rewards').addEventListener('click', () => {
+                document.getElementById('level-rewards-panel').style.display = 'none';
+            });
         }
 
         function hideAllUI() {
@@ -2059,6 +2148,7 @@
             initMouseShooting();
             initBazaar();
             initPlayerMenu();
+            initLevelRewards();
             showCoins();
             //hide joystick on first screen
             document.getElementById('joystick-container').style.display = 'none';
@@ -2091,20 +2181,7 @@
                 document.getElementById('debug-status').textContent = msg;
             }
             setDebug('Game Ready - Click Battle!');
-            function debugGameState() {
-                console.log("=== GAME STATE DEBUG ===");
-                console.log("Game started:", gameStarted);
-                console.log("Player:", player);
-                console.log("Players alive:", players.filter(p => p.currentHp > 0).length);
-                console.log("Lasers:", lasers.length);
-                console.log("AI Lasers:", aiLasers.length);
-                console.log("Health packs:", healthPacks.filter(p => p.active).length, "active");
-                console.log("========================");
-            }
-
-            // You can call this from the console anytime by typing: debugGameState()
-            window.debugGameState = debugGameState;
-            console.log('Game initialized successfully');
+;
         }
 
         // Start the game when page loads
