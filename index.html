@@ -369,9 +369,10 @@
     </div>
 
     <div id="game-over-overlay" class="game-overlay">
-        <div style="background: rgba(0,0,0,0.9); padding: 40px; border-radius: 20px; border: 3px solid #ffcc00;">
+        <div style="background: rgba(0,0,0,0.9); padding: 40px; border-radius: 20px; border: 3px solid #ffcc00; max-width: 500px; width: 90%;">
             <h2 id="game-over-title" style="color: #ffcc00;">Game Over</h2>
             <p id="game-over-message" style="margin: 20px 0;"></p>
+            <div id="leaderboard" style="display:none; margin: 16px 0; max-height: 220px; overflow-y: auto;"></div>
             <button id="return-to-menu" class="btn" style="background: #ffcc00; color: black; font-size: 18px; padding: 10px 20px;">
                 Return to Menu
             </button>
@@ -454,6 +455,8 @@
         let bots = [];
         let player = null;
         let totalPlayersAtStart = 0;
+        let killFeed = [];
+        let matchStatsList = [];
 
         // Camera system
         let camera = { x: 0, y: 0, width: 0, height: 0 };
@@ -831,6 +834,7 @@
                         // Bots just heal normally
                         entity.currentHp = Math.min(entity.maxHp, entity.currentHp + boostAmount);
                     }
+                    entity.healingReceived += boostAmount;
 
                     // Always consume the pack
                     healthPacks.splice(i, 1);
@@ -1075,6 +1079,8 @@
             bots = [];
             lasers = [];
             aiLasers = [];
+            killFeed = [];
+            matchStatsList = [];
 
             generateObstacles();
             generateHealthPacks();
@@ -1097,7 +1103,10 @@
                 vx: 0,
                 vy: 0,
                 prevX: playerPos.x,
-                prevY: playerPos.y
+                prevY: playerPos.y,
+                kills: 0,
+                damageDealt: 0,
+                healingReceived: 0
             };
             players.push(player);
 
@@ -1121,9 +1130,12 @@
                     vx: 0,
                     vy: 0,
                     shootCooldown: 0,
-                    healCooldown: 0, // Initialize heal cooldown
+                    healCooldown: 0,
                     wanderTarget: null,
-                    wanderTimer: 0
+                    wanderTimer: 0,
+                    kills: 0,
+                    damageDealt: 0,
+                    healingReceived: 0
                 };
                 players.push(bot);
                 bots.push(bot);
@@ -1363,6 +1375,32 @@
             healMessage.timer--;
         }
 
+        function drawKillFeed() {
+            const now = Date.now();
+            killFeed = killFeed.filter(e => now - e.ts < 3500);
+            if (killFeed.length === 0) return;
+            ctx.save();
+            ctx.font = 'bold 13px Arial';
+            ctx.textAlign = 'right';
+            const x = gameCanvas.width - 12;
+            const recent = killFeed.slice(-6);
+            recent.forEach((entry, i) => {
+                const age = now - entry.ts;
+                const alpha = age > 2500 ? 1 - (age - 2500) / 1000 : 1;
+                const y = 60 + i * 22;
+                const text = `${entry.killerName}  ⚡  ${entry.victimName}`;
+                const w = ctx.measureText(text).width;
+                ctx.globalAlpha = alpha * 0.55;
+                ctx.fillStyle = '#000';
+                ctx.fillRect(x - w - 8, y - 14, w + 16, 20);
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = '#fff';
+                ctx.fillText(text, x, y);
+            });
+            ctx.globalAlpha = 1;
+            ctx.restore();
+        }
+
         function drawLevelUp() {
             if (!levelUpMessage || levelUpMessage.timer <= 0) return;
             const alpha = Math.min(1, levelUpMessage.timer / 40);
@@ -1406,11 +1444,15 @@
                     if (laser.x >= targetPlayer.x && laser.x <= targetPlayer.x + targetPlayer.size &&
                         laser.y >= targetPlayer.y && laser.y <= targetPlayer.y + targetPlayer.size) {
 
-                        // Use currentHp for damage calculation
+                        const actualDamage = Math.min(laser.damage, Math.max(0, targetPlayer.currentHp));
                         targetPlayer.currentHp -= laser.damage;
+                        laser.shooter.damageDealt += actualDamage;
                         hit = true;
 
                         if (targetPlayer.currentHp <= 0) {
+                            laser.shooter.kills++;
+                            killFeed.push({ killerName: laser.shooter.name, victimName: targetPlayer.name, ts: Date.now() });
+                            matchStatsList.push({ name: targetPlayer.name, kills: targetPlayer.kills, damageDealt: targetPlayer.damageDealt, healingReceived: targetPlayer.healingReceived, team: targetPlayer.team, isHuman: targetPlayer.isHuman });
                             players.splice(j, 1);
                             if (targetPlayer.isBot) {
                                 const botIndex = bots.findIndex(b => b.id === targetPlayer.id);
@@ -1453,8 +1495,9 @@
                     if (laser.x >= targetPlayer.x && laser.x <= targetPlayer.x + targetPlayer.size &&
                         laser.y >= targetPlayer.y && laser.y <= targetPlayer.y + targetPlayer.size) {
 
-                        // Use currentHp for damage calculation
+                        const actualDamage = Math.min(laser.damage, Math.max(0, targetPlayer.currentHp));
                         targetPlayer.currentHp -= laser.damage;
+                        laser.shooter.damageDealt += actualDamage;
                         hit = true;
 
                         // Reset regen on damage
@@ -1464,6 +1507,9 @@
                         }
 
                         if (targetPlayer.currentHp <= 0) {
+                            laser.shooter.kills++;
+                            killFeed.push({ killerName: laser.shooter.name, victimName: targetPlayer.name, ts: Date.now() });
+                            matchStatsList.push({ name: targetPlayer.name, kills: targetPlayer.kills, damageDealt: targetPlayer.damageDealt, healingReceived: targetPlayer.healingReceived, team: targetPlayer.team, isHuman: targetPlayer.isHuman });
                             players.splice(j, 1);
                             if (targetPlayer.isBot) {
                                 const botIndex = bots.findIndex(b => b.id === targetPlayer.id);
@@ -1789,6 +1835,27 @@
                 messageEl.innerHTML += `<br><br>💫 You earned ${loseCoins} coins and ${loseXP} XP!`;
             }
 
+            // Snapshot surviving players before clearing
+            for (const p of players) {
+                matchStatsList.push({ name: p.name, kills: p.kills, damageDealt: p.damageDealt, healingReceived: p.healingReceived, team: p.team, isHuman: p.isHuman });
+            }
+            matchStatsList.sort((a, b) => b.kills - a.kills || b.damageDealt - a.damageDealt);
+
+            // Build leaderboard
+            const lbDiv = document.getElementById('leaderboard');
+            if (matchStatsList.length > 0) {
+                let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+                html += '<tr style="border-bottom:1px solid #444;"><th style="text-align:left;padding:5px 8px;color:#aaa;">Player</th><th style="color:#aaa;padding:5px;">Kills</th><th style="color:#aaa;padding:5px;">Damage</th><th style="color:#aaa;padding:5px;">Healing</th></tr>';
+                for (const s of matchStatsList) {
+                    const teamColor = s.team === 'red' ? '#ff6666' : s.team === 'blue' ? '#6699ff' : '#cccccc';
+                    const nameStyle = s.isHuman ? 'color:#ffcc00;font-weight:bold' : `color:${teamColor}`;
+                    html += `<tr style="border-bottom:1px solid #222;"><td style="${nameStyle};padding:5px 8px;">${s.isHuman ? '★ ' : ''}${s.name}</td><td style="text-align:center;padding:5px;color:#fff;">${s.kills}</td><td style="text-align:center;padding:5px;color:#ff9944;">${s.damageDealt}</td><td style="text-align:center;padding:5px;color:#44dd88;">${s.healingReceived}</td></tr>`;
+                }
+                html += '</table>';
+                lbDiv.innerHTML = html;
+                lbDiv.style.display = 'block';
+            }
+
             // Show the overlay
             overlay.style.display = 'flex';
 
@@ -1805,6 +1872,7 @@
         document.getElementById('return-to-menu').addEventListener('click', () => {
             // Hide game over overlay
             document.getElementById('game-over-overlay').style.display = 'none';
+            document.getElementById('leaderboard').style.display = 'none';
 
             // Show main menu UI
             document.querySelector('.guide').style.display = 'block';
@@ -1848,6 +1916,7 @@
             drawPlayers();
             drawLasers();
             drawHUD();
+            drawKillFeed();
             drawHealMessage();
             drawLevelUp();
 

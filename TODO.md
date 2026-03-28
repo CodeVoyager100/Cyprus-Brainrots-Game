@@ -1,13 +1,25 @@
 # Cyprus Brainrots Game — TODO
 
-Last reviewed: 2026-03-26 (session 4)
+Last reviewed: 2026-03-27 (session 5)
 
 ---
 
 ## Remaining Features
 
-- [ ] **Rarity system** — Add rarity tiers to characters (Common, Rare, Epic, Legendary). Visual presentation in Bazaar. *(deferred — plan upgrade system first)*
-- [ ] **Upgrade system** *(depends on rarity)* — Spend coins/XP to upgrade character stats. Based on rarity tier.
+<!-- ordered easiest → hardest -->
+
+- [x] **Kill feed** — Small scrolling log in the corner showing who killed who *(easy: just track kill events and draw text)*
+- [x] **Leaderboard screen** — End-of-game scoreboard showing kills, damage dealt, healing received *(easy: collect stats already in game state, show on game end)*
+- [ ] **Settings menu** — Volume slider, toggle joystick visibility, maybe keybinds *(easy: UI panel + a few variables)*
+- [ ] **Emotes/taunts** — Press a key to display a short emote above your character *(easy: key handler + draw text bubble)*
+- [ ] **Sound effects per character** — Unique shoot/death sounds for each brainrot character *(easy: add sound file refs to `playersData`, play on shoot/death)*
+- [ ] **2v2 game mode** — Same rules as 3v3 but 2 players per team (1 human + 1 bot vs 2 bots); add to mode select menu *(medium: copy 3v3 config, adjust player count)*
+- [ ] **Star drops** — Post-match reward chest; after winning (or losing?) a match you open a star drop that contains a random reward (coins, character unlock, etc.) *(medium: new end-screen UI + reward pool logic)*
+- [ ] **Rarity system** — Add rarity tiers to characters (Common, Rare, Epic, Mythic, Legendary). Visual presentation in Bazaar *(medium: data + UI, no new game logic)*
+- [ ] **Respawn system (team modes)** — When you die in 3v3/2v2, spectate your teammate; if they survive 15 seconds you respawn next to them (safe spawn, not inside a wall) *(hard: spectate camera, timer, safe-position check)*
+- [ ] **Unique attacks per character** — Some characters get non-laser attacks (e.g. spread shot, boomerang, area blast, homing projectile) *(hard: new projectile types, new rendering + collision logic per character)*
+- [ ] **Upgrade system** *(depends on rarity)* — Spend coins/XP to upgrade character stats. Based on rarity tier *(hard: depends on rarity system)*
+- [ ] **Account system** — Username + password login, persist coins/XP/unlocks server-side (or localStorage profile switcher as a simpler first step) *(hardest: requires a backend or significant auth flow)*
 
 ---
 
