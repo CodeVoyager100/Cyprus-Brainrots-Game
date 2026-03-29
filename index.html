@@ -379,7 +379,7 @@
         </div>
     </div>
 
-    <div id="coins-display">💰 Coins: 500<br>🏆 Level: 1</div>
+    <div id="coins-display">💰 Coins: 500<br>� Medals: 0</div>
 
     <div id="level-rewards-panel" class="modal-panel" style="width:420px;">
         <h2>🏆 Level Rewards</h2>
@@ -410,8 +410,18 @@
             </div>
             <div class="mode-card" data-mode="3v3">
                 <h3>⚔️ 3v3 Team Battle</h3>
-                <p>Team up and defeat the enemy team!</p>
-                <div style="background: rgba(255, 204, 0, 0.2); padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">6 Players</div>
+                <p>4 teams of 3 — last team standing wins!</p>
+                <div style="background: rgba(255, 204, 0, 0.2); padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">12 Players</div>
+            </div>
+            <div class="mode-card" data-mode="2v2">
+                <h3>🤝 2v2 Team Battle</h3>
+                <p>4 teams of 2 — duo showdown!</p>
+                <div style="background: rgba(255, 204, 0, 0.2); padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">8 Players</div>
+            </div>
+            <div class="mode-card" data-mode="ballGoal">
+                <h3>⚽ Ball-Goal</h3>
+                <p>Score goals! First team to 2 wins!</p>
+                <div style="background: rgba(255, 204, 0, 0.2); padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">6 Players (3v3)</div>
             </div>
         </div>
         <button class="btn modal-close" id="close-modes-btn">Close</button>
@@ -457,11 +467,12 @@
         let totalPlayersAtStart = 0;
         let killFeed = [];
         let matchStatsList = [];
+        let bushes = [];
 
         // Camera system
         let camera = { x: 0, y: 0, width: 0, height: 0 };
-        const MAP_WIDTH = 2000;
-        const MAP_HEIGHT = 2000;
+        let MAP_WIDTH = 2000;
+        let MAP_HEIGHT = 2000;
 
         // Game state (persisted via localStorage)
         let playerCoins = parseInt(localStorage.getItem('playerCoins') ?? '500');
@@ -482,7 +493,7 @@
 
         function awardXP(amount) {
             const oldLevel = Math.floor(playerXP / 10) + 1;
-            playerXP += amount;
+            playerXP = Math.max(0, playerXP + amount);
             playerLevel = Math.floor(playerXP / 10) + 1;
             if (playerLevel > oldLevel) {
                 levelUpMessage = { text: `Level Up! Level ${playerLevel}`, timer: 180 };
@@ -491,6 +502,20 @@
             showCoins();
         }
         let currentGameMode = 'showdown';
+
+        // Poison gas zone (Showdown only)
+        let poisonZone = { x: 0, y: 0, w: MAP_WIDTH, h: MAP_HEIGHT, shrinking: false, timer: 0, phase: 0 };
+        const POISON_DAMAGE = 2;
+        const POISON_TICK_INTERVAL = 30; // frames between damage ticks
+        const POISON_SHRINK_DELAY = 300; // ~5 seconds before first shrink
+        const POISON_SHRINK_SPEED = 0.15; // pixels per frame per side
+        const POISON_PHASES = 5; // number of shrink phases
+
+        // Ball-Goal mode state
+        let ball = null;
+        let goals = [];
+        let teamScores = {};
+        const BALL_GOAL_WIN_SCORE = 2;
 
         // Image cache for all game images
         const imageCache = {};
@@ -656,8 +681,22 @@
 
         const gameModes = {
             showdown: { name: "Showdown", maxPlayers: 8, teams: false, fillBots: true },
-            '3v3': { name: "3v3 Team Battle", maxPlayers: 6, teams: true, teamSize: 3, fillBots: true },
-            '2v2': { name: "2v2 Team Battle", maxPlayers: 8, teams: true, teamSize: 2, fillBots: true }
+            '3v3': { name: "3v3 Team Battle", maxPlayers: 12, teams: true, teamSize: 3, teamNames: ['red','blue','green','yellow'], fillBots: true },
+            '2v2': { name: "2v2 Team Battle", maxPlayers: 8, teams: true, teamSize: 2, teamNames: ['red','blue','green','yellow'], fillBots: true },
+            ballGoal: { name: "Ball-Goal", maxPlayers: 6, teams: true, teamSize: 3, teamNames: ['red','blue'], fillBots: true }
+        };
+
+        const teamColors = {
+            red: '#ff4444',
+            blue: '#4488ff',
+            green: '#44cc44',
+            yellow: '#ffcc00'
+        };
+        const teamScoreboardColors = {
+            red: '#ff6666',
+            blue: '#6699ff',
+            green: '#66dd66',
+            yellow: '#ffdd66'
         };
 
         // Input handling
@@ -735,7 +774,8 @@
 
         function generateObstacles() {
             obstacles = [];
-            for (let i = 0; i < 15; i++) {
+            const obstacleCount = currentGameMode === 'ballGoal' ? 6 : 15;
+            for (let i = 0; i < obstacleCount; i++) {
                 obstacles.push({
                     x: Math.random() * (MAP_WIDTH - 100),
                     y: Math.random() * (MAP_HEIGHT - 100),
@@ -758,6 +798,69 @@
                     active: true
                 });
             }
+        }
+
+        function generateBushes() {
+            bushes = [];
+            // Place bushes near existing obstacles (walls and lakes)
+            for (let obs of obstacles) {
+                const bushCount = 1 + Math.floor(Math.random() * 2); // 1-2 bushes per obstacle
+                for (let i = 0; i < bushCount; i++) {
+                    // Pick a random side of the obstacle
+                    const side = Math.floor(Math.random() * 4);
+                    let bx, by;
+                    const bSize = 50 + Math.random() * 30; // 50-80px
+                    if (side === 0) { // top
+                        bx = obs.x + Math.random() * obs.width - bSize / 2;
+                        by = obs.y - bSize - Math.random() * 20;
+                    } else if (side === 1) { // bottom
+                        bx = obs.x + Math.random() * obs.width - bSize / 2;
+                        by = obs.y + obs.height + Math.random() * 20;
+                    } else if (side === 2) { // left
+                        bx = obs.x - bSize - Math.random() * 20;
+                        by = obs.y + Math.random() * obs.height - bSize / 2;
+                    } else { // right
+                        bx = obs.x + obs.width + Math.random() * 20;
+                        by = obs.y + Math.random() * obs.height - bSize / 2;
+                    }
+                    // Clamp to map bounds
+                    bx = Math.max(10, Math.min(bx, MAP_WIDTH - bSize - 10));
+                    by = Math.max(10, Math.min(by, MAP_HEIGHT - bSize - 10));
+                    bushes.push({ x: bx, y: by, size: bSize });
+                }
+            }
+            // Add some random bushes scattered around
+            const randomBushCount = currentGameMode === 'ballGoal' ? 2 : 6;
+            for (let i = 0; i < randomBushCount; i++) {
+                const bSize = 50 + Math.random() * 30;
+                const pos = getSpawnPosition(bSize);
+                bushes.push({ x: pos.x, y: pos.y, size: bSize });
+            }
+        }
+
+        function isInBush(entity) {
+            for (let bush of bushes) {
+                const cx = entity.x + entity.size / 2;
+                const cy = entity.y + entity.size / 2;
+                if (cx > bush.x && cx < bush.x + bush.size &&
+                    cy > bush.y && cy < bush.y + bush.size) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function findNearestBush(entity) {
+            let nearest = null;
+            let minDist = Infinity;
+            for (let bush of bushes) {
+                const dist = getDistance(entity.x, entity.y, bush.x + bush.size / 2, bush.y + bush.size / 2);
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearest = bush;
+                }
+            }
+            return nearest;
         }
 
         // NEW: Check laser collision with obstacles
@@ -866,6 +969,13 @@
 
             if (distance === 0) return;
 
+            // If carrying the ball in Ball-Goal, kick it instead of shooting
+            if (currentGameMode === 'ballGoal' && player.hasBall && ball) {
+                kickBall(player, dx, dy);
+                player.shootCooldown = 20;
+                return;
+            }
+
             const speed = 12;
             lasers.push({
                 x: startX,
@@ -878,6 +988,8 @@
             });
 
             player.shootCooldown = 15;
+            // Shooting reveals you from bush
+            player.bushRevealTimer = 90;
         }
 
         // IMPROVED AI SYSTEM - Bots fight each other and don't always chase player
@@ -902,6 +1014,50 @@
                         }
                         checkHealthPackCollision(bot);
                         return;
+                    }
+
+                    // No health pack nearby — try to hide in a bush
+                    if (!bot.inBush) {
+                        const nearestBush = findNearestBush(bot);
+                        if (nearestBush && getDistance(bot.x, bot.y, nearestBush.x + nearestBush.size / 2, nearestBush.y + nearestBush.size / 2) < 350) {
+                            const bx = nearestBush.x + nearestBush.size / 2 - bot.x;
+                            const by = nearestBush.y + nearestBush.size / 2 - bot.y;
+                            const bd = Math.sqrt(bx * bx + by * by);
+                            if (bd > 10) {
+                                bot.vx = (bx / bd) * bot.speed;
+                                bot.vy = (by / bd) * bot.speed;
+                            }
+                            checkHealthPackCollision(bot);
+                            return;
+                        }
+                    }
+                }
+
+                // Ball-Goal: if carrying ball, run toward opponent's goal and kick when close
+                if (currentGameMode === 'ballGoal' && bot.hasBall && ball) {
+                    const targetGoal = goals.find(g => g.team !== bot.team);
+                    if (targetGoal) {
+                        const gx = targetGoal.x + targetGoal.w / 2 - bot.x;
+                        const gy = targetGoal.y + targetGoal.h / 2 - bot.y;
+                        const gd = Math.sqrt(gx * gx + gy * gy) || 1;
+                        bot.vx = (gx / gd) * bot.speed;
+                        bot.vy = (gy / gd) * bot.speed;
+                        // Kick toward goal when close enough
+                        if (gd < 350 && bot.shootCooldown <= 0) {
+                            kickBall(bot, gx, gy);
+                            bot.shootCooldown = 30;
+                        }
+                    }
+                }
+                // Ball-Goal: if not carrying, aggressively chase the free ball
+                else if (currentGameMode === 'ballGoal' && ball && !ball.carrier) {
+                    const ballDist = getDistance(bot.x, bot.y, ball.x, ball.y);
+                    if (ballDist < 1000) {
+                        const dx = ball.x - bot.x;
+                        const dy = ball.y - bot.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                        bot.vx = (dx / dist) * bot.speed * 0.9;
+                        bot.vy = (dy / dist) * bot.speed * 0.9;
                     }
                 }
 
@@ -934,7 +1090,16 @@
                     }
 
                     // Shoot when ready — 40% chance per frame so bots miss sometimes
-                    if (bot.shootCooldown <= 0 && distance < bot.laserRange &&
+                    // If bot has ball in Ball-Goal, kick toward opponent's goal instead
+                    if (currentGameMode === 'ballGoal' && bot.hasBall && ball && bot.shootCooldown <= 0) {
+                        const targetGoal = goals.find(g => g.team !== bot.team);
+                        if (targetGoal) {
+                            const goalCx = targetGoal.x + targetGoal.w / 2 - (bot.x + bot.size / 2);
+                            const goalCy = targetGoal.y + targetGoal.h / 2 - (bot.y + bot.size / 2);
+                            kickBall(bot, goalCx, goalCy);
+                            bot.shootCooldown = 30;
+                        }
+                    } else if (bot.shootCooldown <= 0 && distance < bot.laserRange &&
                         hasLineOfSight(bot, closestTarget) && Math.random() < 0.4) {
 
                         const laserSpeed = 10;
@@ -967,6 +1132,8 @@
                             shooter: bot
                         });
                         bot.shootCooldown = 30;
+                        // Shooting reveals bot from bush
+                        bot.bushRevealTimer = 90;
                     }
                 }
 
@@ -999,6 +1166,9 @@
 
                 // In team modes, don't target teammates
                 if (bot.team && other.team === bot.team) return;
+
+                // Can't see players hiding in bushes (unless revealed)
+                if (other.inBush && !(other.bushRevealTimer > 0)) return;
 
                 const dist = getDistance(bot.x, bot.y, other.x, other.y);
 
@@ -1082,18 +1252,54 @@
             killFeed = [];
             matchStatsList = [];
 
+            // Set map size per mode
+            if (mode === 'ballGoal') {
+                MAP_WIDTH = 1500;
+                MAP_HEIGHT = 1000;
+            } else {
+                MAP_WIDTH = 2000;
+                MAP_HEIGHT = 2000;
+            }
+
             generateObstacles();
             generateHealthPacks();
+            generateBushes();
+
+            // Team spawn zones: each team spawns in a different quadrant
+            const halfW = MAP_WIDTH / 2;
+            const halfH = MAP_HEIGHT / 2;
+            const teamSpawnZones = {
+                red:    { xMin: 50,  xMax: halfW - 50,   yMin: 50,  yMax: halfH - 50 },
+                blue:   { xMin: halfW + 50, xMax: MAP_WIDTH - 50, yMin: 50,  yMax: halfH - 50 },
+                green:  { xMin: 50,  xMax: halfW - 50,   yMin: halfH + 50, yMax: MAP_HEIGHT - 50 },
+                yellow: { xMin: halfW + 50, xMax: MAP_WIDTH - 50, yMin: halfH + 50, yMax: MAP_HEIGHT - 50 }
+            };
+
+            function getTeamSpawnPosition(size, team) {
+                if (!team || !teamSpawnZones[team]) return getSpawnPosition(size);
+                const zone = teamSpawnZones[team];
+                let attempts = 0;
+                let pos;
+                do {
+                    pos = {
+                        x: zone.xMin + Math.random() * (zone.xMax - zone.xMin - size),
+                        y: zone.yMin + Math.random() * (zone.yMax - zone.yMin - size)
+                    };
+                    attempts++;
+                } while (!isValidSpawnPosition(pos.x, pos.y, size) && attempts < 50);
+                return pos;
+            }
 
             // Create player
             const playerData = playersData[selectedPlayerId];
-            const playerPos = getSpawnPosition(playerData.size);
+            const playerTeam = modeConfig.teams ? 'red' : null;
+            const playerPos = modeConfig.teams ? getTeamSpawnPosition(playerData.size, 'red') : getSpawnPosition(playerData.size);
             player = {
                 ...playerData,
                 x: playerPos.x,
                 y: playerPos.y,
                 isHuman: true,
-                team: modeConfig.teams ? 'red' : null,
+                team: playerTeam,
                 maxHp: playerData.hp,
                 currentHp: playerData.hp,
                 shootCooldown: 1,
@@ -1106,7 +1312,8 @@
                 prevY: playerPos.y,
                 kills: 0,
                 damageDealt: 0,
-                healingReceived: 0
+                healingReceived: 0,
+                bushRevealTimer: 0
             };
             players.push(player);
 
@@ -1116,7 +1323,8 @@
                 const availableBots = Object.keys(playersData).filter(id => id !== selectedPlayerId);
                 const botPlayerId = availableBots[Math.floor(Math.random() * availableBots.length)];
                 const botData = playersData[botPlayerId];
-                const botPos = getSpawnPosition(botData.size);
+                const botTeam = modeConfig.teams ? modeConfig.teamNames[Math.floor((i + 1) / modeConfig.teamSize)] || modeConfig.teamNames[modeConfig.teamNames.length - 1] : null;
+                const botPos = modeConfig.teams ? getTeamSpawnPosition(botData.size, botTeam) : getSpawnPosition(botData.size);
 
                 const bot = {
                     ...botData,
@@ -1124,7 +1332,7 @@
                     x: botPos.x,
                     y: botPos.y,
                     isBot: true,
-                    team: modeConfig.teams ? (i < modeConfig.teamSize - 1 ? 'red' : 'blue') : null,
+                    team: botTeam,
                     maxHp: botData.hp,
                     currentHp: botData.hp,
                     vx: 0,
@@ -1135,13 +1343,26 @@
                     wanderTimer: 0,
                     kills: 0,
                     damageDealt: 0,
-                    healingReceived: 0
+                    healingReceived: 0,
+                    bushRevealTimer: 0
                 };
                 players.push(bot);
                 bots.push(bot);
             }
 
             totalPlayersAtStart = players.length;
+
+            // Init poison zone for Showdown
+            poisonZone = { x: 0, y: 0, w: MAP_WIDTH, h: MAP_HEIGHT, shrinking: false, timer: 0, phase: 0 };
+
+            // Init Ball-Goal
+            if (mode === 'ballGoal') {
+                initBallGoal();
+            } else {
+                ball = null;
+                goals = [];
+                teamScores = {};
+            }
         }
 
         // Drawing functions
@@ -1224,13 +1445,61 @@
             ctx.restore();
         }
 
+        function drawBushes() {
+            ctx.save();
+            for (let bush of bushes) {
+                const bx = bush.x - camera.x;
+                const by = bush.y - camera.y;
+                const s = bush.size;
+
+                // Bush base (dark green square)
+                ctx.fillStyle = 'rgba(34, 120, 34, 0.85)';
+                ctx.fillRect(bx, by, s, s);
+
+                // Lighter inner patches
+                ctx.fillStyle = 'rgba(50, 160, 50, 0.7)';
+                ctx.fillRect(bx + s * 0.1, by + s * 0.1, s * 0.4, s * 0.4);
+                ctx.fillRect(bx + s * 0.45, by + s * 0.5, s * 0.4, s * 0.35);
+
+                // Outline
+                ctx.strokeStyle = 'rgba(20, 80, 20, 0.6)';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(bx, by, s, s);
+            }
+            ctx.restore();
+        }
+
         function drawPlayers() {
             players.forEach(p => {
                 if (p.currentHp <= 0) return;
 
+                p.inBush = isInBush(p);
+
+                // Tick down bush reveal timer
+                if (p.bushRevealTimer > 0) p.bushRevealTimer--;
+
+                // Revealed if shot or took damage recently
+                const isRevealed = p.bushRevealTimer > 0;
+
+                // If enemy is in a bush AND not revealed, don't draw them (invisible)
+                // Same-team players and the human player are drawn faded
+                if (p.inBush && !isRevealed && !p.isHuman) {
+                    if (player && player.team && p.team === player.team) {
+                        // Teammate in bush: draw faded
+                    } else {
+                        // Enemy in bush: fully hidden
+                        return;
+                    }
+                }
+
                 ctx.save();
 
-                const teamColor = p.team === 'red' ? '#ff4444' : p.team === 'blue' ? '#4488ff' : null;
+                // Fade players who are in a bush (and not revealed)
+                if (p.inBush && !isRevealed) {
+                    ctx.globalAlpha = 0.4;
+                }
+
+                const teamColor = p.team ? teamColors[p.team] : null;
                 const px = p.x - camera.x;
                 const py = p.y - camera.y;
 
@@ -1328,26 +1597,42 @@
             ctx.save();
 
             const isTeamMode = gameModes[currentGameMode].teams;
-            const hudHeight = isTeamMode ? 100 : 80;
+            const isBallGoal = currentGameMode === 'ballGoal';
+            const hudHeight = isBallGoal ? 100 : isTeamMode ? 110 : 80;
+            const hudWidth = isTeamMode ? 280 : 200;
             ctx.fillStyle = 'rgba(0,0,0,0.7)';
-            ctx.fillRect(10, 10, 200, hudHeight);
+            ctx.fillRect(10, 10, hudWidth, hudHeight);
 
             ctx.font = '14px Arial';
             ctx.fillStyle = 'white';
             ctx.fillText(`HP: ${player.currentHp}/${player.maxHp}`, 20, 30);
             ctx.fillText(`Mode: ${gameModes[currentGameMode].name}`, 20, 50);
 
-            if (isTeamMode) {
-                const teamSize = gameModes[currentGameMode].teamSize;
-                const redAlive = players.filter(p => p.currentHp > 0 && p.team === 'red').length;
-                const blueAlive = players.filter(p => p.currentHp > 0 && p.team === 'blue').length;
-
+            if (isBallGoal) {
+                // Ball-Goal score display
+                ctx.font = 'bold 16px Arial';
                 ctx.fillStyle = '#ff4444';
-                ctx.fillText(`Red: ${redAlive}/${teamSize}`, 20, 70);
+                ctx.fillText(`Red: ${teamScores.red || 0}`, 20, 72);
                 ctx.fillStyle = '#4488ff';
-                ctx.fillText(`Blue: ${blueAlive}/${teamSize}`, 110, 70);
+                ctx.fillText(`Blue: ${teamScores.blue || 0}`, 100, 72);
+                ctx.fillStyle = '#aaa';
+                ctx.font = '12px Arial';
+                ctx.fillText(`First to ${BALL_GOAL_WIN_SCORE} wins`, 20, 90);
+            } else if (isTeamMode) {
+                const teamSize = gameModes[currentGameMode].teamSize;
+                const teams = gameModes[currentGameMode].teamNames;
+                ctx.font = '13px Arial';
+                let tx = 20;
+                teams.forEach(t => {
+                    const alive = players.filter(p => p.currentHp > 0 && p.team === t).length;
+                    ctx.fillStyle = teamColors[t];
+                    const label = t.charAt(0).toUpperCase() + t.slice(1);
+                    const text = `${label}: ${alive}/${teamSize}`;
+                    ctx.fillText(text, tx, 70);
+                    tx += ctx.measureText(text).width + 10;
+                });
 
-                ctx.fillStyle = player.team === 'red' ? '#ff4444' : '#4488ff';
+                ctx.fillStyle = teamColors[player.team];
                 ctx.font = '11px Arial';
                 ctx.fillText(`(you are ${player.team})`, 20, 90);
             } else {
@@ -1417,6 +1702,311 @@
             levelUpMessage.timer--;
         }
 
+        // Poison gas zone (Showdown)
+        function updatePoisonZone() {
+            if (currentGameMode !== 'showdown') return;
+
+            poisonZone.timer++;
+
+            // Start shrinking after delay, in phases
+            if (poisonZone.timer > POISON_SHRINK_DELAY) {
+                const elapsed = poisonZone.timer - POISON_SHRINK_DELAY;
+                // Each phase lasts ~600 frames (~10s), then pauses ~300 frames (~5s)
+                const phaseLength = 600;
+                const pauseLength = 300;
+                const cycleLength = phaseLength + pauseLength;
+                const currentPhase = Math.floor(elapsed / cycleLength);
+                const withinCycle = elapsed % cycleLength;
+
+                if (currentPhase < POISON_PHASES && withinCycle < phaseLength) {
+                    // Shrink the zone
+                    const speed = POISON_SHRINK_SPEED * (1 + currentPhase * 0.3);
+                    poisonZone.x += speed;
+                    poisonZone.y += speed;
+                    poisonZone.w -= speed * 2;
+                    poisonZone.h -= speed * 2;
+
+                    // Minimum zone size
+                    if (poisonZone.w < 200) poisonZone.w = 200;
+                    if (poisonZone.h < 200) poisonZone.h = 200;
+                }
+                poisonZone.phase = Math.min(currentPhase + 1, POISON_PHASES);
+            }
+
+            // Damage players outside the zone
+            if (poisonZone.timer % POISON_TICK_INTERVAL === 0) {
+                players.forEach(p => {
+                    if (p.currentHp <= 0) return;
+                    if (p.x < poisonZone.x || p.x + p.size > poisonZone.x + poisonZone.w ||
+                        p.y < poisonZone.y || p.y + p.size > poisonZone.y + poisonZone.h) {
+                        const dmg = POISON_DAMAGE + poisonZone.phase;
+                        p.currentHp -= dmg;
+                        if (p.isHuman) {
+                            p.regenCooldown = 180;
+                            p.regenTimer = 0;
+                        }
+                    }
+                });
+            }
+        }
+
+        function drawPoisonZone() {
+            if (currentGameMode !== 'showdown') return;
+
+            ctx.save();
+            // Draw poison fog on the edges outside the safe zone
+            const zx = poisonZone.x - camera.x;
+            const zy = poisonZone.y - camera.y;
+            const zw = poisonZone.w;
+            const zh = poisonZone.h;
+            const pulse = 0.25 + Math.sin(Date.now() / 400) * 0.08;
+
+            ctx.fillStyle = `rgba(120, 0, 180, ${pulse})`;
+            // Top strip
+            ctx.fillRect(-camera.x, -camera.y, MAP_WIDTH, poisonZone.y);
+            // Bottom strip
+            ctx.fillRect(-camera.x, zy + zh, MAP_WIDTH, MAP_HEIGHT - poisonZone.y - poisonZone.h);
+            // Left strip
+            ctx.fillRect(-camera.x, zy, poisonZone.x, zh);
+            // Right strip
+            ctx.fillRect(zx + zw, zy, MAP_WIDTH - poisonZone.x - poisonZone.w, zh);
+
+            // Safe zone border
+            ctx.strokeStyle = `rgba(180, 50, 255, 0.8)`;
+            ctx.lineWidth = 3;
+            ctx.setLineDash([10, 5]);
+            ctx.strokeRect(zx, zy, zw, zh);
+            ctx.setLineDash([]);
+            ctx.restore();
+
+            // Warn player if outside zone
+            if (player && player.currentHp > 0) {
+                if (player.x < poisonZone.x || player.x + player.size > poisonZone.x + poisonZone.w ||
+                    player.y < poisonZone.y || player.y + player.size > poisonZone.y + poisonZone.h) {
+                    ctx.save();
+                    ctx.font = 'bold 20px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillStyle = '#ff44ff';
+                    ctx.shadowColor = '#cc00cc';
+                    ctx.shadowBlur = 10;
+                    ctx.fillText('☠️ OUTSIDE SAFE ZONE!', gameCanvas.width / 2, 40);
+                    ctx.restore();
+                }
+            }
+        }
+
+        // Ball-Goal mode
+        function initBallGoal() {
+            const cx = MAP_WIDTH / 2, cy = MAP_HEIGHT / 2;
+            ball = {
+                x: cx - 15, y: cy - 15, size: 30,
+                vx: 0, vy: 0, carrier: null, pickupCooldown: 0
+            };
+            // Goals: left side = red team, right side = blue team
+            goals = [
+                { team: 'red',  x: 10, y: MAP_HEIGHT / 2 - 104, w: 30, h: 208 },
+                { team: 'blue', x: MAP_WIDTH - 40, y: MAP_HEIGHT / 2 - 104, w: 30, h: 208 }
+            ];
+            teamScores = { red: 0, blue: 0 };
+        }
+
+        function resetBallToCenter() {
+            ball.x = MAP_WIDTH / 2 - ball.size / 2;
+            ball.y = MAP_HEIGHT / 2 - ball.size / 2;
+            ball.vx = 0;
+            ball.vy = 0;
+            ball.carrier = null;
+            ball.pickupCooldown = 30;
+            // Reset all players to spawn positions
+            players.forEach(p => { p.hasBall = false; });
+        }
+
+        function dropBall(carrier) {
+            if (!ball || ball.carrier !== carrier) return;
+            ball.carrier = null;
+            carrier.hasBall = false;
+            ball.x = carrier.x + carrier.size / 2 - ball.size / 2;
+            ball.y = carrier.y + carrier.size / 2 - ball.size / 2;
+            ball.vx = 0;
+            ball.vy = 0;
+            ball.pickupCooldown = 30; // Brief cooldown before anyone can pick up
+        }
+
+        function kickBall(kicker, dirX, dirY) {
+            if (!ball || ball.carrier !== kicker) return;
+            ball.carrier = null;
+            kicker.hasBall = false;
+            const dist = Math.sqrt(dirX * dirX + dirY * dirY) || 1;
+            ball.x = kicker.x + kicker.size / 2 - ball.size / 2 + (dirX / dist) * 30;
+            ball.y = kicker.y + kicker.size / 2 - ball.size / 2 + (dirY / dist) * 30;
+            ball.vx = (dirX / dist) * 12;
+            ball.vy = (dirY / dist) * 12;
+            ball.pickupCooldown = 15;
+        }
+
+        function updateBall() {
+            if (!ball || currentGameMode !== 'ballGoal') return;
+
+            if (ball.pickupCooldown > 0) ball.pickupCooldown--;
+
+            // Ball is being carried
+            if (ball.carrier) {
+                const c = ball.carrier;
+                if (c.currentHp <= 0) {
+                    dropBall(c);
+                } else {
+                    // Ball follows carrier
+                    ball.x = c.x + c.size / 2 - ball.size / 2;
+                    ball.y = c.y + c.size / 2 - ball.size / 2;
+                    ball.vx = 0;
+                    ball.vy = 0;
+                }
+                // Still check goals while carrying
+                checkBallGoals();
+                return;
+            }
+
+            // Ball physics (when free)
+            ball.vx *= 0.96;
+            ball.vy *= 0.96;
+            if (Math.abs(ball.vx) < 0.1) ball.vx = 0;
+            if (Math.abs(ball.vy) < 0.1) ball.vy = 0;
+
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+
+            // Bounce off map edges
+            if (ball.x < 0) { ball.x = 0; ball.vx = Math.abs(ball.vx); }
+            if (ball.y < 0) { ball.y = 0; ball.vy = Math.abs(ball.vy); }
+            if (ball.x + ball.size > MAP_WIDTH) { ball.x = MAP_WIDTH - ball.size; ball.vx = -Math.abs(ball.vx); }
+            if (ball.y + ball.size > MAP_HEIGHT) { ball.y = MAP_HEIGHT - ball.size; ball.vy = -Math.abs(ball.vy); }
+
+            // Bounce off obstacles
+            for (let obs of obstacles) {
+                if (ball.x < obs.x + obs.width && ball.x + ball.size > obs.x &&
+                    ball.y < obs.y + obs.height && ball.y + ball.size > obs.y) {
+                    const dx = (ball.x + ball.size / 2) - (obs.x + obs.width / 2);
+                    const dy = (ball.y + ball.size / 2) - (obs.y + obs.height / 2);
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        ball.vx = dx > 0 ? Math.abs(ball.vx) : -Math.abs(ball.vx);
+                        ball.x = dx > 0 ? obs.x + obs.width : obs.x - ball.size;
+                    } else {
+                        ball.vy = dy > 0 ? Math.abs(ball.vy) : -Math.abs(ball.vy);
+                        ball.y = dy > 0 ? obs.y + obs.height : obs.y - ball.size;
+                    }
+                }
+            }
+
+            // Players pick up the ball by walking over it
+            if (ball.pickupCooldown <= 0) {
+                for (let p of players) {
+                    if (p.currentHp <= 0) continue;
+                    if (p.x < ball.x + ball.size && p.x + p.size > ball.x &&
+                        p.y < ball.y + ball.size && p.y + p.size > ball.y) {
+                        ball.carrier = p;
+                        p.hasBall = true;
+                        ball.vx = 0;
+                        ball.vy = 0;
+                        break;
+                    }
+                }
+            }
+
+            checkBallGoals();
+        }
+
+        function checkBallGoals() {
+            for (let goal of goals) {
+                if (ball.x + ball.size > goal.x && ball.x < goal.x + goal.w &&
+                    ball.y + ball.size > goal.y && ball.y < goal.y + goal.h) {
+                    const scoringTeam = goal.team === 'red' ? 'blue' : 'red';
+                    teamScores[scoringTeam]++;
+
+                    healMessage = { text: `⚽ ${scoringTeam.charAt(0).toUpperCase() + scoringTeam.slice(1)} Team Scores! (${teamScores[scoringTeam]}/${BALL_GOAL_WIN_SCORE})`, timer: 150 };
+
+                    if (teamScores[scoringTeam] >= BALL_GOAL_WIN_SCORE) {
+                        const label = scoringTeam.charAt(0).toUpperCase() + scoringTeam.slice(1);
+                        endGame(`${label} Team Wins!`, scoringTeam === player.team);
+                        return;
+                    }
+
+                    resetBallToCenter();
+                    return;
+                }
+            }
+        }
+
+        function drawBall() {
+            if (!ball || currentGameMode !== 'ballGoal') return;
+            ctx.save();
+            const bx = ball.x - camera.x + ball.size / 2;
+            const by = ball.y - camera.y + ball.size / 2;
+            const r = ball.carrier ? ball.size / 2.5 : ball.size / 2;
+
+            // Ball glow
+            ctx.shadowColor = ball.carrier ? '#ffcc00' : '#ffffff';
+            ctx.shadowBlur = ball.carrier ? 8 : 12;
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(bx, by, r, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Inner pattern
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(bx, by, r, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Pentagon pattern
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(bx, by, r * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Carrier indicator
+            if (ball.carrier) {
+                ctx.font = '10px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#ffcc00';
+                ctx.fillText('⚽', bx, by - r - 5);
+            }
+
+            ctx.restore();
+        }
+
+        function drawGoals() {
+            if (currentGameMode !== 'ballGoal') return;
+            ctx.save();
+            for (let goal of goals) {
+                const gx = goal.x - camera.x;
+                const gy = goal.y - camera.y;
+                ctx.fillStyle = goal.team === 'red' ? 'rgba(255,68,68,0.4)' : 'rgba(68,136,255,0.4)';
+                ctx.fillRect(gx, gy, goal.w, goal.h);
+                ctx.strokeStyle = goal.team === 'red' ? '#ff4444' : '#4488ff';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(gx, gy, goal.w, goal.h);
+
+                // Goal net pattern
+                ctx.strokeStyle = goal.team === 'red' ? 'rgba(255,100,100,0.5)' : 'rgba(100,150,255,0.5)';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < goal.h; i += 15) {
+                    ctx.beginPath();
+                    ctx.moveTo(gx, gy + i);
+                    ctx.lineTo(gx + goal.w, gy + i);
+                    ctx.stroke();
+                }
+                for (let i = 0; i < goal.w; i += 10) {
+                    ctx.beginPath();
+                    ctx.moveTo(gx + i, gy);
+                    ctx.lineTo(gx + i, gy + goal.h);
+                    ctx.stroke();
+                }
+            }
+            ctx.restore();
+        }
+
         // FIXED LASER COLLISION SYSTEM - AI lasers can damage other AI players AND check obstacle collisions
         function updateLasers() {
             // Update player lasers
@@ -1447,6 +2037,10 @@
                         const actualDamage = Math.min(laser.damage, Math.max(0, targetPlayer.currentHp));
                         targetPlayer.currentHp -= laser.damage;
                         laser.shooter.damageDealt += actualDamage;
+                        // Taking damage reveals from bush
+                        targetPlayer.bushRevealTimer = 90;
+                        // Drop ball on taking damage in Ball-Goal
+                        if (currentGameMode === 'ballGoal' && targetPlayer.hasBall && ball) dropBall(targetPlayer);
                         hit = true;
 
                         if (targetPlayer.currentHp <= 0) {
@@ -1498,6 +2092,10 @@
                         const actualDamage = Math.min(laser.damage, Math.max(0, targetPlayer.currentHp));
                         targetPlayer.currentHp -= laser.damage;
                         laser.shooter.damageDealt += actualDamage;
+                        // Taking damage reveals from bush
+                        targetPlayer.bushRevealTimer = 90;
+                        // Drop ball on taking damage in Ball-Goal
+                        if (currentGameMode === 'ballGoal' && targetPlayer.hasBall && ball) dropBall(targetPlayer);
                         hit = true;
 
                         // Reset regen on damage
@@ -1777,14 +2375,21 @@
         //end joystick implementation
         /************************************************** */
         function checkGameEnd() {
+            // Ball-Goal ends by score (handled in updateBall), not elimination
+            if (currentGameMode === 'ballGoal') return;
+
             const alivePlayers = players.filter(p => p.currentHp > 0);
 
             if (gameModes[currentGameMode].teams) {
-                const redAlive = alivePlayers.filter(p => p.team === 'red').length;
-                const blueAlive = alivePlayers.filter(p => p.team === 'blue').length;
+                const teams = gameModes[currentGameMode].teamNames;
+                const teamsAlive = teams.filter(t => alivePlayers.some(p => p.team === t));
 
-                if (redAlive === 0 || blueAlive === 0) {
-                    endGame((redAlive > 0 ? 'Red' : 'Blue') + ' Team Wins!', redAlive > 0);
+                if (teamsAlive.length === 1) {
+                    const winTeam = teamsAlive[0];
+                    const label = winTeam.charAt(0).toUpperCase() + winTeam.slice(1);
+                    endGame(`${label} Team Wins!`, winTeam === player.team);
+                } else if (teamsAlive.length === 0) {
+                    endGame('Draw!', false);
                 }
             } else {
                 if (alivePlayers.length === 1) {
@@ -1807,11 +2412,11 @@
             const messageEl = document.getElementById('game-over-message');
 
             // Scale rewards by game mode (3v3 is harder = more reward)
-            const is3v3 = currentGameMode === '3v3';
+            const is3v3 = currentGameMode === '3v3' || currentGameMode === 'ballGoal';
             const winCoins  = is3v3 ? 150 : 100;
             const loseCoins = is3v3 ? 50  : 25;
-            const winXP     = is3v3 ? 12   : 8;
-            const loseXP    = 1;
+            const winMedals  = is3v3 ? 12  : 8;
+            const loseMedals = is3v3 ? -4  : -2;
 
             if (isVictory) {
                 title.textContent = 'Victory!';
@@ -1819,20 +2424,20 @@
                 messageEl.textContent = message;
 
                 playerCoins += winCoins;
-                awardXP(winXP);
+                awardXP(winMedals);
                 saveProgress();
                 showCoins();
-                messageEl.innerHTML += `<br><br>🎉 You earned ${winCoins} coins and ${winXP} XP!`;
+                messageEl.innerHTML += `<br><br>🎉 You earned ${winCoins} coins and +${winMedals} 🏅 medals!`;
             } else {
                 title.textContent = 'Game Over';
                 title.style.color = '#ff4444';
                 messageEl.textContent = message;
 
                 playerCoins += loseCoins;
-                awardXP(loseXP);
+                awardXP(loseMedals);
                 saveProgress();
                 showCoins();
-                messageEl.innerHTML += `<br><br>💫 You earned ${loseCoins} coins and ${loseXP} XP!`;
+                messageEl.innerHTML += `<br><br>💫 You earned ${loseCoins} coins and ${loseMedals} 🏅 medals.`;
             }
 
             // Snapshot surviving players before clearing
@@ -1847,7 +2452,7 @@
                 let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
                 html += '<tr style="border-bottom:1px solid #444;"><th style="text-align:left;padding:5px 8px;color:#aaa;">Player</th><th style="color:#aaa;padding:5px;">Kills</th><th style="color:#aaa;padding:5px;">Damage</th><th style="color:#aaa;padding:5px;">Healing</th></tr>';
                 for (const s of matchStatsList) {
-                    const teamColor = s.team === 'red' ? '#ff6666' : s.team === 'blue' ? '#6699ff' : '#cccccc';
+                    const teamColor = s.team ? (teamScoreboardColors[s.team] || '#cccccc') : '#cccccc';
                     const nameStyle = s.isHuman ? 'color:#ffcc00;font-weight:bold' : `color:${teamColor}`;
                     html += `<tr style="border-bottom:1px solid #222;"><td style="${nameStyle};padding:5px 8px;">${s.isHuman ? '★ ' : ''}${s.name}</td><td style="text-align:center;padding:5px;color:#fff;">${s.kills}</td><td style="text-align:center;padding:5px;color:#ff9944;">${s.damageDealt}</td><td style="text-align:center;padding:5px;color:#44dd88;">${s.healingReceived}</td></tr>`;
                 }
@@ -1865,6 +2470,9 @@
             lasers = [];
             aiLasers = [];
             healthPacks = [];
+            ball = null;
+            goals = [];
+            teamScores = {};
 
         }
 
@@ -1908,13 +2516,19 @@
 
             updateAllBots();
             updateLasers();
+            updatePoisonZone();
+            updateBall();
             checkGameEnd();
 
             drawBackground();
             drawObstacles();
+            drawGoals();
             drawHealthPacks();
             drawPlayers();
+            drawBushes();
+            drawBall();
             drawLasers();
+            drawPoisonZone();
             drawHUD();
             drawKillFeed();
             drawHealMessage();
@@ -1949,11 +2563,11 @@
         }
 
         function showCoins() {
-            const xpIntoLevel = playerXP % 10;
+            const medalsIntoLevel = playerXP % 10;
             // Check and auto-claim any newly reached rewards
             claimLevelRewards();
             document.getElementById('coins-display').innerHTML =
-                `💰 Coins: ${playerCoins}<br>🏆 Level: ${playerLevel} &nbsp;(${xpIntoLevel}/10 XP)`;
+                `💰 Coins: ${playerCoins}<br>🏅 Medals: ${playerXP} &nbsp;(Lv ${playerLevel})`;
         }
 
         function renderLevelRewards() {
@@ -1976,14 +2590,14 @@
                 row.className = 'reward-row' +
                     (milestone.claimed ? ' reached' : isNext ? ' current' : ' next');
 
-                const xpNeeded = (milestone.level - 1) * 10;
-                const xpLeft = Math.max(0, xpNeeded - playerXP);
+                const medalsNeeded = (milestone.level - 1) * 10;
+                const medalsLeft = Math.max(0, medalsNeeded - playerXP);
 
                 row.innerHTML = `
                     <span class="reward-level-badge">Lv ${milestone.level}</span>
                     <span style="flex:1">${milestone.icon} ${milestone.reward}</span>
                     <span style="font-size:12px; color:${milestone.claimed ? '#555' : isNext ? '#ffcc00' : '#777'}">
-                        ${milestone.claimed ? '✅ Claimed' : xpLeft === 0 ? '🎉 Ready!' : `${xpLeft} XP away`}
+                        ${milestone.claimed ? '✅ Claimed' : medalsLeft === 0 ? '🎉 Ready!' : `${medalsLeft} 🏅 away`}
                     </span>
                 `;
                 list.appendChild(row);
