@@ -12,17 +12,16 @@ Last reviewed: 2026-03-29 (session 7)
 - [ ] **Sound effects per character** — Unique shoot/death sounds for each brainrot character *(add sound file refs to `playersData`, play on shoot/death)*
 
 ### Medium
-- [x] **Medal system** *(replaces XP)* — Rename XP to Medals (🏅); win = +medals, lose = −medals (like Brawl Stars trophies). Rank based on medal count instead of flat XP *(rework awardXP → awardMedals, update UI/localStorage, add medal loss on defeat)*
-- [ ] **Star drops** — Post-match reward chest; after winning (or losing?) a match you open a star drop that contains a random reward (coins, character unlock, etc.) *(new end-screen UI + reward pool logic)*
+
+- [x] **Star drops** — Post-match loot box with chest open/close animation; random reward (coins or medals); weighted rolls *(chestclose.png → chestopen.png animation, star drop overlay)*
 - [ ] **Rarity system** — Add rarity tiers to characters (Common, Rare, Epic, Mythic, Legendary). Visual presentation in Bazaar *(data + UI, no new game logic)*
 - [ ] **Gadgets** — One-time-use ability per match per character (e.g. dash, shield, heal burst, teleport). Activated by a button/key *(new ability system, UI button, cooldown tracking)*
 - [ ] **Bounty mode** — Kills give stars; team with most stars when timer ends wins *(new win condition + timer + star tracking HUD)*
 
 ### Hard
 - [ ] **Super ability** — Each character charges a special attack by dealing damage (e.g. Tornader → tornado AoE, Lazerman → piercing beam, Fournakis → fire zone). Bar fills up, press key to unleash *(per-character super definitions, charge meter, new projectile/AoE rendering + collision)*
-- [x] **Poison gas / shrinking zone (Showdown)** — Map slowly shrinks with a damage zone pushing players inward *(zone boundary rendering, periodic damage tick, timer system)*
-- [x] **Ball-Goal mode** — Soccer-style: kick a ball into the enemy team's goal to score. First to 2 goals wins *(ball physics, goal zones, score tracking, reset on goal)*
-- [ ] **Respawn system (team modes)** — When you die in 3v3/2v2, spectate your teammate; if they survive 15 seconds you respawn next to them *(spectate camera, timer, safe-position check)*
+
+
 - [ ] **Unique attacks per character** — Some characters get non-laser attacks (e.g. spread shot, boomerang, area blast, homing projectile) *(new projectile types, new rendering + collision logic per character)*
 - [ ] **Upgrade system** *(depends on rarity)* — Spend coins/medals to upgrade character stats. Based on rarity tier *(depends on rarity system)*
 
@@ -64,3 +63,7 @@ Last reviewed: 2026-03-29 (session 7)
 - [x] Medal system — replaced XP with Medals (🏅); win = +medals, lose = −medals; level based on total medals
 - [x] Poison gas zone (Showdown) — purple shrinking safe zone in 5 phases; increasing damage outside; pulsing visual + warning text
 - [x] Ball-Goal mode — 3v3 soccer: kick ball into opponent's goal, first to 2 scores wins; bot ball-chasing AI; score HUD
+- [x] **Poison gas / shrinking zone (Showdown)** — Map slowly shrinks with a damage zone pushing players inward *(zone boundary rendering, periodic damage tick, timer system)*
+- [x] **Ball-Goal mode** — Soccer-style: kick a ball into the enemy team's goal to score. First to 2 goals wins *(ball physics, goal zones, score tracking, reset on goal)*
+- [x] **Medal system** *(replaces XP)* — Rename XP to Medals (🏅); win = +medals, lose = −medals (like Brawl Stars trophies). Rank based on medal count instead of flat XP *(rework awardXP → awardMedals, update UI/localStorage, add medal loss on defeat)*
+- [x] **Respawn system (team modes)** — 15s respawn timer in team modes; respawn near teammate (team battle) or near goalpost (Ball-Goal); no respawn if all teammates dead *(respawnTimer, updateRespawns(), death overlay, skull countdown)*

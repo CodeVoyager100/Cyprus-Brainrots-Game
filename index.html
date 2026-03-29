@@ -363,7 +363,7 @@
     </div>
 
     <div id="lootbox-popup">
-        <h2 style="color:#FFF; text-shadow:2px 2px 4px #000;">LOOT BOX REWARD!</h2>
+        <h2 style="color:#FFF; text-shadow:2px 2px 4px #000;">✅ Success!</h2>
         <div id="lootbox-content" style="font-size:24px; margin:20px 0;"></div>
         <button id="lootbox-ok" style="background:#FFF; border:none; padding:10px 20px; border-radius:10px; font-weight:bold;">OK</button>
     </div>
@@ -375,6 +375,23 @@
             <div id="leaderboard" style="display:none; margin: 16px 0; max-height: 220px; overflow-y: auto;"></div>
             <button id="return-to-menu" class="btn" style="background: #ffcc00; color: black; font-size: 18px; padding: 10px 20px;">
                 Return to Menu
+            </button>
+        </div>
+    </div>
+
+    <!-- Star Drop / Loot Box overlay -->
+    <div id="stardrop-overlay" class="game-overlay" style="display:none;">
+        <div id="stardrop-box" style="padding: 40px 50px; border-radius: 20px; border: 3px solid #b0b0b0; max-width: 500px; width: 90%; text-align:center; transition: border-color 0.4s, box-shadow 0.4s, background 0.5s; background: rgba(30,30,30,0.97);">
+            <h2 id="stardrop-title" style="color: #ffcc00; font-size: 28px; text-shadow: 0 0 10px rgba(0,0,0,0.8);">⭐ Star Drop!</h2>
+            <p id="stardrop-rarity-label" style="font-weight:bold; font-size: 22px; margin: 4px 0 12px; color: #b0b0b0; text-shadow: 0 0 8px rgba(0,0,0,0.6);">Common</p>
+            <p id="stardrop-hint" style="color: #ddd; margin: 8px 0 16px; font-size: 14px; text-shadow: 0 0 4px rgba(0,0,0,0.5);">Tap the chest 5 times to open! It might upgrade...</p>
+            <img id="stardrop-chest" src="images/chestclose.png" style="width: 280px; height: 280px; cursor: pointer; transition: transform 0.15s;" />
+            <div id="stardrop-clicks" style="margin-top: 12px; font-size: 18px; color: #ddd;"></div>
+            <div id="stardrop-reward" style="display:none; margin-top: 20px;">
+                <p id="stardrop-reward-text" style="font-size: 24px; color: #fff; margin: 10px 0; text-shadow: 0 0 8px rgba(0,0,0,0.5);"></p>
+            </div>
+            <button id="stardrop-collect" class="btn" style="display:none; background: #ffcc00; color: black; font-size: 18px; padding: 12px 24px; margin-top: 16px;">
+                Collect
             </button>
         </div>
     </div>
@@ -400,6 +417,27 @@
         <button class="btn modal-close" id="close-player-menu">Close</button>
     </div>
 
+    <!-- Player Detail Popup -->
+    <div id="player-detail-popup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1100; justify-content:center; align-items:center;">
+        <div id="player-detail-box" style="background:#1a1a2e; border-radius:16px; border:3px solid #ffcc00; padding:24px; max-width:340px; width:90%; text-align:center; color:#fff;">
+            <img id="pd-img" src="" style="width:120px; height:120px; object-fit:cover; border-radius:12px; border:3px solid #ccc;" />
+            <h2 id="pd-name" style="margin:8px 0 4px; color:#fff;"></h2>
+            <p id="pd-rarity" style="font-weight:bold; margin:2px 0;"></p>
+            <p id="pd-level" style="color:#44ccff; margin:4px 0;"></p>
+            <div style="display:flex; justify-content:space-around; margin:10px 0;">
+                <div><span style="color:#aaa;">HP</span><br><span id="pd-hp" style="font-size:18px; font-weight:bold;"></span></div>
+                <div><span style="color:#aaa;">Damage</span><br><span id="pd-dmg" style="font-size:18px; font-weight:bold;"></span></div>
+                <div><span style="color:#aaa;">Speed</span><br><span id="pd-spd" style="font-size:18px; font-weight:bold;"></span></div>
+                <div><span style="color:#aaa;">Range</span><br><span id="pd-rng" style="font-size:18px; font-weight:bold;"></span></div>
+            </div>
+            <div id="pd-upgrade-section" style="margin:10px 0;"></div>
+            <div style="display:flex; gap:8px; justify-content:center; margin-top:12px;">
+                <button id="pd-select-btn" class="btn" style="background:#ffcc00; color:#000; padding:8px 20px;">Select</button>
+                <button id="pd-close-btn" class="btn" style="background:#555; color:#fff; padding:8px 20px;">Close</button>
+            </div>
+        </div>
+    </div>
+
     <div id="game-modes-container" class="modal-panel">
         <h2>🎮 Select Game Mode</h2>
         <div class="game-modes-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0;">
@@ -414,7 +452,7 @@
                 <div style="background: rgba(255, 204, 0, 0.2); padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">12 Players</div>
             </div>
             <div class="mode-card" data-mode="2v2">
-                <h3>🤝 2v2 Team Battle</h3>
+                <h3></h3>⚔️ 2v2 Team Battle</h3>
                 <p>4 teams of 2 — duo showdown!</p>
                 <div style="background: rgba(255, 204, 0, 0.2); padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">8 Players</div>
             </div>
@@ -431,7 +469,7 @@
         <button class="btn" id="game-mode-btn">🎮 Game Modes</button>
         <button class="btn" id="start-btn">⚔️ Battle!</button>
         <button class="btn" id="shop-btn">🛒 Bazaar</button>
-        <button class="btn" id="switch-player-btn">🔁 Switch Player</button>
+        <button class="btn" id="switch-player-btn"> Players</button>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -480,12 +518,58 @@
         let selectedPlayerId = localStorage.getItem('selectedPlayerId') ?? 'default';
         let playerXP = parseInt(localStorage.getItem('playerXP') ?? '0');
         let playerLevel = Math.floor(playerXP / 10) + 1;
+        let killFeedColor = localStorage.getItem('killFeedColor') ?? '#ffffff';
+        let energySparks = parseInt(localStorage.getItem('energySparks') ?? '0');
+        let playerPowerLevels = JSON.parse(localStorage.getItem('playerPowerLevels') ?? '{}');
+
+        // Upgrade cost table: [sparks, coins] per level, indexed by rarity
+        const upgradeCosts = {
+            common:    [[10,50],[15,80],[25,120],[35,180],[50,250],[70,350],[100,500],[140,700],[190,1000],[250,1400],[320,1800],[400,2200],[500,2800]],
+            rare:      [[15,80],[25,120],[35,180],[50,260],[75,380],[100,500],[140,700],[190,1000],[250,1400],[320,1800],[400,2200],[500,2800],[620,3500]],
+            epic:      [[20,120],[35,180],[50,260],[75,380],[100,500],[140,700],[200,1000],[270,1400],[350,1800],[440,2300],[550,2800],[680,3500],[850,4200]],
+            mythic:    [[30,180],[45,260],[70,380],[100,520],[140,700],[200,1000],[280,1400],[380,1800],[500,2400],[640,3000],[800,3800],[1000,4800],[1250,6000]],
+            legendary: [[40,250],[60,380],[90,520],[130,720],[180,1000],[260,1400],[360,2000],[500,2800],[680,3600],[900,4600],[1150,5800],[1450,7200],[1800,9000]]
+        };
+
+        function getPlayerPowerLevel(playerId) {
+            return playerPowerLevels[playerId] || 1;
+        }
+
+        function getUpgradeCost(playerId) {
+            const pData = playersData[playerId];
+            const level = getPlayerPowerLevel(playerId);
+            if (level >= 14) return null; // Max level
+            const costs = upgradeCosts[pData.rarity] || upgradeCosts.common;
+            return { sparks: costs[level - 1][0], coins: costs[level - 1][1] };
+        }
+
+        function upgradePlayer(playerId) {
+            const cost = getUpgradeCost(playerId);
+            if (!cost) return false;
+            if (energySparks < cost.sparks || playerCoins < cost.coins) return false;
+            energySparks -= cost.sparks;
+            playerCoins -= cost.coins;
+            playerPowerLevels[playerId] = (playerPowerLevels[playerId] || 1) + 1;
+            saveProgress();
+            showCoins();
+            return true;
+        }
+
+        function getStatBonus(playerId) {
+            const level = getPlayerPowerLevel(playerId);
+            // Each level gives +4% HP, +4% damage
+            const mult = 1 + (level - 1) * 0.04;
+            return mult;
+        }
 
         function saveProgress() {
             localStorage.setItem('playerCoins', playerCoins);
             localStorage.setItem('unlockedPlayers', JSON.stringify(unlockedPlayers));
             localStorage.setItem('selectedPlayerId', selectedPlayerId);
             localStorage.setItem('playerXP', playerXP);
+            localStorage.setItem('killFeedColor', killFeedColor);
+            localStorage.setItem('energySparks', energySparks);
+            localStorage.setItem('playerPowerLevels', JSON.stringify(playerPowerLevels));
         }
 
         let levelUpMessage = null; // { text, timer }
@@ -548,6 +632,10 @@
             // Preload background
             loadImage('images/background.png');
 
+            // Preload chest images for star drops
+            loadImage('images/chestclose.png');
+            loadImage('images/chestopen.png');
+
             // Preload player images
             Object.values(playersData).forEach(player => {
                 if (player.img) {
@@ -567,7 +655,8 @@
                 laserDamage: 1,
                 size: 55,
                 laserRange: 250,
-                price: 0
+                price: 0,
+                rarity: 'common'
             },
             tornader: {
                 id: 'tornader',
@@ -579,7 +668,8 @@
                 laserDamage: 3,
                 size: 55,
                 laserRange: 300,
-                price: 1200
+                price: 1200,
+                rarity: 'epic'
             },
             lazerman: {
                 id: 'lazerman',
@@ -591,7 +681,8 @@
                 laserDamage: 2,
                 size: 55,
                 laserRange: 800,
-                price: 500
+                price: 500,
+                rarity: 'rare'
             },
             fournakis: {
                 id: 'fournakis',
@@ -603,7 +694,8 @@
                 laserDamage: 2,
                 size: 55,
                 laserRange: 400,
-                price: 700
+                price: 700,
+                rarity: 'rare'
             },
             kleftikomegazord: {
                 id: 'kleftikomegazord',
@@ -615,7 +707,8 @@
                 laserDamage: 6,
                 size: 65,
                 laserRange: 600,
-                price: 2000
+                price: 2000,
+                rarity: 'legendary'
             },
             baklavasbazookos: {
                 id: 'baklavasbazookos',
@@ -627,7 +720,8 @@
                 laserDamage: 3,
                 size: 55,
                 laserRange: 500,
-                price: 700
+                price: 700,
+                rarity: 'rare'
             },
             firekoupepy: {
                 id: 'firekoupepy',
@@ -639,7 +733,8 @@
                 laserDamage: 3,
                 size: 55,
                 laserRange: 450,
-                price: 500
+                price: 500,
+                rarity: 'rare'
             },
             boboshiros: {
                 id: 'boboshiros',
@@ -651,7 +746,8 @@
                 laserDamage: 4,
                 size: 55,
                 laserRange: 550,
-                price: 700
+                price: 700,
+                rarity: 'epic'
             },
             megagrinos: {
                 id: 'megagrinos',
@@ -663,7 +759,8 @@
                 laserDamage: 4,
                 size: 60,
                 laserRange: 550,
-                price: 1000
+                price: 1000,
+                rarity: 'mythic'
             },
             kafekauboy: {
                 id: 'kafekauboy',
@@ -675,8 +772,21 @@
                 laserDamage: 4,
                 size: 55,
                 laserRange: 550,
-                price: 800
+                price: 800,
+                rarity: 'epic'
             }
+        };
+
+        // Rarity colors and labels
+        const rarityColors = {
+            common:    '#b0b0b0',
+            rare:      '#4a8af5',
+            epic:      '#b44aff',
+            mythic:    '#ff4a6a',
+            legendary: '#ffaa00'
+        };
+        const rarityLabels = {
+            common: 'Common', rare: 'Rare', epic: 'Epic', mythic: 'Mythic', legendary: 'Legendary'
         };
 
         const gameModes = {
@@ -959,7 +1069,7 @@
 
 
         function playerShoot(targetX, targetY) {
-            if (!player || player.shootCooldown > 0) return;
+            if (!player || player.currentHp <= 0 || player.shootCooldown > 0) return;
 
             const startX = player.x + player.size / 2;
             const startY = player.y + player.size / 2;
@@ -1294,14 +1404,16 @@
             const playerData = playersData[selectedPlayerId];
             const playerTeam = modeConfig.teams ? 'red' : null;
             const playerPos = modeConfig.teams ? getTeamSpawnPosition(playerData.size, 'red') : getSpawnPosition(playerData.size);
+            const playerBonus = getStatBonus(selectedPlayerId);
             player = {
                 ...playerData,
                 x: playerPos.x,
                 y: playerPos.y,
                 isHuman: true,
                 team: playerTeam,
-                maxHp: playerData.hp,
-                currentHp: playerData.hp,
+                maxHp: Math.round(playerData.hp * playerBonus),
+                currentHp: Math.round(playerData.hp * playerBonus),
+                laserDamage: Math.round(playerData.laserDamage * playerBonus),
                 shootCooldown: 1,
                 healCooldown: 1,
                 regenCooldown: 0,
@@ -1471,7 +1583,25 @@
 
         function drawPlayers() {
             players.forEach(p => {
-                if (p.currentHp <= 0) return;
+                // Draw respawn indicator for dead players in team modes
+                if (p.currentHp <= 0) {
+                    if (p.respawnTimer > 0) {
+                        const px = p.x - camera.x;
+                        const py = p.y - camera.y;
+                        ctx.save();
+                        ctx.globalAlpha = 0.4;
+                        ctx.font = 'bold 30px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillText('💀', px + p.size / 2, py + p.size / 2 + 5);
+                        const seconds = Math.ceil(p.respawnTimer / 60);
+                        ctx.font = 'bold 16px Arial';
+                        ctx.fillStyle = '#ffcc00';
+                        ctx.fillText(seconds + 's', px + p.size / 2, py + p.size / 2 + 28);
+                        ctx.restore();
+                    }
+                    return;
+                }
 
                 p.inBush = isInBush(p);
 
@@ -1660,6 +1790,43 @@
             healMessage.timer--;
         }
 
+        function drawRespawnOverlay() {
+            if (!player || player.currentHp > 0) return;
+            if (!player.respawnTimer || player.respawnTimer <= 0) return;
+
+            ctx.save();
+            // Dark screen overlay
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+            // "YOU DIED" text
+            ctx.font = 'bold 48px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#ff3333';
+            ctx.shadowColor = '#cc0000';
+            ctx.shadowBlur = 20;
+            ctx.fillText('YOU DIED', gameCanvas.width / 2, gameCanvas.height / 2 - 30);
+
+            // Respawn countdown
+            const seconds = Math.ceil(player.respawnTimer / 60);
+            ctx.font = 'bold 32px Arial';
+            ctx.fillStyle = '#ffcc00';
+            ctx.shadowColor = '#ff8800';
+            ctx.shadowBlur = 15;
+            ctx.fillText('Respawning in ' + seconds + 's', gameCanvas.width / 2, gameCanvas.height / 2 + 20);
+
+            // Check if no living teammates
+            const hasLivingTeammate = players.some(t => t !== player && t.team === player.team && t.currentHp > 0);
+            if (!hasLivingTeammate) {
+                ctx.font = 'bold 24px Arial';
+                ctx.fillStyle = '#ff6666';
+                ctx.shadowBlur = 10;
+                ctx.fillText('No teammates alive — cannot respawn!', gameCanvas.width / 2, gameCanvas.height / 2 + 60);
+            }
+
+            ctx.restore();
+        }
+
         function drawKillFeed() {
             const now = Date.now();
             killFeed = killFeed.filter(e => now - e.ts < 3500);
@@ -1679,7 +1846,8 @@
                 ctx.fillStyle = '#000';
                 ctx.fillRect(x - w - 8, y - 14, w + 16, 20);
                 ctx.globalAlpha = alpha;
-                ctx.fillStyle = '#fff';
+                // Use custom color for human player kills
+                ctx.fillStyle = entry.isHumanKill ? killFeedColor : '#fff';
                 ctx.fillText(text, x, y);
             });
             ctx.globalAlpha = 1;
@@ -2007,6 +2175,58 @@
             ctx.restore();
         }
 
+        // Respawn system for team modes
+        function updateRespawns() {
+            const isTeamMode = gameModes[currentGameMode] && gameModes[currentGameMode].teams;
+            if (!isTeamMode) return;
+
+            for (let p of players) {
+                if (p.currentHp > 0 || !p.respawnTimer) continue;
+
+                // Check if any living teammate exists
+                const hasLivingTeammate = players.some(t => t !== p && t.team === p.team && t.currentHp > 0);
+                if (!hasLivingTeammate) {
+                    p.respawnTimer = 0; // Can't respawn — all teammates dead
+                    continue;
+                }
+
+                p.respawnTimer--;
+
+                if (p.respawnTimer <= 0) {
+                    // Respawn the player
+                    p.currentHp = p.maxHp;
+                    p.dead = false;
+                    p.respawnTimer = 0;
+                    p.bushRevealTimer = 0;
+
+                    // Determine spawn position
+                    if (currentGameMode === 'ballGoal') {
+                        // Respawn near own goalpost
+                        const ownGoal = goals.find(g => g.team === p.team);
+                        if (ownGoal) {
+                            const offsetX = p.team === 'red' ? 80 : -80;
+                            p.x = ownGoal.x + ownGoal.w / 2 + offsetX - p.size / 2;
+                            p.y = ownGoal.y + ownGoal.h / 2 + (Math.random() - 0.5) * 100 - p.size / 2;
+                        }
+                    } else {
+                        // Respawn near a living teammate
+                        const livingTeammates = players.filter(t => t !== p && t.team === p.team && t.currentHp > 0);
+                        if (livingTeammates.length > 0) {
+                            const mate = livingTeammates[Math.floor(Math.random() * livingTeammates.length)];
+                            const angle = Math.random() * Math.PI * 2;
+                            const dist = 60 + Math.random() * 40;
+                            p.x = Math.max(0, Math.min(mate.x + Math.cos(angle) * dist, MAP_WIDTH - p.size));
+                            p.y = Math.max(0, Math.min(mate.y + Math.sin(angle) * dist, MAP_HEIGHT - p.size));
+                        }
+                    }
+
+                    // Clamp to map
+                    p.x = Math.max(0, Math.min(p.x, MAP_WIDTH - p.size));
+                    p.y = Math.max(0, Math.min(p.y, MAP_HEIGHT - p.size));
+                }
+            }
+        }
+
         // FIXED LASER COLLISION SYSTEM - AI lasers can damage other AI players AND check obstacle collisions
         function updateLasers() {
             // Update player lasers
@@ -2030,6 +2250,8 @@
                     if (targetPlayer === laser.shooter) continue;
                     // Don't hit teammates in team modes
                     if (laser.shooter.team && targetPlayer.team === laser.shooter.team) continue;
+                    // Don't hit dead players
+                    if (targetPlayer.currentHp <= 0) continue;
 
                     if (laser.x >= targetPlayer.x && laser.x <= targetPlayer.x + targetPlayer.size &&
                         laser.y >= targetPlayer.y && laser.y <= targetPlayer.y + targetPlayer.size) {
@@ -2044,16 +2266,24 @@
                         hit = true;
 
                         if (targetPlayer.currentHp <= 0) {
+                            targetPlayer.currentHp = 0;
                             laser.shooter.kills++;
-                            killFeed.push({ killerName: laser.shooter.name, victimName: targetPlayer.name, ts: Date.now() });
-                            matchStatsList.push({ name: targetPlayer.name, kills: targetPlayer.kills, damageDealt: targetPlayer.damageDealt, healingReceived: targetPlayer.healingReceived, team: targetPlayer.team, isHuman: targetPlayer.isHuman });
-                            players.splice(j, 1);
-                            if (targetPlayer.isBot) {
-                                const botIndex = bots.findIndex(b => b.id === targetPlayer.id);
-                                if (botIndex !== -1) bots.splice(botIndex, 1);
-                            }
+                            killFeed.push({ killerName: laser.shooter.name, victimName: targetPlayer.name, ts: Date.now(), isHumanKill: laser.shooter.isHuman });
                             // Award XP for kill
                             if (laser.shooter.isHuman) awardXP(1);
+                            // In team modes: keep player for respawn; in FFA: remove
+                            const isTeamMode = gameModes[currentGameMode] && gameModes[currentGameMode].teams;
+                            if (isTeamMode) {
+                                targetPlayer.respawnTimer = 900; // 15 seconds at 60fps
+                                targetPlayer.dead = true;
+                            } else {
+                                matchStatsList.push({ name: targetPlayer.name, kills: targetPlayer.kills, damageDealt: targetPlayer.damageDealt, healingReceived: targetPlayer.healingReceived, team: targetPlayer.team, isHuman: targetPlayer.isHuman });
+                                players.splice(j, 1);
+                                if (targetPlayer.isBot) {
+                                    const botIndex = bots.findIndex(b => b.id === targetPlayer.id);
+                                    if (botIndex !== -1) bots.splice(botIndex, 1);
+                                }
+                            }
                         }
                         break;
                     }
@@ -2085,6 +2315,8 @@
                     if (targetPlayer === laser.shooter) continue;
                     // Don't hit teammates in team modes
                     if (laser.shooter.team && targetPlayer.team === laser.shooter.team) continue;
+                    // Don't hit dead players
+                    if (targetPlayer.currentHp <= 0) continue;
 
                     if (laser.x >= targetPlayer.x && laser.x <= targetPlayer.x + targetPlayer.size &&
                         laser.y >= targetPlayer.y && laser.y <= targetPlayer.y + targetPlayer.size) {
@@ -2105,18 +2337,25 @@
                         }
 
                         if (targetPlayer.currentHp <= 0) {
+                            targetPlayer.currentHp = 0;
                             laser.shooter.kills++;
-                            killFeed.push({ killerName: laser.shooter.name, victimName: targetPlayer.name, ts: Date.now() });
-                            matchStatsList.push({ name: targetPlayer.name, kills: targetPlayer.kills, damageDealt: targetPlayer.damageDealt, healingReceived: targetPlayer.healingReceived, team: targetPlayer.team, isHuman: targetPlayer.isHuman });
-                            players.splice(j, 1);
-                            if (targetPlayer.isBot) {
-                                const botIndex = bots.findIndex(b => b.id === targetPlayer.id);
-                                if (botIndex !== -1) bots.splice(botIndex, 1);
-                            }
-
-                            // Check if player died
-                            if (targetPlayer.isHuman) {
-                                endGame('Game Over! You were defeated!', false);
+                            killFeed.push({ killerName: laser.shooter.name, victimName: targetPlayer.name, ts: Date.now(), isHumanKill: laser.shooter.isHuman });
+                            // In team modes: keep player for respawn; in FFA: remove
+                            const isTeamMode = gameModes[currentGameMode] && gameModes[currentGameMode].teams;
+                            if (isTeamMode) {
+                                targetPlayer.respawnTimer = 900; // 15 seconds at 60fps
+                                targetPlayer.dead = true;
+                            } else {
+                                matchStatsList.push({ name: targetPlayer.name, kills: targetPlayer.kills, damageDealt: targetPlayer.damageDealt, healingReceived: targetPlayer.healingReceived, team: targetPlayer.team, isHuman: targetPlayer.isHuman });
+                                players.splice(j, 1);
+                                if (targetPlayer.isBot) {
+                                    const botIndex = bots.findIndex(b => b.id === targetPlayer.id);
+                                    if (botIndex !== -1) bots.splice(botIndex, 1);
+                                }
+                                // End game if human dies in FFA
+                                if (targetPlayer.isHuman) {
+                                    endGame('Game Over! You were defeated!', false);
+                                }
                             }
                         }
                         break;
@@ -2322,6 +2561,7 @@
         // Update the handleInputFrame function to use joystick input
         function handleInputFrame() {
             if (!player) return;
+            if (player.currentHp <= 0) return; // Dead players can't move
 
             let inputX = 0, inputY = 0;
 
@@ -2382,7 +2622,14 @@
 
             if (gameModes[currentGameMode].teams) {
                 const teams = gameModes[currentGameMode].teamNames;
-                const teamsAlive = teams.filter(t => alivePlayers.some(p => p.team === t));
+                // A team is eliminated only when ALL its members are dead
+                // and none can respawn (no living teammates = respawnTimer stopped)
+                const teamsAlive = teams.filter(t => {
+                    const teamMembers = players.filter(p => p.team === t);
+                    if (teamMembers.length === 0) return false;
+                    // Team is alive if any member is alive OR any member is still respawning
+                    return teamMembers.some(p => p.currentHp > 0 || p.respawnTimer > 0);
+                });
 
                 if (teamsAlive.length === 1) {
                     const winTeam = teamsAlive[0];
@@ -2464,6 +2711,9 @@
             // Show the overlay
             overlay.style.display = 'flex';
 
+            // Show star drop after a brief delay
+            setTimeout(() => showStarDrop(), 800);
+
             // Reset game state but keep player progress
             players = [];
             bots = [];
@@ -2476,11 +2726,213 @@
 
         }
 
+        // Star Drop / Loot Box system
+        const chestTiers = [
+            { name: 'Common',    color: '#b0b0b0', bg: 'linear-gradient(135deg, #2a2a2a, #3a3a3a)',         glow: 'rgba(176,176,176,0.3)', upgradeChance: 0.35 },
+            { name: 'Rare',      color: '#4a8af5', bg: 'linear-gradient(135deg, #1a2a4a, #2a3a6a)',         glow: 'rgba(74,138,245,0.4)',  upgradeChance: 0.25 },
+            { name: 'Epic',      color: '#b44aff', bg: 'linear-gradient(135deg, #2a1a3a, #4a2a6a)',         glow: 'rgba(180,74,255,0.4)',  upgradeChance: 0.15 },
+            { name: 'Mythic',    color: '#ff4a6a', bg: 'linear-gradient(135deg, #3a1a1a, #6a2a2a)',         glow: 'rgba(255,74,106,0.4)',  upgradeChance: 0.08 },
+            { name: 'Legendary', color: '#ffaa00', bg: 'linear-gradient(135deg, #3a2a0a, #5a4a1a, #6a5a20)', glow: 'rgba(255,170,0,0.5)',   upgradeChance: 0 },
+        ];
+
+        function getStarDropReward(tierIndex) {
+            const killFeedColors = [
+                { name: 'Red',      color: '#ff4444' },
+                { name: 'Cyan',     color: '#44ffff' },
+                { name: 'Lime',     color: '#44ff44' },
+                { name: 'Pink',     color: '#ff66cc' },
+                { name: 'Orange',   color: '#ff8833' },
+                { name: 'Gold',     color: '#ffcc00' },
+                { name: 'Purple',   color: '#bb66ff' },
+                { name: 'Ice Blue', color: '#66ccff' },
+            ];
+
+            // Rewards scale with tier
+            const rewardsByTier = [
+                // Common
+                [
+                    { type: 'coins', amount: 25,  weight: 50, icon: '💰', text: '+25 Coins' },
+                    { type: 'coins', amount: 50,  weight: 5, icon: '💰', text: '+50 Coins' },
+                    { type: 'sparks', amount: 20,  weight: 35, icon: '⚡', text: '+20 Energy Sparks' },
+                    { type: 'killfeedcolor', weight: 10, icon: '🎨', text: '', colors: killFeedColors },
+                ],
+                // Rare
+                [
+                    { type: 'coins', amount: 50,  weight: 30, icon: '💰', text: '+50 Coins' },
+                    { type: 'coins', amount: 100, weight: 25, icon: '💰', text: '+100 Coins' },
+                    { type: 'sparks', amount: 50, weight: 20, icon: '⚡', text: '+50 Energy Sparks' },
+                    { type: 'killfeedcolor', weight: 10, icon: '🎨', text: '', colors: killFeedColors },
+                    { type: 'medals', amount: 3, weight: 15, icon: '🏅', text: '+3 Medals' },
+                ],
+                // Epic
+                [
+                    { type: 'coins', amount: 100, weight: 25, icon: '💰', text: '+100 Coins' },
+                    { type: 'coins', amount: 200, weight: 20, icon: '💰', text: '+200 Coins!' },
+                    { type: 'sparks', amount: 30, weight: 20, icon: '⚡', text: '+50 Energy Sparks' },
+                    { type: 'killfeedcolor', weight: 10, icon: '🎨', text: '', colors: killFeedColors },
+                    { type: 'medals', amount: 5, weight: 25, icon: '🏅', text: '+5 Medals' },
+                ],
+                // Mythic
+                [
+                    { type: 'coins', amount: 200, weight: 20, icon: '💰', text: '+200 Coins!' },
+                    { type: 'coins', amount: 350, weight: 10, icon: '💰', text: '+350 Coins!' },
+                    { type: 'sparks', amount: 60, weight: 20, icon: '⚡', text: '+60 Energy Sparks' },
+                    { type: 'medals', amount: 8, weight: 15, icon: '🏅', text: '+8 Medals!' },
+                    { type: 'killfeedcolor', weight: 20, icon: '🎨', text: '', colors: killFeedColors },
+                    { type: 'player', weight: 15, icon: '🎭', text: '' },
+                ],
+                // Legendary
+                [
+                    { type: 'coins', amount: 350, weight: 15, icon: '💰', text: '+350 Coins!' },
+                    { type: 'coins', amount: 500, weight: 10, icon: '💰', text: '+500 Coins!!' },
+                    { type: 'sparks', amount: 100, weight: 25, icon: '⚡', text: '+100 Energy Sparks!' },
+                    { type: 'medals', amount: 12, weight: 15, icon: '🏅', text: '+12 Medals!!' },
+                    { type: 'killfeedcolor', weight: 10, icon: '🎨', text: '', colors: killFeedColors },
+                    { type: 'player', weight: 25, icon: '🎭', text: '' },
+                ],
+            ];
+
+            const rewards = rewardsByTier[tierIndex] || rewardsByTier[0];
+            const totalWeight = rewards.reduce((s, r) => s + r.weight, 0);
+            let roll = Math.random() * totalWeight;
+            for (const r of rewards) {
+                roll -= r.weight;
+                if (roll <= 0) {
+                    if (r.type === 'killfeedcolor') {
+                        const picked = r.colors[Math.floor(Math.random() * r.colors.length)];
+                        return { type: 'killfeedcolor', icon: '🎨', text: `${picked.name} Kill Feed Color!`, color: picked.color };
+                    }
+                    if (r.type === 'player') {
+                        // Pick a random locked player
+                        const locked = Object.values(playersData).filter(p => !unlockedPlayers.includes(p.id) && p.id !== 'default');
+                        if (locked.length > 0) {
+                            const picked = locked[Math.floor(Math.random() * locked.length)];
+                            return { type: 'player', icon: '🎭', text: `${picked.name} Unlocked!`, playerId: picked.id };
+                        }
+                        // Fallback: all players owned, give coins instead
+                        return { type: 'coins', amount: 400, icon: '💰', text: '+400 Coins (all players owned!)' };
+                    }
+                    return r;
+                }
+            }
+            return rewards[0];
+        }
+
+        function showStarDrop() {
+            const overlay = document.getElementById('stardrop-overlay');
+            const box = document.getElementById('stardrop-box');
+            const chest = document.getElementById('stardrop-chest');
+            const rewardDiv = document.getElementById('stardrop-reward');
+            const rewardText = document.getElementById('stardrop-reward-text');
+            const collectBtn = document.getElementById('stardrop-collect');
+            const titleEl = document.getElementById('stardrop-title');
+            const rarityLabel = document.getElementById('stardrop-rarity-label');
+            const clicksDiv = document.getElementById('stardrop-clicks');
+            const hintEl = document.getElementById('stardrop-hint');
+
+            let currentTier = 0;
+            let clicksLeft = 5;
+
+            function updateTierVisuals() {
+                const tier = chestTiers[currentTier];
+                box.style.borderColor = tier.color;
+                box.style.boxShadow = `0 0 60px ${tier.glow}, inset 0 0 30px ${tier.glow}`;
+                box.style.background = tier.bg;
+                rarityLabel.textContent = tier.name;
+                rarityLabel.style.color = tier.color;
+                clicksDiv.innerHTML = '⭐'.repeat(5 - clicksLeft) + '⚪'.repeat(clicksLeft);
+            }
+
+            // Reset state
+            chest.src = 'images/chestclose.png';
+            chest.style.transform = '';
+            chest.style.pointerEvents = 'auto';
+            rewardDiv.style.display = 'none';
+            collectBtn.style.display = 'none';
+            hintEl.style.display = 'block';
+            titleEl.textContent = 'Chest Drop!';
+            titleEl.style.color = '#ffcc00';
+            overlay.style.display = 'flex';
+            updateTierVisuals();
+
+            // Click anywhere on overlay to tap chest
+            chest.onclick = null;
+            overlay.onclick = (e) => {
+                // Don't count clicks on the collect button
+                if (e.target === collectBtn) return;
+                if (clicksLeft <= 0) return;
+                clicksLeft--;
+
+                // Shake effect
+                chest.style.transform = `rotate(${(Math.random() - 0.5) * 12}deg) scale(${1.05 + (5 - clicksLeft) * 0.03})`;
+                setTimeout(() => { chest.style.transform = `scale(${1 + (5 - clicksLeft) * 0.02})`; }, 150);
+
+                // Try to upgrade tier
+                if (currentTier < chestTiers.length - 1) {
+                    if (Math.random() < chestTiers[currentTier].upgradeChance) {
+                        currentTier++;
+                        // Bright flash on upgrade then settle to tier bg
+                        box.style.transition = 'none';
+                        box.style.background = `radial-gradient(circle, ${chestTiers[currentTier].color}88, ${chestTiers[currentTier].color}44)`;
+                        setTimeout(() => {
+                            box.style.transition = 'background 0.6s';
+                            box.style.background = chestTiers[currentTier].bg;
+                        }, 250);
+                    }
+                }
+
+                updateTierVisuals();
+
+                // Open on last click
+                if (clicksLeft <= 0) {
+                    chest.style.pointerEvents = 'none';
+                    hintEl.style.display = 'none';
+                    setTimeout(() => {
+                        chest.src = 'images/chestopen.png';
+                        chest.style.transform = 'scale(1.15)';
+
+                        const reward = getStarDropReward(currentTier);
+                        rewardText.textContent = reward.icon + ' ' + reward.text;
+                        rewardText.style.color = reward.type === 'killfeedcolor' ? reward.color : chestTiers[currentTier].color;
+                        rewardDiv.style.display = 'block';
+                        collectBtn.style.display = 'inline-block';
+                        titleEl.textContent = '🎁 ' + chestTiers[currentTier].name + ' Reward!';
+                        titleEl.style.color = chestTiers[currentTier].color;
+
+                        // Collect button
+                        collectBtn.onclick = () => {
+                            if (reward.type === 'coins') {
+                                playerCoins += reward.amount;
+                            } else if (reward.type === 'medals') {
+                                awardXP(reward.amount);
+                            } else if (reward.type === 'killfeedcolor') {
+                                killFeedColor = reward.color;
+                            } else if (reward.type === 'player') {
+                                if (reward.playerId && !unlockedPlayers.includes(reward.playerId)) {
+                                    unlockedPlayers.push(reward.playerId);
+                                }
+                            } else if (reward.type === 'sparks') {
+                                energySparks += reward.amount;
+                            }
+                            saveProgress();
+                            showCoins();
+                            overlay.style.display = 'none';
+                        };
+                    }, 400);
+                }
+            };
+
+            // Hover effect
+            chest.onmouseenter = () => { if (clicksLeft > 0) chest.style.transform = `scale(${1.08 + (5 - clicksLeft) * 0.02})`; };
+            chest.onmouseleave = () => { if (clicksLeft > 0) chest.style.transform = `scale(${1 + (5 - clicksLeft) * 0.02})`; };
+        }
+
         // Also update the return to menu button handler to properly reset the game
         document.getElementById('return-to-menu').addEventListener('click', () => {
             // Hide game over overlay
             document.getElementById('game-over-overlay').style.display = 'none';
             document.getElementById('leaderboard').style.display = 'none';
+            document.getElementById('stardrop-overlay').style.display = 'none';
 
             // Show main menu UI
             document.querySelector('.guide').style.display = 'block';
@@ -2515,6 +2967,7 @@
             updatePlayerRegen();
 
             updateAllBots();
+            updateRespawns();
             updateLasers();
             updatePoisonZone();
             updateBall();
@@ -2532,6 +2985,7 @@
             drawHUD();
             drawKillFeed();
             drawHealMessage();
+            drawRespawnOverlay();
             drawLevelUp();
 
             requestAnimationFrame(gameLoop);
@@ -2567,7 +3021,7 @@
             // Check and auto-claim any newly reached rewards
             claimLevelRewards();
             document.getElementById('coins-display').innerHTML =
-                `💰 Coins: ${playerCoins}<br>🏅 Medals: ${playerXP} &nbsp;(Lv ${playerLevel})`;
+                `💰 Coins: ${playerCoins}<br>🏅 Medals: ${playerXP} &nbsp;(Lv ${playerLevel})<br>⚡ Energy Sparks: ${energySparks}`;
         }
 
         function renderLevelRewards() {
@@ -2623,6 +3077,7 @@
             document.getElementById('skins-container').style.display = 'none';
             document.getElementById('player-menu').style.display = 'none';
             document.getElementById('game-over-overlay').style.display = 'none';
+            document.getElementById('stardrop-overlay').style.display = 'none';
         }
 
         function showAllUI() {
@@ -2631,6 +3086,7 @@
             document.getElementById('joystick-container').style.display = 'block';
             document.getElementById('shoot-joystick-container').style.display = 'block';
             document.getElementById('game-over-overlay').style.display = 'none';
+            document.getElementById('stardrop-overlay').style.display = 'none';
         }
 
         function startGame() {
@@ -2688,11 +3144,18 @@
                                                   justify-content:center; color:white; font-weight:bold;">
                                                   ${playerData.name}</div>`;
 
+                const rarityColor = rarityColors[playerData.rarity] || '#b0b0b0';
+                const rarityLabel = rarityLabels[playerData.rarity] || 'Common';
+                const bPLevel = getPlayerPowerLevel(playerData.id);
+                const bBonus = getStatBonus(playerData.id);
+
                 card.innerHTML = `
                                 ${imageHtml}
                                 ${fallbackHtml}
                                 <h3>${playerData.name}</h3>
-                                <p>HP: ${playerData.hp} | Damage: ${playerData.laserDamage}</p>
+                                <p style="color:${rarityColor}; font-weight:bold; margin:2px 0;">${rarityLabel}</p>
+                                ${isUnlocked ? `<p style="color:#44ccff; font-size:12px; margin:2px 0;">⚡ Lv ${bPLevel}/14</p>` : ''}
+                                <p>HP: ${Math.round(playerData.hp * bBonus)} | Damage: ${Math.round(playerData.laserDamage * bBonus)}</p>
                                 <p>Speed: ${playerData.speed} | Range: ${playerData.laserRange}</p>
                                 <p><strong>💰 ${playerData.price} coins</strong></p>
                                 <button class="btn buy-btn" ${isUnlocked || !canAfford ? 'disabled' : ''}>
@@ -2748,47 +3211,110 @@
             unlockedPlayers.forEach(playerId => {
                 const playerData = playersData[playerId];
                 const isSelected = selectedPlayerId === playerId;
+                const pRarityColor = rarityColors[playerData.rarity] || '#b0b0b0';
+                const pLevel = getPlayerPowerLevel(playerId);
 
                 const card = document.createElement('div');
-                card.className = 'skin-card';
-                card.style.border = isSelected ? '3px solid #ffcc00' : '2px solid #ccc';
-                card.style.background = isSelected ? 'rgba(255, 204, 0, 0.1)' : '';
+                card.style.cssText = `width:80px; height:80px; border-radius:12px; cursor:pointer; position:relative; transition:transform 0.15s;
+                    border:3px solid ${isSelected ? '#ffcc00' : pRarityColor}; overflow:hidden;
+                    box-shadow:${isSelected ? '0 0 12px #ffcc00' : `0 0 8px ${pRarityColor}44`};`;
 
-                // Use image if available, otherwise use color
-                const imageHtml = playerData.img ?
-                    `<img src="${playerData.img}" class="skin-img" alt="${playerData.name}"
-                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                                      style="width:100%; height:120px; object-fit:cover; border-radius:10px;">` :
-                    '';
-
-                const fallbackHtml = `<div style="background:${playerData.color}; height:120px; border-radius:10px;
-                                                  display:${playerData.img ? 'none' : 'flex'}; align-items:center;
-                                                  justify-content:center; color:white; font-weight:bold;">
-                                                  ${playerData.name}</div>`;
-
-                card.innerHTML = `
-                                ${imageHtml}
-                                ${fallbackHtml}
-                                <h3>${playerData.name}</h3>
-                                <p>HP: ${playerData.hp} | Damage: ${playerData.laserDamage}</p>
-                                <button class="btn select-btn" ${isSelected ? 'disabled' : ''}>
-                                    ${isSelected ? '✅ Selected' : 'Select'}
-                                </button>
-                            `;
-
-                const selectBtn = card.querySelector('.select-btn');
-                if (!isSelected) {
-                    selectBtn.addEventListener('click', () => {
-                        selectedPlayerId = playerId;
-                        saveProgress();
-                        updatePlayerMenu();
-                        document.getElementById('player-menu').style.display = 'none';
-                        showLootboxPopup(`Switched to ${playerData.name}!`);
-                    });
+                if (playerData.img) {
+                    card.innerHTML = `<img src="${playerData.img}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'" />`;
+                } else {
+                    card.style.background = playerData.color;
                 }
+
+                // Level badge
+                const badge = document.createElement('div');
+                badge.style.cssText = 'position:absolute; bottom:2px; right:2px; background:rgba(0,0,0,0.7); color:#44ccff; font-size:10px; font-weight:bold; padding:1px 4px; border-radius:4px;';
+                badge.textContent = `Lv${pLevel}`;
+                card.appendChild(badge);
+
+                // Selected checkmark
+                if (isSelected) {
+                    const check = document.createElement('div');
+                    check.style.cssText = 'position:absolute; top:2px; left:2px; background:rgba(0,0,0,0.7); color:#ffcc00; font-size:14px; padding:0 3px; border-radius:4px;';
+                    check.textContent = '✓';
+                    card.appendChild(check);
+                }
+
+                card.onmouseenter = () => card.style.transform = 'scale(1.1)';
+                card.onmouseleave = () => card.style.transform = '';
+                card.onclick = () => showPlayerDetail(playerId);
 
                 container.appendChild(card);
             });
+        }
+
+        function showPlayerDetail(playerId) {
+            const pd = playersData[playerId];
+            const popup = document.getElementById('player-detail-popup');
+            const pRarityColor = rarityColors[pd.rarity] || '#b0b0b0';
+            const pRarityLabel = rarityLabels[pd.rarity] || 'Common';
+            const pLevel = getPlayerPowerLevel(playerId);
+            const bonus = getStatBonus(playerId);
+            const isSelected = selectedPlayerId === playerId;
+
+            document.getElementById('pd-img').src = pd.img || '';
+            document.getElementById('pd-img').style.borderColor = pRarityColor;
+            document.getElementById('pd-name').textContent = pd.name;
+            document.getElementById('pd-rarity').textContent = pRarityLabel;
+            document.getElementById('pd-rarity').style.color = pRarityColor;
+            document.getElementById('pd-level').textContent = `⚡ Power Level ${pLevel}/14`;
+            document.getElementById('pd-hp').textContent = Math.round(pd.hp * bonus);
+            document.getElementById('pd-dmg').textContent = Math.round(pd.laserDamage * bonus);
+            document.getElementById('pd-spd').textContent = pd.speed;
+            document.getElementById('pd-rng').textContent = pd.laserRange;
+            document.getElementById('player-detail-box').style.borderColor = pRarityColor;
+
+            // Upgrade section
+            const upgradeDiv = document.getElementById('pd-upgrade-section');
+            const cost = getUpgradeCost(playerId);
+            if (pLevel >= 14) {
+                upgradeDiv.innerHTML = '<p style="color:#ffcc00; font-weight:bold;">⭐ MAX LEVEL ⭐</p>';
+            } else {
+                const canUpgrade = cost && energySparks >= cost.sparks && playerCoins >= cost.coins;
+                upgradeDiv.innerHTML = `
+                    <p style="color:#aaa; font-size:13px; margin:4px 0;">Upgrade to Lv ${pLevel + 1}:</p>
+                    <p style="font-size:13px; margin:2px 0;">⚡ ${cost.sparks} Sparks + 💰 ${cost.coins} Coins</p>
+                    <p style="font-size:11px; color:#888; margin:2px 0;">You have: ⚡ ${energySparks} | 💰 ${playerCoins}</p>
+                    <button id="pd-upgrade-btn" class="btn" ${canUpgrade ? '' : 'disabled'}
+                        style="font-size:14px; padding:6px 16px; margin-top:6px; background:${canUpgrade ? '#44ccff' : '#555'}; color:${canUpgrade ? '#000' : '#888'};">
+                        ⚡ Upgrade
+                    </button>`;
+                const uBtn = upgradeDiv.querySelector('#pd-upgrade-btn');
+                if (uBtn && canUpgrade) {
+                    uBtn.onclick = () => {
+                        if (upgradePlayer(playerId)) {
+                            showPlayerDetail(playerId); // Refresh
+                            updatePlayerMenu(); // Refresh icons
+                        }
+                    };
+                }
+            }
+
+            // Select button
+            const selectBtn = document.getElementById('pd-select-btn');
+            selectBtn.textContent = isSelected ? '✅ Selected' : 'Select';
+            selectBtn.disabled = isSelected;
+            selectBtn.style.background = isSelected ? '#555' : '#ffcc00';
+            selectBtn.style.color = isSelected ? '#888' : '#000';
+            selectBtn.onclick = () => {
+                if (!isSelected) {
+                    selectedPlayerId = playerId;
+                    saveProgress();
+                    updatePlayerMenu();
+                    showPlayerDetail(playerId);
+                }
+            };
+
+            // Close button
+            document.getElementById('pd-close-btn').onclick = () => {
+                popup.style.display = 'none';
+            };
+
+            popup.style.display = 'flex';
         }
 
         // Game Modes
@@ -2844,6 +3370,7 @@
             document.getElementById('return-to-menu').addEventListener('click', () => {
                 // Hide game over overlay
                 document.getElementById('game-over-overlay').style.display = 'none';
+                document.getElementById('stardrop-overlay').style.display = 'none';
 
                 // Remove game-active class to hide joysticks
                 document.body.classList.remove('game-active');
