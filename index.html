@@ -1413,137 +1413,153 @@
             bots.forEach(bot => {
                 if (bot.currentHp <= 0) return;
 
-                // Find closest target (could be player OR another bot in showdown mode)
-                let closestTarget = findClosestTarget(bot);
+                // Init stuck-detection state once
+                if (bot.stuckTimer === undefined) {
+                    bot.stuckTimer = 0; bot.stuckCheckX = bot.x; bot.stuckCheckY = bot.y;
+                    bot.escapeTimer = 0; bot.escapeVx = 0; bot.escapeVy = 0;
+                }
 
-                // Check for health packs when low health
-                if (bot.currentHp < bot.maxHp * 0.6) {
-                    const nearestHealthPack = findNearestHealthPack(bot);
-                    if (nearestHealthPack && getDistance(bot.x, bot.y, nearestHealthPack.x, nearestHealthPack.y) < 400) {
-                        // Move toward health pack
-                        const dx = nearestHealthPack.x - bot.x;
-                        const dy = nearestHealthPack.y - bot.y;
-                        const distance = Math.sqrt(dx * dx + dy * dy);
-                        if (distance > 15) {
-                            bot.vx = (dx / distance) * bot.speed;
-                            bot.vy = (dy / distance) * bot.speed;
-                        }
-                        checkHealthPackCollision(bot);
-                        return;
-                    }
+                // Escape mode: skip all AI movement, just push in escape direction
+                const isEscaping = bot.escapeTimer > 0;
+                if (isEscaping) {
+                    bot.escapeTimer--;
+                    bot.vx = bot.escapeVx;
+                    bot.vy = bot.escapeVy;
+                }
 
-                    // No health pack nearby — try to hide in a bush
-                    if (!bot.inBush) {
-                        const nearestBush = findNearestBush(bot);
-                        if (nearestBush && getDistance(bot.x, bot.y, nearestBush.x + nearestBush.size / 2, nearestBush.y + nearestBush.size / 2) < 350) {
-                            const bx = nearestBush.x + nearestBush.size / 2 - bot.x;
-                            const by = nearestBush.y + nearestBush.size / 2 - bot.y;
-                            const bd = Math.sqrt(bx * bx + by * by);
-                            if (bd > 10) {
-                                bot.vx = (bx / bd) * bot.speed;
-                                bot.vy = (by / bd) * bot.speed;
+                if (!isEscaping) {
+                    // Find closest target (could be player OR another bot in showdown mode)
+                    let closestTarget = findClosestTarget(bot);
+
+                    // Check for health packs when low health
+                    if (bot.currentHp < bot.maxHp * 0.6) {
+                        const nearestHealthPack = findNearestHealthPack(bot);
+                        if (nearestHealthPack && getDistance(bot.x, bot.y, nearestHealthPack.x, nearestHealthPack.y) < 400) {
+                            // Move toward health pack
+                            const dx = nearestHealthPack.x - bot.x;
+                            const dy = nearestHealthPack.y - bot.y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            if (distance > 15) {
+                                bot.vx = (dx / distance) * bot.speed;
+                                bot.vy = (dy / distance) * bot.speed;
                             }
                             checkHealthPackCollision(bot);
                             return;
                         }
-                    }
-                }
 
-                // Ball-Goal: if carrying ball, run toward opponent's goal and kick when close
-                if (currentGameMode === 'ballGoal' && bot.hasBall && ball) {
-                    const targetGoal = goals.find(g => g.team !== bot.team);
-                    if (targetGoal) {
-                        const gx = targetGoal.x + targetGoal.w / 2 - bot.x;
-                        const gy = targetGoal.y + targetGoal.h / 2 - bot.y;
-                        const gd = Math.sqrt(gx * gx + gy * gy) || 1;
-                        bot.vx = (gx / gd) * bot.speed;
-                        bot.vy = (gy / gd) * bot.speed;
-                        // Kick toward goal when close enough
-                        if (gd < 350 && bot.shootCooldown <= 0) {
-                            kickBall(bot, gx, gy);
-                            bot.shootCooldown = 30;
-                        }
-                    }
-                }
-                // Ball-Goal: if not carrying, aggressively chase the free ball
-                else if (currentGameMode === 'ballGoal' && ball && !ball.carrier) {
-                    const ballDist = getDistance(bot.x, bot.y, ball.x, ball.y);
-                    if (ballDist < 1000) {
-                        const dx = ball.x - bot.x;
-                        const dy = ball.y - bot.y;
-                        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                        bot.vx = (dx / dist) * bot.speed * 0.9;
-                        bot.vy = (dy / dist) * bot.speed * 0.9;
-                    }
-                }
-
-                // If no target, wander; otherwise chase/shoot
-                if (!closestTarget) {
-                    wanderBehavior(bot);
-                } else {
-                    const dx = closestTarget.x - bot.x;
-                    const dy = closestTarget.y - bot.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance > 0) {
-                        const optimalDistance = bot.laserRange * 0.6;
-
-                        if (distance > optimalDistance + 20) {
-                            // Chase target
-                            bot.vx = (dx / distance) * bot.speed * 0.55;
-                            bot.vy = (dy / distance) * bot.speed * 0.55;
-                        } else if (distance < optimalDistance - 30) {
-                            // Back away
-                            bot.vx = (-dx / distance) * bot.speed * 0.45;
-                            bot.vy = (-dy / distance) * bot.speed * 0.45;
-                        } else {
-                            // Strafe at optimal distance, change direction occasionally
-                            if (!bot.strafeDir || Math.random() < 0.015) bot.strafeDir = Math.random() < 0.5 ? 1 : -1;
-                            const strafeAngle = Math.atan2(dy, dx) + Math.PI / 2;
-                            bot.vx = Math.cos(strafeAngle) * bot.speed * 0.45 * bot.strafeDir;
-                            bot.vy = Math.sin(strafeAngle) * bot.speed * 0.45 * bot.strafeDir;
+                        // No health pack nearby — try to hide in a bush
+                        if (!bot.inBush) {
+                            const nearestBush = findNearestBush(bot);
+                            if (nearestBush && getDistance(bot.x, bot.y, nearestBush.x + nearestBush.size / 2, nearestBush.y + nearestBush.size / 2) < 350) {
+                                const bx = nearestBush.x + nearestBush.size / 2 - bot.x;
+                                const by = nearestBush.y + nearestBush.size / 2 - bot.y;
+                                const bd = Math.sqrt(bx * bx + by * by);
+                                if (bd > 10) {
+                                    bot.vx = (bx / bd) * bot.speed;
+                                    bot.vy = (by / bd) * bot.speed;
+                                }
+                                checkHealthPackCollision(bot);
+                                return;
+                            }
                         }
                     }
 
-                    // Shoot when ready — 40% chance per frame so bots miss sometimes
-                    // If bot has ball in Ball-Goal, kick toward opponent's goal instead
-                    if (currentGameMode === 'ballGoal' && bot.hasBall && ball && bot.shootCooldown <= 0) {
+                    // Ball-Goal: if carrying ball, run toward opponent's goal and kick when close
+                    if (currentGameMode === 'ballGoal' && bot.hasBall && ball) {
                         const targetGoal = goals.find(g => g.team !== bot.team);
                         if (targetGoal) {
-                            const goalCx = targetGoal.x + targetGoal.w / 2 - (bot.x + bot.size / 2);
-                            const goalCy = targetGoal.y + targetGoal.h / 2 - (bot.y + bot.size / 2);
-                            kickBall(bot, goalCx, goalCy);
-                            bot.shootCooldown = 30;
+                            const gx = targetGoal.x + targetGoal.w / 2 - bot.x;
+                            const gy = targetGoal.y + targetGoal.h / 2 - bot.y;
+                            const gd = Math.sqrt(gx * gx + gy * gy) || 1;
+                            bot.vx = (gx / gd) * bot.speed;
+                            bot.vy = (gy / gd) * bot.speed;
+                            // Kick toward goal when close enough
+                            if (gd < 350 && bot.shootCooldown <= 0) {
+                                kickBall(bot, gx, gy);
+                                bot.shootCooldown = 30;
+                            }
                         }
-                    } else if (bot.shootCooldown <= 0 && distance < bot.laserRange &&
-                        hasLineOfSight(bot, closestTarget) && Math.random() < 0.4) {
-
-                        const laserSpeed = 10;
-                        const timeToHit = distance / laserSpeed;
-
-                        // Mild lead shot — slight prediction, not perfect
-                        const targetVx = closestTarget.vx || 0;
-                        const targetVy = closestTarget.vy || 0;
-                        const predictedX = closestTarget.x + closestTarget.size / 2 + targetVx * timeToHit * 0.25;
-                        const predictedY = closestTarget.y + closestTarget.size / 2 + targetVy * timeToHit * 0.25;
-
-                        const aimDx = predictedX - (bot.x + bot.size / 2);
-                        const aimDy = predictedY - (bot.y + bot.size / 2);
-                        const aimDist = Math.sqrt(aimDx * aimDx + aimDy * aimDy) || 1;
-
-                        // Aim spread increases with distance
-                        const spread = (distance / bot.laserRange) * 0.25;
-                        const spreadAngle = (Math.random() - 0.5) * spread;
-                        const cos = Math.cos(spreadAngle), sin = Math.sin(spreadAngle);
-                        const dirX = aimDx / aimDist;
-                        const dirY = aimDy / aimDist;
-
-                        botFireAttack(bot, (dirX * cos - dirY * sin), (dirX * sin + dirY * cos), laserSpeed);
-                        bot.shootCooldown = 30;
-                        // Shooting reveals bot from bush
-                        bot.bushRevealTimer = 90;
                     }
-                }
+                    // Ball-Goal: if not carrying, aggressively chase the free ball
+                    else if (currentGameMode === 'ballGoal' && ball && !ball.carrier) {
+                        const ballDist = getDistance(bot.x, bot.y, ball.x, ball.y);
+                        if (ballDist < 1000) {
+                            const dx = ball.x - bot.x;
+                            const dy = ball.y - bot.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                            bot.vx = (dx / dist) * bot.speed * 0.9;
+                            bot.vy = (dy / dist) * bot.speed * 0.9;
+                        }
+                    }
+
+                    // If no target, wander; otherwise chase/shoot
+                    if (!closestTarget) {
+                        wanderBehavior(bot);
+                    } else {
+                        const dx = closestTarget.x - bot.x;
+                        const dy = closestTarget.y - bot.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        if (distance > 0) {
+                            const optimalDistance = bot.laserRange * 0.6;
+
+                            if (distance > optimalDistance + 20) {
+                                // Chase target
+                                bot.vx = (dx / distance) * bot.speed * 0.55;
+                                bot.vy = (dy / distance) * bot.speed * 0.55;
+                            } else if (distance < optimalDistance - 30) {
+                                // Back away
+                                bot.vx = (-dx / distance) * bot.speed * 0.45;
+                                bot.vy = (-dy / distance) * bot.speed * 0.45;
+                            } else {
+                                // Strafe at optimal distance, change direction occasionally
+                                if (!bot.strafeDir || Math.random() < 0.015) bot.strafeDir = Math.random() < 0.5 ? 1 : -1;
+                                const strafeAngle = Math.atan2(dy, dx) + Math.PI / 2;
+                                bot.vx = Math.cos(strafeAngle) * bot.speed * 0.45 * bot.strafeDir;
+                                bot.vy = Math.sin(strafeAngle) * bot.speed * 0.45 * bot.strafeDir;
+                            }
+                        }
+
+                        // Shoot when ready — 40% chance per frame so bots miss sometimes
+                        // If bot has ball in Ball-Goal, kick toward opponent's goal instead
+                        if (currentGameMode === 'ballGoal' && bot.hasBall && ball && bot.shootCooldown <= 0) {
+                            const targetGoal = goals.find(g => g.team !== bot.team);
+                            if (targetGoal) {
+                                const goalCx = targetGoal.x + targetGoal.w / 2 - (bot.x + bot.size / 2);
+                                const goalCy = targetGoal.y + targetGoal.h / 2 - (bot.y + bot.size / 2);
+                                kickBall(bot, goalCx, goalCy);
+                                bot.shootCooldown = 30;
+                            }
+                        } else if (bot.shootCooldown <= 0 && distance < bot.laserRange &&
+                            hasLineOfSight(bot, closestTarget) && Math.random() < 0.4) {
+
+                            const laserSpeed = 10;
+                            const timeToHit = distance / laserSpeed;
+
+                            // Mild lead shot — slight prediction, not perfect
+                            const targetVx = closestTarget.vx || 0;
+                            const targetVy = closestTarget.vy || 0;
+                            const predictedX = closestTarget.x + closestTarget.size / 2 + targetVx * timeToHit * 0.25;
+                            const predictedY = closestTarget.y + closestTarget.size / 2 + targetVy * timeToHit * 0.25;
+
+                            const aimDx = predictedX - (bot.x + bot.size / 2);
+                            const aimDy = predictedY - (bot.y + bot.size / 2);
+                            const aimDist = Math.sqrt(aimDx * aimDx + aimDy * aimDy) || 1;
+
+                            // Aim spread increases with distance
+                            const spread = (distance / bot.laserRange) * 0.25;
+                            const spreadAngle = (Math.random() - 0.5) * spread;
+                            const cos = Math.cos(spreadAngle), sin = Math.sin(spreadAngle);
+                            const dirX = aimDx / aimDist;
+                            const dirY = aimDy / aimDist;
+
+                            botFireAttack(bot, (dirX * cos - dirY * sin), (dirX * sin + dirY * cos), laserSpeed);
+                            bot.shootCooldown = 30;
+                            // Shooting reveals bot from bush
+                            bot.bushRevealTimer = 90;
+                        }
+                    }
+                } // end !isEscaping
 
                 if (bot.shootCooldown > 0) bot.shootCooldown--;
 
@@ -1552,14 +1568,32 @@
                 bot.x = Math.max(0, Math.min(bot.x + bot.vx, MAP_WIDTH - bot.size));
                 bot.y = Math.max(0, Math.min(bot.y + bot.vy, MAP_HEIGHT - bot.size));
 
+                let hitObstacle = false;
                 for (let obs of obstacles) {
                     if (checkCollisionWithRect(bot, obs)) {
                         bot.x = oldX;
                         bot.y = oldY;
                         bot.vx = 0;
                         bot.vy = 0;
+                        hitObstacle = true;
                         break;
                     }
+                }
+
+                // Stuck detection — check every 180 frames (~3s); trigger escape if barely moved
+                bot.stuckTimer++;
+                if (bot.stuckTimer >= 180) {
+                    const moved = Math.abs(bot.x - bot.stuckCheckX) + Math.abs(bot.y - bot.stuckCheckY);
+                    if (moved < 8 && bot.escapeTimer <= 0) {
+                        // Pick a random escape angle, biased away from current facing to break loop
+                        const angle = Math.random() * Math.PI * 2;
+                        bot.escapeVx = Math.cos(angle) * bot.speed;
+                        bot.escapeVy = Math.sin(angle) * bot.speed;
+                        bot.escapeTimer = 90; // escape for 1.5 seconds
+                    }
+                    bot.stuckTimer = 0;
+                    bot.stuckCheckX = bot.x;
+                    bot.stuckCheckY = bot.y;
                 }
 
                 checkHealthPackCollision(bot);
