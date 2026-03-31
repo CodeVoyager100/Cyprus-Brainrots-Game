@@ -16,7 +16,7 @@ Last reviewed: 2026-03-31 (session 9)
 - [x] **Level rewards not persisting** — `milestone.claimed` lives only in memory; re-claimable every page reload. Save/load `claimed` flags to `localStorage` *(add persistence around `levelRewards` array)*
 - [x] **`showAllUI()` shows joysticks on desktop** — unconditionally shows joystick elements regardless of device. Add touch/width check matching `startGame()` *(~5 lines)*
 - [x] **Bots don't pick up health packs during normal play** — `checkHealthPackCollision(bot)` only called in health-panic branch. Move call so it runs every frame *(move 1 line)*
-- [ ] **Naming inconsistency: XP → Medals** — `awardXP()`, `playerXP`, localStorage key `playerXP` still reference old XP name. Rename for clarity *(search-and-replace)*
+- [x] **Naming inconsistency: XP → Medals** — `awardXP()`, `playerXP`, localStorage key `playerXP` still reference old XP name. Rename for clarity *(search-and-replace)*
 
 ### Hard fixes (design/logic changes)
 - [ ] **Berserk super 2× fire rate broken** — `_baseShootMult` assigned but `shootCooldown` never halved. Implement the fire-rate half for the duration of the super *(add cooldown override in shoot logic)*
@@ -51,6 +51,8 @@ Last reviewed: 2026-03-31 (session 9)
 ---
 
 ## Completed
+
+- [x] **Background fix** — `background.png` was commented out of preload; restored. Team modes now use `teammap.png`, all others use `background.png`
 
 - [x] Persist coins, unlocked characters, selected player and XP via localStorage
 - [x] XP system: +1 per kill, +2 for winning, level up every 10 XP

@@ -1048,15 +1048,45 @@
 
         function generateObstacles() {
             obstacles = [];
+            const isTeamSideMode = currentGameMode === '3v3' || currentGameMode === '2v2';
+            if (isTeamSideMode) {
+                // Fixed symmetric water walls — 400px from each horizontal edge, centred vertically
+                // Left water
+                obstacles.push({ x: 400, y: 750, width: 50, height: 500, type: 'water' });
+                // Right water (mirrored)
+                obstacles.push({ x: 1550, y: 750, width: 50, height: 500, type: 'water' });
+
+                // Central water pool (200×200)
+                obstacles.push({ x: 900, y: 900, width: 200, height: 200, type: 'water' });
+
+                // 4 corner walls (50×50) at the outer corners of the bush strips
+                obstacles.push({ x: 850, y: 850, width: 50, height: 50, type: 'brick' });
+                obstacles.push({ x: 1100, y: 850, width: 50, height: 50, type: 'brick' });
+                obstacles.push({ x: 850, y: 1100, width: 50, height: 50, type: 'brick' });
+                obstacles.push({ x: 1100, y: 1100, width: 50, height: 50, type: 'brick' });
+
+                // Top walls (y=300): left group x=300–800, right group x=1200–1700
+                obstacles.push({ x: 300, y: 300, width: 500, height: 50, type: 'brick' });
+                obstacles.push({ x: 1200, y: 300, width: 500, height: 50, type: 'brick' });
+                // Bottom walls (y=1650): left group, right group
+                obstacles.push({ x: 300, y: 1650, width: 500, height: 50, type: 'brick' });
+                obstacles.push({ x: 1200, y: 1650, width: 500, height: 50, type: 'brick' });
+                return;
+            }
             const obstacleCount = currentGameMode === 'ballGoal' ? 6 : 15;
-            for (let i = 0; i < obstacleCount; i++) {
-                obstacles.push({
-                    x: Math.random() * (MAP_WIDTH - 100),
-                    y: Math.random() * (MAP_HEIGHT - 100),
-                    width: 60 + Math.random() * 60,
-                    height: 60 + Math.random() * 60,
-                    type: Math.random() < 0.5 ? 'brick' : 'water'
-                });
+            const edgeClear = 200;
+            let attempts = 0;
+            let placed = 0;
+            while (placed < obstacleCount && attempts < obstacleCount * 20) {
+                attempts++;
+                const w = 60 + Math.random() * 60;
+                const h = 60 + Math.random() * 60;
+                const x = Math.random() * (MAP_WIDTH - 100);
+                const y = Math.random() * (MAP_HEIGHT - 100);
+                if (x < edgeClear || x + w > MAP_WIDTH - edgeClear ||
+                    y < edgeClear || y + h > MAP_HEIGHT - edgeClear) continue;
+                obstacles.push({ x, y, width: w, height: h, type: Math.random() < 0.5 ? 'brick' : 'water' });
+                placed++;
             }
         }
 
@@ -1076,6 +1106,27 @@
 
         function generateBushes() {
             bushes = [];
+            // For team side modes: fixed layout only, no random
+            if (currentGameMode === '3v3' || currentGameMode === '2v2') {
+                // Left bush (right of left water, x=450)
+                bushes.push({ x: 450, y: 750, width: 50, height: 500 });
+                // Right bush (left of right water, x=1500)
+                bushes.push({ x: 1500, y: 750, width: 50, height: 500 });
+
+                // Central bushes (200×50) on each side of the central water pool
+                bushes.push({ x: 900, y: 850, width: 200, height: 50 });  // top
+                bushes.push({ x: 900, y: 1100, width: 200, height: 50 }); // bottom
+                bushes.push({ x: 850, y: 900, width: 50, height: 200 });  // left
+                bushes.push({ x: 1100, y: 900, width: 50, height: 200 }); // right
+
+                // Top bushes inward of top walls (y=350)
+                bushes.push({ x: 300, y: 350, width: 500, height: 50 });
+                bushes.push({ x: 1200, y: 350, width: 500, height: 50 });
+                // Bottom bushes inward of bottom walls (y=1600)
+                bushes.push({ x: 300, y: 1600, width: 500, height: 50 });
+                bushes.push({ x: 1200, y: 1600, width: 500, height: 50 });
+                return;
+            }
             // Place bushes near existing obstacles (walls and lakes)
             for (let obs of obstacles) {
                 const bushCount = 1 + Math.floor(Math.random() * 2); // 1-2 bushes per obstacle
@@ -1116,8 +1167,10 @@
             for (let bush of bushes) {
                 const cx = entity.x + entity.size / 2;
                 const cy = entity.y + entity.size / 2;
-                if (cx > bush.x && cx < bush.x + bush.size &&
-                    cy > bush.y && cy < bush.y + bush.size) {
+                const bw = bush.width !== undefined ? bush.width : bush.size;
+                const bh = bush.height !== undefined ? bush.height : bush.size;
+                if (cx > bush.x && cx < bush.x + bw &&
+                    cy > bush.y && cy < bush.y + bh) {
                     return true;
                 }
             }
@@ -1629,7 +1682,7 @@
             }
             generateHealthPacks();
 
-            // Team spawn zones: each team spawns in a different quadrant
+            // Team spawn zones: each team spawns in a different quadrant (used for bounty/ballGoal)
             const halfW = MAP_WIDTH / 2;
             const halfH = MAP_HEIGHT / 2;
             const teamSpawnZones = {
@@ -1638,6 +1691,9 @@
                 green:  { xMin: 50,  xMax: halfW - 50,   yMin: halfH + 50, yMax: MAP_HEIGHT - 50 },
                 yellow: { xMin: halfW + 50, xMax: MAP_WIDTH - 50, yMin: halfH + 50, yMax: MAP_HEIGHT - 50 }
             };
+
+            // For 3v3/2v2: track how many players placed per team for ordered side-spawns
+            const teamIndexCounters = { red: 0, blue: 0, green: 0, yellow: 0 };
 
             function getTeamSpawnPosition(size, team) {
                 // Use battlemap spawn circles if available
@@ -1649,11 +1705,28 @@
                         const y = pt.y - size / 2;
                         if (isValidSpawnPosition(x, y, size)) return {x, y};
                     }
-                    // Fallback: use first point even if inside obstacle
                     const pt = pts[Math.floor(Math.random() * pts.length)];
                     return { x: pt.x - size / 2, y: pt.y - size / 2 };
                 }
-                // Default: quadrant zones
+
+                // 3v3 / 2v2: fixed side-spawns — teammates line up next to each other
+                if (mode === '3v3' || mode === '2v2') {
+                    const idx = teamIndexCounters[team] || 0;
+                    teamIndexCounters[team] = idx + 1;
+                    const spacing = size + 40; // extra gap so players don't overlap
+                    const teamSize = modeConfig.teamSize;
+                    // offset so the whole row is centred on the map midpoint
+                    const totalSpan = (teamSize - 1) * spacing;
+                    const mid = MAP_HEIGHT / 2;
+                    const midX = MAP_WIDTH / 2;
+                    const edgeMargin = 100; // near the edge so teams start close to their side
+                    if (team === 'red')    return { x: edgeMargin,               y: mid - totalSpan / 2 + idx * spacing };
+                    if (team === 'blue')   return { x: MAP_WIDTH - edgeMargin - size, y: mid - totalSpan / 2 + idx * spacing };
+                    if (team === 'green')  return { x: midX - totalSpan / 2 + idx * spacing, y: edgeMargin };
+                    if (team === 'yellow') return { x: midX - totalSpan / 2 + idx * spacing, y: MAP_HEIGHT - edgeMargin - size };
+                }
+
+                // Default: random within quadrant zone
                 if (!team || !teamSpawnZones[team]) return getSpawnPosition(size);
                 const zone = teamSpawnZones[team];
                 let attempts = 0;
@@ -1763,8 +1836,8 @@
 
         // Drawing functions
         function drawBackground() {
-            const isTeamMode = gameModes[currentGameMode] && gameModes[currentGameMode].teams;
-            const bgKey = isTeamMode ? 'images/teammap.png' : 'images/background.png';
+            const isTeamMap = currentGameMode === '3v3' || currentGameMode === '2v2';
+            const bgKey = isTeamMap ? 'images/teammap.png' : 'images/background.png';
             const bgImage = imageCache[bgKey];
             if (bgImage && bgImage.complete) {
                 ctx.drawImage(bgImage, 0 - camera.x, 0 - camera.y, MAP_WIDTH, MAP_HEIGHT);
@@ -1844,21 +1917,22 @@
             for (let bush of bushes) {
                 const bx = bush.x - camera.x;
                 const by = bush.y - camera.y;
-                const s = bush.size;
+                const bw = bush.width !== undefined ? bush.width : bush.size;
+                const bh = bush.height !== undefined ? bush.height : bush.size;
 
-                // Bush base (dark green square)
+                // Bush base (dark green)
                 ctx.fillStyle = 'rgba(34, 120, 34, 0.85)';
-                ctx.fillRect(bx, by, s, s);
+                ctx.fillRect(bx, by, bw, bh);
 
                 // Lighter inner patches
                 ctx.fillStyle = 'rgba(50, 160, 50, 0.7)';
-                ctx.fillRect(bx + s * 0.1, by + s * 0.1, s * 0.4, s * 0.4);
-                ctx.fillRect(bx + s * 0.45, by + s * 0.5, s * 0.4, s * 0.35);
+                ctx.fillRect(bx + bw * 0.1, by + bh * 0.1, bw * 0.4, bh * 0.4);
+                ctx.fillRect(bx + bw * 0.45, by + bh * 0.5, bw * 0.4, bh * 0.35);
 
                 // Outline
                 ctx.strokeStyle = 'rgba(20, 80, 20, 0.6)';
                 ctx.lineWidth = 2;
-                ctx.strokeRect(bx, by, s, s);
+                ctx.strokeRect(bx, by, bw, bh);
             }
             ctx.restore();
         }
@@ -2676,6 +2750,27 @@
                             // Respawn in safe zone based on team
                             p.x = p.team === 'red' ? 150 + Math.random() * 400 : MAP_WIDTH - 550 + Math.random() * 400;
                             p.y = 150 + Math.random() * (MAP_HEIGHT - 300);
+                        }
+                    } else if (currentGameMode === '3v3' || currentGameMode === '2v2') {
+                        // Respawn in team's edge strip — guaranteed obstacle-free zone (300px from edge)
+                        const edgeMargin = 100;
+                        const stripDepth = 180; // safe depth from edge
+                        const lateralMin = 300;
+                        const lateralMax = MAP_HEIGHT - 300;
+                        const lateralMinX = 300;
+                        const lateralMaxX = MAP_WIDTH - 300;
+                        if (p.team === 'red') {
+                            p.x = edgeMargin + Math.random() * stripDepth;
+                            p.y = lateralMin + Math.random() * (lateralMax - lateralMin);
+                        } else if (p.team === 'blue') {
+                            p.x = MAP_WIDTH - edgeMargin - stripDepth + Math.random() * stripDepth - p.size;
+                            p.y = lateralMin + Math.random() * (lateralMax - lateralMin);
+                        } else if (p.team === 'green') {
+                            p.x = lateralMinX + Math.random() * (lateralMaxX - lateralMinX);
+                            p.y = edgeMargin + Math.random() * stripDepth;
+                        } else if (p.team === 'yellow') {
+                            p.x = lateralMinX + Math.random() * (lateralMaxX - lateralMinX);
+                            p.y = MAP_HEIGHT - edgeMargin - stripDepth + Math.random() * stripDepth - p.size;
                         }
                     } else {
                         // Respawn near a living teammate
