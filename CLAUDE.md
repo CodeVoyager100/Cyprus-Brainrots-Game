@@ -53,7 +53,6 @@ Joysticks are shown on touch devices or screens ≤1024px wide. Left joystick = 
 ## Assets
 
 - [images/](images/) — character PNGs and `background.png`
-- [sounds/](sounds/) — `shoot.wav`, `enemy-death.wav`
 
 Images are preloaded into `imageCache` at startup; failed loads fall back to a magenta placeholder rectangle.
 

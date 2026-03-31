@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>Cyprus Brainrot Game</title>
     <style>
-        /* Your existing CSS styles remain the same */
         body, html {
             margin: 0;
             padding: 0;
@@ -283,6 +282,59 @@
             }
         }
 
+        /* Super ability button */
+        #super-btn-container {
+            display: none;
+            position: fixed;
+            bottom: 160px;
+            right: 20px;
+            z-index: 100;
+        }
+        .game-active #super-btn-container {
+            display: block;
+        }
+        #super-btn {
+            position: relative;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: rgba(30,30,60,0.85);
+            border: 3px solid #ffcc00;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        #super-btn-fill {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 0%;
+            background: rgba(255,200,0,0.45);
+            transition: height 0.1s linear;
+        }
+        #super-btn-label {
+            position: relative;
+            z-index: 1;
+            font-size: 11px;
+            font-weight: bold;
+            color: #ffcc00;
+            text-align: center;
+            pointer-events: none;
+            line-height: 1.2;
+        }
+        #super-btn.ready {
+            border-color: #ffcc00;
+            box-shadow: 0 0 14px #ffcc00;
+            animation: superPulse 0.8s infinite alternate;
+        }
+        @keyframes superPulse {
+            from { box-shadow: 0 0 8px #ffcc00; }
+            to   { box-shadow: 0 0 22px #ff8800; }
+        }
+
         #debug-status {
             position: fixed;
             right: 10px;
@@ -353,9 +405,9 @@
         <h2 style="color: #ffcc00; margin-top: 0;">Welcome to Cyprus Brainrot Game!</h2>
         <p>
             🎮 Use arrow keys or WASD or white joystick to move<br>
-            🖱️ Click mouse or red joistick or touch screen to shoot<br>
+            🖱️ Click mouse or red joystick or touch screen to shoot<br>
             ⚔️ Click "Battle!" to start a game<br>
-            🛒 Collect coins and buy players in the Bazaar!<br>
+            🎖️ Earn Credits by playing and unlock players in the Bazaar!<br>
             ❤️ Collect green health packs to heal!<br>
             🔁 Switch players between matches
         </p>
@@ -396,7 +448,7 @@
         </div>
     </div>
 
-    <div id="coins-display">💰 Coins: 500<br>� Medals: 0</div>
+    <div id="coins-display">💰 Coins: 500<br>🏅 Medals: 0<br>🎖️ Credits: 0</div>
 
     <div id="level-rewards-panel" class="modal-panel" style="width:420px;">
         <h2>🏆 Level Rewards</h2>
@@ -409,6 +461,14 @@
         <h2>🛒 Bazaar</h2>
         <div id="bazaar-items" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;"></div>
         <button class="btn modal-close" id="close-bazaar">Close</button>
+    </div>
+
+    <div id="credits-panel" class="modal-panel" style="width:700px;">
+        <h2 style="color:#4ae8d8;">🎖️ Credits Progression</h2>
+        <p style="text-align:center; color:#aaa; margin-top:-10px; font-size:13px;">Earn credits by playing &nbsp;|&nbsp; Unlock one player per tier &nbsp;|&nbsp; Must unlock Epic before Mythic, Mythic before Legendary</p>
+        <div id="credits-progress-bar" style="margin:10px auto 18px; max-width:420px;"></div>
+        <div id="credits-tier-list"></div>
+        <button class="btn modal-close" id="close-credits-panel">Close</button>
     </div>
 
     <div id="player-menu" class="modal-panel">
@@ -452,7 +512,7 @@
                 <div style="background: rgba(255, 204, 0, 0.2); padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">12 Players</div>
             </div>
             <div class="mode-card" data-mode="2v2">
-                <h3></h3>⚔️ 2v2 Team Battle</h3>
+                <h3>⚔️ 2v2 Team Battle</h3>
                 <p>4 teams of 2 — duo showdown!</p>
                 <div style="background: rgba(255, 204, 0, 0.2); padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">8 Players</div>
             </div>
@@ -460,6 +520,11 @@
                 <h3>⚽ Ball-Goal</h3>
                 <p>Score goals! First team to 2 wins!</p>
                 <div style="background: rgba(255, 204, 0, 0.2); padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">6 Players (3v3)</div>
+            </div>
+            <div class="mode-card" data-mode="bounty">
+                <h3>⭐ Bounty</h3>
+                <p>Kill enemies to earn stars! Most stars when time runs out wins!</p>
+                <div style="background: rgba(255, 204, 0, 0.2); padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">6 Players (3v3) · 2 min</div>
             </div>
         </div>
         <button class="btn modal-close" id="close-modes-btn">Close</button>
@@ -469,6 +534,7 @@
         <button class="btn" id="game-mode-btn">🎮 Game Modes</button>
         <button class="btn" id="start-btn">⚔️ Battle!</button>
         <button class="btn" id="shop-btn">🛒 Bazaar</button>
+        <button class="btn" id="credits-btn" style="background:#1a3a3a; border:1px solid #4ae8d8; color:#4ae8d8;">🎖️ Credits</button>
         <button class="btn" id="switch-player-btn"> Players</button>
     </div>
 
@@ -483,6 +549,14 @@
     <div id="shoot-joystick-container">
         <div id="shoot-joystick-base">
             <div id="shoot-joystick-stick"></div>
+        </div>
+    </div>
+
+    <!-- Super ability button (mobile) -->
+    <div id="super-btn-container">
+        <div id="super-btn">
+            <div id="super-btn-fill"></div>
+            <span id="super-btn-label">E</span>
         </div>
     </div>
 
@@ -512,14 +586,21 @@
         let MAP_WIDTH = 2000;
         let MAP_HEIGHT = 2000;
 
+        // Migrate old playerXP key to playerMedals
+        if (localStorage.getItem('playerXP') !== null && localStorage.getItem('playerMedals') === null) {
+            localStorage.setItem('playerMedals', localStorage.getItem('playerXP'));
+            localStorage.removeItem('playerXP');
+        }
+
         // Game state (persisted via localStorage)
         let playerCoins = parseInt(localStorage.getItem('playerCoins') ?? '500');
         let unlockedPlayers = JSON.parse(localStorage.getItem('unlockedPlayers') ?? '["default"]');
         let selectedPlayerId = localStorage.getItem('selectedPlayerId') ?? 'default';
-        let playerXP = parseInt(localStorage.getItem('playerXP') ?? '0');
-        let playerLevel = Math.floor(playerXP / 10) + 1;
+        let playerMedals = parseInt(localStorage.getItem('playerMedals') ?? '0');
+        let playerLevel = Math.floor(playerMedals / 10) + 1;
         let killFeedColor = localStorage.getItem('killFeedColor') ?? '#ffffff';
         let energySparks = parseInt(localStorage.getItem('energySparks') ?? '0');
+        let playerCredits = parseInt(localStorage.getItem('playerCredits') ?? '0');
         let playerPowerLevels = JSON.parse(localStorage.getItem('playerPowerLevels') ?? '{}');
 
         // Upgrade cost table: [sparks, coins] per level, indexed by rarity
@@ -566,19 +647,21 @@
             localStorage.setItem('playerCoins', playerCoins);
             localStorage.setItem('unlockedPlayers', JSON.stringify(unlockedPlayers));
             localStorage.setItem('selectedPlayerId', selectedPlayerId);
-            localStorage.setItem('playerXP', playerXP);
+            localStorage.setItem('playerMedals', playerMedals);
             localStorage.setItem('killFeedColor', killFeedColor);
             localStorage.setItem('energySparks', energySparks);
+            localStorage.setItem('playerCredits', playerCredits);
             localStorage.setItem('playerPowerLevels', JSON.stringify(playerPowerLevels));
+            localStorage.setItem('claimedLevelRewards', JSON.stringify(levelRewards.filter(r => r.claimed).map(r => r.level)));
         }
 
         let levelUpMessage = null; // { text, timer }
         let healMessage = null;    // { text, timer }
 
-        function awardXP(amount) {
-            const oldLevel = Math.floor(playerXP / 10) + 1;
-            playerXP = Math.max(0, playerXP + amount);
-            playerLevel = Math.floor(playerXP / 10) + 1;
+        function awardMedals(amount) {
+            const oldLevel = Math.floor(playerMedals / 10) + 1;
+            playerMedals = Math.max(0, playerMedals + amount);
+            playerLevel = Math.floor(playerMedals / 10) + 1;
             if (playerLevel > oldLevel) {
                 levelUpMessage = { text: `Level Up! Level ${playerLevel}`, timer: 180 };
             }
@@ -601,6 +684,13 @@
         let teamScores = {};
         const BALL_GOAL_WIN_SCORE = 2;
 
+        // Bounty mode state
+        let bountyTimerFrames = 0;
+        const BOUNTY_DURATION_FRAMES = 7200; // 2 minutes at 60fps
+
+        // Super ability effects (AoE zones, etc.)
+        let superEffects = [];
+
         // Image cache for all game images
         const imageCache = {};
 
@@ -619,7 +709,7 @@
                     ctx.fillRect(0, 0, 100, 100);
                     ctx.fillStyle = '#000';
                     ctx.font = '12px Arial';
-                    ctx.fillText('No Image', 10, 50);
+                    ctx.fillText('teammap', 10, 50);
                     imageCache[src].src = canvas.toDataURL();
                 };
             }
@@ -631,6 +721,7 @@
 
             // Preload background
             loadImage('images/background.png');
+            loadImage('images/teammap.png');
 
             // Preload chest images for star drops
             loadImage('images/chestclose.png');
@@ -656,20 +747,10 @@
                 size: 55,
                 laserRange: 250,
                 price: 0,
-                rarity: 'common'
-            },
-            tornader: {
-                id: 'tornader',
-                name: 'Tornader',
-                img: 'images/rot2.png',
-                color: '#e84a4a',
-                hp: 32,
-                speed: 5,
-                laserDamage: 3,
-                size: 55,
-                laserRange: 300,
-                price: 1200,
-                rarity: 'epic'
+                rarity: 'common',
+                attackType: 'standard',
+                superType: 'burst',          // 8-laser starburst in all directions
+                superName: '🦂 Sting Burst'
             },
             lazerman: {
                 id: 'lazerman',
@@ -682,7 +763,10 @@
                 size: 55,
                 laserRange: 800,
                 price: 500,
-                rarity: 'rare'
+                rarity: 'rare',
+                attackType: 'double',        // fires 2 parallel beams
+                superType: 'piercebeam',     // one massive beam crossing the whole map
+                superName: '⚡ Mega Beam'
             },
             fournakis: {
                 id: 'fournakis',
@@ -695,20 +779,10 @@
                 size: 55,
                 laserRange: 400,
                 price: 700,
-                rarity: 'rare'
-            },
-            kleftikomegazord: {
-                id: 'kleftikomegazord',
-                name: 'Kleftikomegazord',
-                img: 'images/rot3.png',
-                color: '#e8e84a',
-                hp: 70,
-                speed: 3,
-                laserDamage: 6,
-                size: 65,
-                laserRange: 600,
-                price: 2000,
-                rarity: 'legendary'
+                rarity: 'rare',
+                attackType: 'spread',        // 3-shot spread
+                superType: 'firezone',       // burning AoE zone for 3 s
+                superName: '🔥 Fire Zone'
             },
             baklavasbazookos: {
                 id: 'baklavasbazookos',
@@ -721,7 +795,10 @@
                 size: 55,
                 laserRange: 500,
                 price: 700,
-                rarity: 'rare'
+                rarity: 'rare',
+                attackType: 'heavy',         // slow heavy ball that explodes on hit
+                superType: 'bigshot',        // slow big projectile → explodes on hit
+                superName: '💥 Bazooka Blast'
             },
             firekoupepy: {
                 id: 'firekoupepy',
@@ -734,7 +811,27 @@
                 size: 55,
                 laserRange: 450,
                 price: 500,
-                rarity: 'rare'
+                rarity: 'rare',
+                attackType: 'rapid',         // fires 2 quick shots in succession
+                superType: 'firedash',       // dash + damage trail
+                superName: '🔥 Fire Dash'
+            },
+            // Epic — player picks ONE
+            tornader: {
+                id: 'tornader',
+                name: 'Tornader',
+                img: 'images/rot2.png',
+                color: '#e84a4a',
+                hp: 32,
+                speed: 5,
+                laserDamage: 3,
+                size: 55,
+                laserRange: 300,
+                creditCost: 200,
+                rarity: 'epic',
+                attackType: 'boomerang',     // curved projectile that returns
+                superType: 'tornado',        // AoE tornado that pulls and damages
+                superName: '🌪️ Tornado'
             },
             boboshiros: {
                 id: 'boboshiros',
@@ -746,21 +843,11 @@
                 laserDamage: 4,
                 size: 55,
                 laserRange: 550,
-                price: 700,
-                rarity: 'epic'
-            },
-            megagrinos: {
-                id: 'megagrinos',
-                name: 'Megagrinos',
-                img: 'images/megagrinos.png',
-                color: '#e8e84a',
-                hp: 50,
-                speed: 4,
-                laserDamage: 4,
-                size: 60,
-                laserRange: 550,
-                price: 1000,
-                rarity: 'mythic'
+                creditCost: 200,
+                rarity: 'epic',
+                attackType: 'triple',        // wide 3-shot fan
+                superType: 'berserk',        // 2× damage + 2× fire rate for 5 s
+                superName: '😡 Berserk'
             },
             kafekauboy: {
                 id: 'kafekauboy',
@@ -772,8 +859,77 @@
                 laserDamage: 4,
                 size: 55,
                 laserRange: 550,
-                price: 800,
-                rarity: 'epic'
+                creditCost: 200,
+                rarity: 'epic',
+                attackType: 'homing',        // projectile homes toward nearest enemy
+                superType: 'coffeerush',     // 3× speed + rapid fire for 4 s
+                superName: '☕ Coffee Rush'
+            },
+            // Mythic — player picks ONE
+            megagrinos: {
+                id: 'megagrinos',
+                name: 'Megagrinos',
+                img: 'images/megagrinos.png',
+                color: '#e8e84a',
+                hp: 50,
+                speed: 4,
+                laserDamage: 4,
+                size: 60,
+                laserRange: 550,
+                creditCost: 500,
+                rarity: 'mythic',
+                attackType: 'aoehit',        // laser that deals area damage on impact
+                superType: 'scream',         // Mega scream AoE deals damage + slows all nearby enemies
+                superName: '😱 Mega Scream'
+            },
+            // Legendary — player picks ONE
+            kleftikomegazord: {
+                id: 'kleftikomegazord',
+                name: 'Kleftikomegazord',
+                img: 'images/rot3.png',
+                color: '#e8e84a',
+                hp: 70,
+                speed: 3,
+                laserDamage: 6,
+                size: 65,
+                laserRange: 600,
+                creditCost: 1000,
+                rarity: 'legendary',
+                attackType: 'double',        // fires powerful double beam
+                superType: 'megazord',       // 2 s invincibility + 12-laser full-circle burst
+                superName: '🤖 Megazord Blast'
+            },
+            petras: {
+                id: 'petras',
+                name: 'Petras',
+                img: 'images/petras.png',
+                color: '#e8e84a',
+                hp: 50,
+                speed: 2.5,
+                laserDamage: 4,
+                size: 60,
+                laserRange: 550,
+                creditCost: 500,
+                rarity: 'mythic',
+                attackType: 'heavy',         // slow heavy boulder shot
+                superType: 'rockshield',     // damage immunity for 3 s
+                superName: '🪨 Rock Shield'
+            },
+            rocky: {
+                id: 'rocky',
+                name: 'Rocky',
+                img: 'images/rocky.png',
+                color: '#e8e84a',
+                hp: 50,
+                speed: 2.5,
+                laserDamage: 4,
+                size: 60,
+                laserRange: 550,
+                creditCost: 500,
+                rarity: 'legendary',
+                attackType: 'spread',        // 3-shot spread punch
+                superType: 'rockrush',       // charge forward, massive damage to everything in path
+                superName: '🥊 Rock Rush'
             }
         };
 
@@ -788,12 +944,20 @@
         const rarityLabels = {
             common: 'Common', rare: 'Rare', epic: 'Epic', mythic: 'Mythic', legendary: 'Legendary'
         };
+        // Rarities above rare are unlocked with credits (pick ONE per tier)
+        const creditRarities = ['epic', 'mythic', 'legendary'];
+        const creditRarityThresholds = { epic: 200, mythic: 500, legendary: 1000 };
+
+        function hasUnlockedRarity(rarity) {
+            return Object.values(playersData).some(p => p.rarity === rarity && unlockedPlayers.includes(p.id));
+        }
 
         const gameModes = {
             showdown: { name: "Showdown", maxPlayers: 8, teams: false, fillBots: true },
             '3v3': { name: "3v3 Team Battle", maxPlayers: 12, teams: true, teamSize: 3, teamNames: ['red','blue','green','yellow'], fillBots: true },
             '2v2': { name: "2v2 Team Battle", maxPlayers: 8, teams: true, teamSize: 2, teamNames: ['red','blue','green','yellow'], fillBots: true },
-            ballGoal: { name: "Ball-Goal", maxPlayers: 6, teams: true, teamSize: 3, teamNames: ['red','blue'], fillBots: true }
+            'ballGoal': { name: "Ball-Goal", maxPlayers: 6, teams: true, teamSize: 3, teamNames: ['red','blue'], fillBots: true },
+            'bounty': { name: "Bounty", maxPlayers: 6, teams: true, teamSize: 3, teamNames: ['red','blue'], fillBots: true, bountyMode: true }
         };
 
         const teamColors = {
@@ -1087,19 +1251,108 @@
             }
 
             const speed = 12;
-            lasers.push({
-                x: startX,
-                y: startY,
-                vx: (dx / distance) * speed,
-                vy: (dy / distance) * speed,
-                life: 90,
-                damage: player.laserDamage,
-                shooter: player // Track who shot this laser
-            });
+            const nx = dx / distance, ny = dy / distance;
+            const aType = player.attackType || 'standard';
 
-            player.shootCooldown = 15;
+            function makeLaser(ox, oy, vx, vy, life, dmg, extra) {
+                return { x: startX + ox, y: startY + oy, vx, vy, life, damage: dmg, shooter: player, attackType: aType, ...extra };
+            }
+            function rotated(nx, ny, angle) {
+                const c = Math.cos(angle), s = Math.sin(angle);
+                return { vx: (nx * c - ny * s) * speed, vy: (nx * s + ny * c) * speed };
+            }
+
+            if (aType === 'spread') {
+                for (const angle of [-0.22, 0, 0.22]) {
+                    const r = rotated(nx, ny, angle);
+                    lasers.push(makeLaser(0, 0, r.vx, r.vy, 80, Math.max(1, Math.round(player.laserDamage * 0.75)), {}));
+                }
+                player.shootCooldown = 18;
+            } else if (aType === 'triple') {
+                for (const angle of [-0.35, 0, 0.35]) {
+                    const r = rotated(nx, ny, angle);
+                    lasers.push(makeLaser(0, 0, r.vx, r.vy, 80, player.laserDamage, {}));
+                }
+                player.shootCooldown = 25;
+            } else if (aType === 'double') {
+                const px = -ny * 9, py = nx * 9;
+                for (const s of [-1, 1]) {
+                    lasers.push(makeLaser(px * s, py * s, nx * speed, ny * speed, 90, player.laserDamage, {}));
+                }
+                player.shootCooldown = 20;
+            } else if (aType === 'heavy') {
+                lasers.push(makeLaser(0, 0, nx * 5, ny * 5, 130, Math.round(player.laserDamage * 2.5), { radius: 12, aoeRadius: 60 }));
+                player.shootCooldown = 38;
+            } else if (aType === 'rapid') {
+                lasers.push(makeLaser(0, 0, nx * speed, ny * speed, 80, player.laserDamage, {}));
+                // Second shot fires after a short delay via a scheduled push
+                setTimeout(() => {
+                    if (!gameStarted || player.currentHp <= 0) return;
+                    lasers.push({ x: startX, y: startY, vx: nx * speed, vy: ny * speed, life: 80, damage: player.laserDamage, shooter: player, attackType: 'rapid' });
+                }, 100);
+                player.shootCooldown = 14;
+            } else if (aType === 'homing') {
+                lasers.push(makeLaser(0, 0, nx * 8, ny * 8, 150, player.laserDamage, { homingSpeed: 8 }));
+                player.shootCooldown = 22;
+            } else if (aType === 'boomerang') {
+                lasers.push(makeLaser(0, 0, nx * 9, ny * 9, 80, player.laserDamage, { boomerang: true, returnTimer: 40, origVx: nx * 9, origVy: ny * 9 }));
+                player.shootCooldown = 28;
+            } else if (aType === 'aoehit') {
+                lasers.push(makeLaser(0, 0, nx * speed, ny * speed, 90, player.laserDamage, { aoeRadius: 55 }));
+                player.shootCooldown = 22;
+            } else {
+                // standard
+                lasers.push(makeLaser(0, 0, nx * speed, ny * speed, 90, player.laserDamage, {}));
+                player.shootCooldown = 15;
+            }
+
             // Shooting reveals you from bush
             player.bushRevealTimer = 90;
+        }
+
+        // ── Bot attack type helper ────────────────────────────────────────────────
+        function botFireAttack(bot, dirX, dirY, laserSpeed) {
+            const cx = bot.x + bot.size / 2;
+            const cy = bot.y + bot.size / 2;
+            const aType = bot.attackType || 'standard';
+
+            function rotated(dx, dy, angle) {
+                const c = Math.cos(angle), s = Math.sin(angle);
+                return { vx: (dx * c - dy * s) * laserSpeed, vy: (dx * s + dy * c) * laserSpeed };
+            }
+
+            if (aType === 'spread') {
+                for (const angle of [-0.22, 0, 0.22]) {
+                    const r = rotated(dirX, dirY, angle);
+                    aiLasers.push({ x: cx, y: cy, vx: r.vx, vy: r.vy, life: 80, damage: Math.max(1, Math.round(bot.laserDamage * 0.75)), shooter: bot, attackType: aType });
+                }
+            } else if (aType === 'triple') {
+                for (const angle of [-0.35, 0, 0.35]) {
+                    const r = rotated(dirX, dirY, angle);
+                    aiLasers.push({ x: cx, y: cy, vx: r.vx, vy: r.vy, life: 80, damage: bot.laserDamage, shooter: bot, attackType: aType });
+                }
+            } else if (aType === 'double') {
+                const px = -dirY * 9, py = dirX * 9;
+                for (const s of [-1, 1]) {
+                    aiLasers.push({ x: cx + px * s, y: cy + py * s, vx: dirX * laserSpeed, vy: dirY * laserSpeed, life: 90, damage: bot.laserDamage, shooter: bot, attackType: aType });
+                }
+            } else if (aType === 'heavy') {
+                aiLasers.push({ x: cx, y: cy, vx: dirX * 5, vy: dirY * 5, life: 130, damage: Math.round(bot.laserDamage * 2.5), shooter: bot, attackType: aType, radius: 12, aoeRadius: 60 });
+            } else if (aType === 'rapid') {
+                aiLasers.push({ x: cx, y: cy, vx: dirX * laserSpeed, vy: dirY * laserSpeed, life: 80, damage: bot.laserDamage, shooter: bot, attackType: aType });
+                setTimeout(() => {
+                    if (!gameStarted || bot.currentHp <= 0) return;
+                    aiLasers.push({ x: bot.x + bot.size / 2, y: bot.y + bot.size / 2, vx: dirX * laserSpeed, vy: dirY * laserSpeed, life: 80, damage: bot.laserDamage, shooter: bot, attackType: 'rapid' });
+                }, 120);
+            } else if (aType === 'homing') {
+                aiLasers.push({ x: cx, y: cy, vx: dirX * 8, vy: dirY * 8, life: 150, damage: bot.laserDamage, shooter: bot, attackType: aType, homingSpeed: 8 });
+            } else if (aType === 'boomerang') {
+                aiLasers.push({ x: cx, y: cy, vx: dirX * 9, vy: dirY * 9, life: 80, damage: bot.laserDamage, shooter: bot, attackType: aType, boomerang: true, returnTimer: 40, origVx: dirX * 9, origVy: dirY * 9 });
+            } else if (aType === 'aoehit') {
+                aiLasers.push({ x: cx, y: cy, vx: dirX * laserSpeed, vy: dirY * laserSpeed, life: 90, damage: bot.laserDamage, shooter: bot, attackType: aType, aoeRadius: 55 });
+            } else {
+                aiLasers.push({ x: cx, y: cy, vx: dirX * laserSpeed, vy: dirY * laserSpeed, life: 90, damage: bot.laserDamage, shooter: bot, attackType: 'standard' });
+            }
         }
 
         // IMPROVED AI SYSTEM - Bots fight each other and don't always chase player
@@ -1232,15 +1485,7 @@
                         const dirX = aimDx / aimDist;
                         const dirY = aimDy / aimDist;
 
-                        aiLasers.push({
-                            x: bot.x + bot.size / 2,
-                            y: bot.y + bot.size / 2,
-                            vx: (dirX * cos - dirY * sin) * laserSpeed,
-                            vy: (dirX * sin + dirY * cos) * laserSpeed,
-                            life: 90,
-                            damage: bot.laserDamage,
-                            shooter: bot
-                        });
+                        botFireAttack(bot, (dirX * cos - dirY * sin), (dirX * sin + dirY * cos), laserSpeed);
                         bot.shootCooldown = 30;
                         // Shooting reveals bot from bush
                         bot.bushRevealTimer = 90;
@@ -1263,6 +1508,8 @@
                         break;
                     }
                 }
+
+                checkHealthPackCollision(bot);
             });
         }
 
@@ -1371,9 +1618,16 @@
                 MAP_HEIGHT = 2000;
             }
 
-            generateObstacles();
+            pickMap(!!modeConfig.teams);
+
+            if (currentBattleMapData) {
+                obstacles = currentBattleMapData.obstacles.map(o => ({...o}));
+                bushes    = currentBattleMapData.bushCells.map(b => ({...b}));
+            } else {
+                generateObstacles();
+                generateBushes();
+            }
             generateHealthPacks();
-            generateBushes();
 
             // Team spawn zones: each team spawns in a different quadrant
             const halfW = MAP_WIDTH / 2;
@@ -1386,6 +1640,20 @@
             };
 
             function getTeamSpawnPosition(size, team) {
+                // Use battlemap spawn circles if available
+                if (currentBattleMapData && currentBattleMapData.spawnPoints[team] && currentBattleMapData.spawnPoints[team].length > 0) {
+                    const pts = currentBattleMapData.spawnPoints[team];
+                    for (let attempt = 0; attempt < 40; attempt++) {
+                        const pt = pts[Math.floor(Math.random() * pts.length)];
+                        const x = pt.x - size / 2;
+                        const y = pt.y - size / 2;
+                        if (isValidSpawnPosition(x, y, size)) return {x, y};
+                    }
+                    // Fallback: use first point even if inside obstacle
+                    const pt = pts[Math.floor(Math.random() * pts.length)];
+                    return { x: pt.x - size / 2, y: pt.y - size / 2 };
+                }
+                // Default: quadrant zones
                 if (!team || !teamSpawnZones[team]) return getSpawnPosition(size);
                 const zone = teamSpawnZones[team];
                 let attempts = 0;
@@ -1425,7 +1693,12 @@
                 kills: 0,
                 damageDealt: 0,
                 healingReceived: 0,
-                bushRevealTimer: 0
+                bushRevealTimer: 0,
+                superCharge: 0,       // 0-100
+                superCooldown: 0,     // frames before can use again after activation
+                superActive: false,   // buff supers (berserk, coffeerush, etc.)
+                superTimer: 0,        // frames remaining for active buff
+                superInvincible: false // for rockshield / megazord
             };
             players.push(player);
 
@@ -1456,13 +1729,21 @@
                     kills: 0,
                     damageDealt: 0,
                     healingReceived: 0,
-                    bushRevealTimer: 0
+                    bushRevealTimer: 0,
+                    superCharge: 0,
+                    superCooldown: 0,
+                    superActive: false,
+                    superTimer: 0,
+                    superInvincible: false
                 };
                 players.push(bot);
                 bots.push(bot);
             }
 
             totalPlayersAtStart = players.length;
+
+            // Reset super effects
+            superEffects = [];
 
             // Init poison zone for Showdown
             poisonZone = { x: 0, y: 0, w: MAP_WIDTH, h: MAP_HEIGHT, shrinking: false, timer: 0, phase: 0 };
@@ -1475,17 +1756,18 @@
                 goals = [];
                 teamScores = {};
             }
+
+            // Init Bounty timer
+            bountyTimerFrames = (mode === 'bounty') ? BOUNTY_DURATION_FRAMES : 0;
         }
 
         // Drawing functions
         function drawBackground() {
-            // Try to draw background image
-            const bgImage = imageCache['images/background.png'];
+            const isTeamMode = gameModes[currentGameMode] && gameModes[currentGameMode].teams;
+            const bgKey = isTeamMode ? 'images/teammap.png' : 'images/background.png';
+            const bgImage = imageCache[bgKey];
             if (bgImage && bgImage.complete) {
-                // Create pattern for tiling
-                const pattern = ctx.createPattern(bgImage, 'repeat');
-                ctx.fillStyle = pattern;
-                ctx.fillRect(0 - camera.x, 0 - camera.y, MAP_WIDTH, MAP_HEIGHT);
+                ctx.drawImage(bgImage, 0 - camera.x, 0 - camera.y, MAP_WIDTH, MAP_HEIGHT);
             } else {
                 // Fallback to gradient background
                 const gradient = ctx.createLinearGradient(0, 0, MAP_WIDTH, MAP_HEIGHT);
@@ -1691,33 +1973,89 @@
                     ctx.fillText(p.name, px + p.size / 2, py - 28);
                 }
 
+                // Stars above player in bounty mode
+                if (currentGameMode === 'bounty' && p.kills > 0) {
+                    ctx.font = 'bold 13px Arial';
+                    ctx.textAlign = 'center';
+                    const starY = py - (p.isHuman ? 42 : 32);
+                    ctx.fillStyle = '#ffe600';
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 2;
+                    const starText = '⭐'.repeat(Math.min(p.kills, 5)) + (p.kills > 5 ? ` ×${p.kills}` : '');
+                    ctx.strokeText(starText, px + p.size / 2, starY);
+                    ctx.fillText(starText, px + p.size / 2, starY);
+                }
+
                 ctx.restore();
             });
         }
 
         function drawLasers() {
             ctx.save();
-            lasers.forEach(laser => {
-                ctx.strokeStyle = '#00ffff';
-                ctx.lineWidth = 3;
-                ctx.shadowColor = '#00ffff';
-                ctx.shadowBlur = 5;
-                ctx.beginPath();
-                ctx.moveTo(laser.x - camera.x, laser.y - camera.y);
-                ctx.lineTo(laser.x - camera.x - laser.vx * 2, laser.y - camera.y - laser.vy * 2);
-                ctx.stroke();
-            });
 
-            aiLasers.forEach(laser => {
-                ctx.strokeStyle = '#ff4444';
-                ctx.lineWidth = 3;
-                ctx.shadowColor = '#ff4444';
-                ctx.shadowBlur = 5;
-                ctx.beginPath();
-                ctx.moveTo(laser.x - camera.x, laser.y - camera.y);
-                ctx.lineTo(laser.x - camera.x - laser.vx * 2, laser.y - camera.y - laser.vy * 2);
-                ctx.stroke();
-            });
+            function drawOneLaser(laser, isAI) {
+                const lx = laser.x - camera.x, ly = laser.y - camera.y;
+                const aType = laser.attackType;
+                const isSuperLaser = laser.isSuperLaser;
+
+                if (aType === 'heavy') {
+                    // Slow cannon ball rendered as a glowing circle
+                    const r = laser.radius || 10;
+                    ctx.shadowColor = '#ff8800';
+                    ctx.shadowBlur = 14;
+                    ctx.fillStyle = '#ff6600';
+                    ctx.beginPath();
+                    ctx.arc(lx, ly, r, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffcc00';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                } else if (aType === 'homing') {
+                    ctx.strokeStyle = '#00ff88';
+                    ctx.lineWidth = 3;
+                    ctx.shadowColor = '#00ff88';
+                    ctx.shadowBlur = 8;
+                    ctx.beginPath();
+                    ctx.arc(lx, ly, 5, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(lx, ly);
+                    ctx.lineTo(lx - laser.vx * 2, ly - laser.vy * 2);
+                    ctx.stroke();
+                } else if (aType === 'boomerang') {
+                    ctx.strokeStyle = '#ff88ff';
+                    ctx.lineWidth = 4;
+                    ctx.shadowColor = '#ff00ff';
+                    ctx.shadowBlur = 10;
+                    ctx.beginPath();
+                    ctx.arc(lx, ly, 7, 0, Math.PI * 1.5);
+                    ctx.stroke();
+                } else if (aType === 'aoehit') {
+                    ctx.strokeStyle = '#aa44ff';
+                    ctx.lineWidth = 4;
+                    ctx.shadowColor = '#aa44ff';
+                    ctx.shadowBlur = 8;
+                    ctx.beginPath();
+                    ctx.moveTo(lx, ly);
+                    ctx.lineTo(lx - laser.vx * 2.5, ly - laser.vy * 2.5);
+                    ctx.stroke();
+                } else {
+                    // standard / spread / triple / double / rapid
+                    const color = isSuperLaser ? '#ffcc00' : isAI ? '#ff4444' : '#00ffff';
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = isSuperLaser ? 5 : 3;
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = isSuperLaser ? 12 : 5;
+                    ctx.beginPath();
+                    ctx.moveTo(lx, ly);
+                    ctx.lineTo(lx - laser.vx * 2, ly - laser.vy * 2);
+                    ctx.stroke();
+                }
+            }
+
+            lasers.forEach(laser => drawOneLaser(laser, false));
+            aiLasers.forEach(laser => drawOneLaser(laser, true));
+
             ctx.shadowBlur = 0;
             ctx.restore();
         }
@@ -1728,7 +2066,8 @@
 
             const isTeamMode = gameModes[currentGameMode].teams;
             const isBallGoal = currentGameMode === 'ballGoal';
-            const hudHeight = isBallGoal ? 100 : isTeamMode ? 110 : 80;
+            const isBounty   = currentGameMode === 'bounty';
+            const hudHeight = (isBallGoal || isBounty) ? 100 : isTeamMode ? 110 : 80;
             const hudWidth = isTeamMode ? 280 : 200;
             ctx.fillStyle = 'rgba(0,0,0,0.7)';
             ctx.fillRect(10, 10, hudWidth, hudHeight);
@@ -1738,7 +2077,25 @@
             ctx.fillText(`HP: ${player.currentHp}/${player.maxHp}`, 20, 30);
             ctx.fillText(`Mode: ${gameModes[currentGameMode].name}`, 20, 50);
 
-            if (isBallGoal) {
+            if (isBounty) {
+                // Bounty: show countdown + team star counts
+                const secsLeft = Math.ceil(bountyTimerFrames / 60);
+                const mins = Math.floor(secsLeft / 60);
+                const secs = secsLeft % 60;
+                const timeStr = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                const redStars  = players.filter(p => p.team === 'red').reduce((s, p) => s + p.kills, 0);
+                const blueStars = players.filter(p => p.team === 'blue').reduce((s, p) => s + p.kills, 0);
+                ctx.font = 'bold 16px Arial';
+                ctx.fillStyle = secsLeft <= 30 ? '#ff4444' : '#ffcc00';
+                ctx.fillText(`⏱ ${timeStr}`, 20, 72);
+                ctx.fillStyle = '#ff4444';
+                ctx.fillText(`⭐ Red: ${redStars}`, 100, 72);
+                ctx.fillStyle = '#4488ff';
+                ctx.fillText(`⭐ Blue: ${blueStars}`, 185, 72);
+                ctx.fillStyle = player.team === 'red' ? '#ff4444' : '#4488ff';
+                ctx.font = '11px Arial';
+                ctx.fillText(`You: ${player.team} (${player.kills} kills)`, 20, 90);
+            } else if (isBallGoal) {
                 // Ball-Goal score display
                 ctx.font = 'bold 16px Arial';
                 ctx.fillStyle = '#ff4444';
@@ -1771,6 +2128,100 @@
                 ctx.fillText(`Players: ${alive}/${totalPlayersAtStart}`, 20, 70);
             }
 
+            // ── Super charge bar ──────────────────────────────────────────────
+            const superData = playersData[player.id] || playersData[selectedPlayerId];
+            const superName = superData?.superName || '⚡ Super';
+            const charge = player.superCharge || 0;
+            const barW = 160, barH = 14;
+            const barX = 10, barY = hudHeight + 18;
+            ctx.fillStyle = 'rgba(0,0,0,0.65)';
+            ctx.fillRect(barX, barY, barW + 2, barH + 2);
+            // Background track
+            ctx.fillStyle = '#333';
+            ctx.fillRect(barX + 1, barY + 1, barW, barH);
+            // Fill
+            const fillColor = charge >= 100 ? '#ffcc00' : '#aa66ff';
+            ctx.fillStyle = fillColor;
+            ctx.fillRect(barX + 1, barY + 1, Math.round(barW * charge / 100), barH);
+            // Label
+            ctx.font = '11px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = charge >= 100 ? '#ffcc00' : '#ccaaff';
+            ctx.fillText(charge >= 100 ? `${superName} — Press E!` : `${superName}  ${Math.round(charge)}%`, barX + 3, barY + barH - 2);
+            // Super active indicator
+            if (player.superActive) {
+                ctx.fillStyle = '#ffcc00';
+                ctx.font = 'bold 12px Arial';
+                ctx.fillText('⚡ SUPER ACTIVE', barX, barY + barH + 16);
+            }
+
+            // Update mobile super button label and glow
+            const superBtn = document.getElementById('super-btn');
+            const superFill = document.getElementById('super-btn-fill');
+            const superLabel = document.getElementById('super-btn-label');
+            if (superBtn && superFill && superLabel) {
+                superFill.style.height = charge + '%';
+                superLabel.textContent = charge >= 100 ? (superData?.superName || 'E') : 'E ' + Math.round(charge) + '%';
+                if (charge >= 100) superBtn.classList.add('ready');
+                else superBtn.classList.remove('ready');
+            }
+
+            ctx.restore();
+        }
+
+        function drawSuperEffects() {
+            if (superEffects.length === 0) return;
+            ctx.save();
+            for (const fx of superEffects) {
+                const sx = fx.x - camera.x;
+                const sy = fx.y - camera.y;
+                if (fx.type === 'firezone') {
+                    const alpha = Math.min(1, fx.timer / 30) * 0.55;
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, fx.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255,120,0,${alpha})`;
+                    ctx.fill();
+                    ctx.strokeStyle = `rgba(255,60,0,${alpha + 0.2})`;
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    // Embers
+                    ctx.fillStyle = '#ffdd00';
+                    for (let e = 0; e < 5; e++) {
+                        const ang = Math.random() * Math.PI * 2;
+                        const r = Math.random() * fx.radius;
+                        ctx.beginPath();
+                        ctx.arc(sx + Math.cos(ang) * r, sy + Math.sin(ang) * r, 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                } else if (fx.type === 'tornado') {
+                    ctx.save();
+                    ctx.translate(sx, sy);
+                    for (let ring = 0; ring < 4; ring++) {
+                        const r = fx.radius * (ring + 1) / 4;
+                        const alpha = 0.25 + ring * 0.1;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, r, fx.angle + ring * 0.5, fx.angle + ring * 0.5 + Math.PI * 1.6);
+                        ctx.strokeStyle = `rgba(180,140,255,${alpha})`;
+                        ctx.lineWidth = 6 - ring;
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                } else if (fx.type === 'bigshot') {
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, fx.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255,80,0,0.85)';
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffcc00';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                } else if (fx.type === 'screamflash') {
+                    const alpha = Math.min(0.65, fx.timer / 30 * 0.65);
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, fx.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255,220,60,${alpha})`;
+                    ctx.fill();
+                }
+            }
             ctx.restore();
         }
 
@@ -2179,15 +2630,19 @@
         function updateRespawns() {
             const isTeamMode = gameModes[currentGameMode] && gameModes[currentGameMode].teams;
             if (!isTeamMode) return;
+            const isBounty = currentGameMode === 'bounty';
 
             for (let p of players) {
                 if (p.currentHp > 0 || !p.respawnTimer) continue;
 
-                // Check if any living teammate exists
-                const hasLivingTeammate = players.some(t => t !== p && t.team === p.team && t.currentHp > 0);
-                if (!hasLivingTeammate) {
-                    p.respawnTimer = 0; // Can't respawn — all teammates dead
-                    continue;
+                // In bounty, always respawn regardless of teammates
+                if (!isBounty) {
+                    // Check if any living teammate exists
+                    const hasLivingTeammate = players.some(t => t !== p && t.team === p.team && t.currentHp > 0);
+                    if (!hasLivingTeammate) {
+                        p.respawnTimer = 0; // Can't respawn — all teammates dead
+                        continue;
+                    }
                 }
 
                 p.respawnTimer--;
@@ -2207,6 +2662,20 @@
                             const offsetX = p.team === 'red' ? 80 : -80;
                             p.x = ownGoal.x + ownGoal.w / 2 + offsetX - p.size / 2;
                             p.y = ownGoal.y + ownGoal.h / 2 + (Math.random() - 0.5) * 100 - p.size / 2;
+                        }
+                    } else if (currentGameMode === 'bounty') {
+                        // Respawn in own team's half (red=left, blue=right)
+                        const livingTeammates = players.filter(t => t !== p && t.team === p.team && t.currentHp > 0);
+                        if (livingTeammates.length > 0) {
+                            const mate = livingTeammates[Math.floor(Math.random() * livingTeammates.length)];
+                            const angle = Math.random() * Math.PI * 2;
+                            const dist = 80 + Math.random() * 60;
+                            p.x = Math.max(0, Math.min(mate.x + Math.cos(angle) * dist, MAP_WIDTH - p.size));
+                            p.y = Math.max(0, Math.min(mate.y + Math.sin(angle) * dist, MAP_HEIGHT - p.size));
+                        } else {
+                            // Respawn in safe zone based on team
+                            p.x = p.team === 'red' ? 150 + Math.random() * 400 : MAP_WIDTH - 550 + Math.random() * 400;
+                            p.y = 150 + Math.random() * (MAP_HEIGHT - 300);
                         }
                     } else {
                         // Respawn near a living teammate
@@ -2236,14 +2705,44 @@
                 laser.y += laser.vy;
                 laser.life--;
 
+                // Homing: steer toward nearest enemy
+                if (laser.attackType === 'homing') {
+                    let nearest = null, nearestDist = Infinity;
+                    for (const p of players) {
+                        if (p === laser.shooter || (laser.shooter.team && p.team === laser.shooter.team) || p.currentHp <= 0) continue;
+                        const d = Math.hypot(p.x + p.size / 2 - laser.x, p.y + p.size / 2 - laser.y);
+                        if (d < nearestDist) { nearestDist = d; nearest = p; }
+                    }
+                    if (nearest) {
+                        const tdx = nearest.x + nearest.size / 2 - laser.x;
+                        const tdy = nearest.y + nearest.size / 2 - laser.y;
+                        const td = Math.hypot(tdx, tdy) || 1;
+                        const spd = laser.homingSpeed || 8;
+                        laser.vx += (tdx / td * spd - laser.vx) * 0.12;
+                        laser.vy += (tdy / td * spd - laser.vy) * 0.12;
+                    }
+                }
+
+                // Boomerang: reverse direction halfway through life
+                if (laser.boomerang && laser.returnTimer > 0) {
+                    laser.returnTimer--;
+                    if (laser.returnTimer <= 0) {
+                        laser.vx = -laser.origVx;
+                        laser.vy = -laser.origVy;
+                    }
+                }
+
                 // Check collision with brown brick obstacles
                 if (checkLaserObstacleCollision(laser)) {
+                    if (laser.aoeRadius) dealAoeDamage(laser.x, laser.y, laser.aoeRadius, Math.round(laser.damage * 0.5), laser.shooter);
                     lasers.splice(i, 1);
                     continue;
                 }
 
                 // Check collisions with all players (except the shooter and teammates)
                 let hit = false;
+                // For heavy: use radius-based hit detection
+                const hitRadius = laser.radius || 0;
                 for (let j = 0; j < players.length; j++) {
                     const targetPlayer = players[j];
                     // Don't hit the shooter
@@ -2253,14 +2752,28 @@
                     // Don't hit dead players
                     if (targetPlayer.currentHp <= 0) continue;
 
-                    if (laser.x >= targetPlayer.x && laser.x <= targetPlayer.x + targetPlayer.size &&
-                        laser.y >= targetPlayer.y && laser.y <= targetPlayer.y + targetPlayer.size) {
+                    const tcx = targetPlayer.x + targetPlayer.size / 2;
+                    const tcy = targetPlayer.y + targetPlayer.size / 2;
+                    const playerHit = hitRadius > 0
+                        ? Math.hypot(laser.x - tcx, laser.y - tcy) < hitRadius + targetPlayer.size / 2
+                        : (laser.x >= targetPlayer.x && laser.x <= targetPlayer.x + targetPlayer.size &&
+                           laser.y >= targetPlayer.y && laser.y <= targetPlayer.y + targetPlayer.size);
 
+                    if (playerHit) {
                         const actualDamage = Math.min(laser.damage, Math.max(0, targetPlayer.currentHp));
                         targetPlayer.currentHp -= laser.damage;
                         laser.shooter.damageDealt += actualDamage;
+                        // Charge super bar (4 damage = 1 charge point, capped at 100)
+                        if (laser.shooter.superCharge !== undefined)
+                            laser.shooter.superCharge = Math.min(100, laser.shooter.superCharge + actualDamage * 4);
+                        // AoE on hit (heavy / aoehit)
+                        if (laser.aoeRadius) {
+                            dealAoeDamage(laser.x, laser.y, laser.aoeRadius, Math.round(laser.damage * 0.5), laser.shooter);
+                        }
                         // Taking damage reveals from bush
                         targetPlayer.bushRevealTimer = 90;
+                        // Block damage if target is invincible
+                        if (targetPlayer.superInvincible) { targetPlayer.currentHp += laser.damage; hit = true; break; }
                         // Drop ball on taking damage in Ball-Goal
                         if (currentGameMode === 'ballGoal' && targetPlayer.hasBall && ball) dropBall(targetPlayer);
                         hit = true;
@@ -2270,11 +2783,13 @@
                             laser.shooter.kills++;
                             killFeed.push({ killerName: laser.shooter.name, victimName: targetPlayer.name, ts: Date.now(), isHumanKill: laser.shooter.isHuman });
                             // Award XP for kill
-                            if (laser.shooter.isHuman) awardXP(1);
+                            if (laser.shooter.isHuman) awardMedals(1);
+                            // Check bounty 20-star win
+                            checkBountyWin();
                             // In team modes: keep player for respawn; in FFA: remove
                             const isTeamMode = gameModes[currentGameMode] && gameModes[currentGameMode].teams;
                             if (isTeamMode) {
-                                targetPlayer.respawnTimer = 900; // 15 seconds at 60fps
+                                targetPlayer.respawnTimer = currentGameMode === 'bounty' ? 300 : 900;
                                 targetPlayer.dead = true;
                             } else {
                                 matchStatsList.push({ name: targetPlayer.name, kills: targetPlayer.kills, damageDealt: targetPlayer.damageDealt, healingReceived: targetPlayer.healingReceived, team: targetPlayer.team, isHuman: targetPlayer.isHuman });
@@ -2289,7 +2804,7 @@
                     }
                 }
 
-                if (hit || laser.life <= 0) {
+                if ((hit && !laser.piercing) || laser.life <= 0) {
                     lasers.splice(i, 1);
                 }
             }
@@ -2301,14 +2816,43 @@
                 laser.y += laser.vy;
                 laser.life--;
 
+                // Homing: steer toward nearest player
+                if (laser.attackType === 'homing') {
+                    let nearest = null, nearestDist = Infinity;
+                    for (const p of players) {
+                        if (p === laser.shooter || (laser.shooter.team && p.team === laser.shooter.team) || p.currentHp <= 0) continue;
+                        const d = Math.hypot(p.x + p.size / 2 - laser.x, p.y + p.size / 2 - laser.y);
+                        if (d < nearestDist) { nearestDist = d; nearest = p; }
+                    }
+                    if (nearest) {
+                        const tdx = nearest.x + nearest.size / 2 - laser.x;
+                        const tdy = nearest.y + nearest.size / 2 - laser.y;
+                        const td = Math.hypot(tdx, tdy) || 1;
+                        const spd = laser.homingSpeed || 8;
+                        laser.vx += (tdx / td * spd - laser.vx) * 0.12;
+                        laser.vy += (tdy / td * spd - laser.vy) * 0.12;
+                    }
+                }
+
+                // Boomerang return
+                if (laser.boomerang && laser.returnTimer > 0) {
+                    laser.returnTimer--;
+                    if (laser.returnTimer <= 0) {
+                        laser.vx = -laser.origVx;
+                        laser.vy = -laser.origVy;
+                    }
+                }
+
                 // Check collision with brown brick obstacles
                 if (checkLaserObstacleCollision(laser)) {
+                    if (laser.aoeRadius) dealAoeDamage(laser.x, laser.y, laser.aoeRadius, Math.round(laser.damage * 0.5), laser.shooter);
                     aiLasers.splice(i, 1);
                     continue;
                 }
 
                 // Check collisions with all players (except the shooter and teammates)
                 let hit = false;
+                const aiHitRadius = laser.radius || 0;
                 for (let j = 0; j < players.length; j++) {
                     const targetPlayer = players[j];
                     // Don't hit the shooter
@@ -2318,14 +2862,29 @@
                     // Don't hit dead players
                     if (targetPlayer.currentHp <= 0) continue;
 
-                    if (laser.x >= targetPlayer.x && laser.x <= targetPlayer.x + targetPlayer.size &&
-                        laser.y >= targetPlayer.y && laser.y <= targetPlayer.y + targetPlayer.size) {
+                    const tcx2 = targetPlayer.x + targetPlayer.size / 2;
+                    const tcy2 = targetPlayer.y + targetPlayer.size / 2;
+                    const aiPlayerHit = aiHitRadius > 0
+                        ? Math.hypot(laser.x - tcx2, laser.y - tcy2) < aiHitRadius + targetPlayer.size / 2
+                        : (laser.x >= targetPlayer.x && laser.x <= targetPlayer.x + targetPlayer.size &&
+                           laser.y >= targetPlayer.y && laser.y <= targetPlayer.y + targetPlayer.size);
+
+                    if (aiPlayerHit) {
 
                         const actualDamage = Math.min(laser.damage, Math.max(0, targetPlayer.currentHp));
                         targetPlayer.currentHp -= laser.damage;
                         laser.shooter.damageDealt += actualDamage;
+                        // Charge super bar
+                        if (laser.shooter.superCharge !== undefined)
+                            laser.shooter.superCharge = Math.min(100, laser.shooter.superCharge + actualDamage * 4);
+                        // AoE on hit (aoehit)
+                        if (laser.aoeRadius) {
+                            dealAoeDamage(laser.x, laser.y, laser.aoeRadius, Math.round(laser.damage * 0.5), laser.shooter);
+                        }
                         // Taking damage reveals from bush
                         targetPlayer.bushRevealTimer = 90;
+                        // Block damage if target is invincible
+                        if (targetPlayer.superInvincible) { targetPlayer.currentHp += laser.damage; hit = true; break; }
                         // Drop ball on taking damage in Ball-Goal
                         if (currentGameMode === 'ballGoal' && targetPlayer.hasBall && ball) dropBall(targetPlayer);
                         hit = true;
@@ -2340,10 +2899,12 @@
                             targetPlayer.currentHp = 0;
                             laser.shooter.kills++;
                             killFeed.push({ killerName: laser.shooter.name, victimName: targetPlayer.name, ts: Date.now(), isHumanKill: laser.shooter.isHuman });
+                            // Check bounty 20-star win
+                            checkBountyWin();
                             // In team modes: keep player for respawn; in FFA: remove
                             const isTeamMode = gameModes[currentGameMode] && gameModes[currentGameMode].teams;
                             if (isTeamMode) {
-                                targetPlayer.respawnTimer = 900; // 15 seconds at 60fps
+                                targetPlayer.respawnTimer = currentGameMode === 'bounty' ? 300 : 900;
                                 targetPlayer.dead = true;
                             } else {
                                 matchStatsList.push({ name: targetPlayer.name, kills: targetPlayer.kills, damageDealt: targetPlayer.damageDealt, healingReceived: targetPlayer.healingReceived, team: targetPlayer.team, isHuman: targetPlayer.isHuman });
@@ -2584,10 +3145,13 @@
                 inputY /= length;
             }
 
+            // Apply slow debuff if active
+            const speedMult = (player._slowTimer > 0) ? 0.4 : 1;
+
             if (inputX !== 0 || inputY !== 0) {
                 const oldX = player.x, oldY = player.y;
-                player.x += inputX * player.speed;
-                player.y += inputY * player.speed;
+                player.x += inputX * player.speed * speedMult;
+                player.y += inputY * player.speed * speedMult;
 
                 player.x = Math.max(0, Math.min(player.x, MAP_WIDTH - player.size));
                 player.y = Math.max(0, Math.min(player.y, MAP_HEIGHT - player.size));
@@ -2610,6 +3174,13 @@
             checkHealthPackCollision(player);
 
             if (player.shootCooldown > 0) player.shootCooldown--;
+
+            // Super ability: E key
+            if (keysPressed['e'] && player.superCharge >= 100 && player.superCooldown <= 0) {
+                keysPressed['e'] = false; // consume keypress
+                // Target = last known mouse world position (or centre of screen)
+                activateSuper(player, lastMouseWorldX, lastMouseWorldY);
+            }
         }
         /************************************************** */
         //end joystick implementation
@@ -2618,6 +3189,8 @@
             // Ball-Goal ends by score (handled in updateBall), not elimination
             if (currentGameMode === 'ballGoal') return;
 
+            // Bounty ends by timer (handled in gameLoop), not elimination
+            if (currentGameMode === 'bounty') return;
             const alivePlayers = players.filter(p => p.currentHp > 0);
 
             if (gameModes[currentGameMode].teams) {
@@ -2627,8 +3200,10 @@
                 const teamsAlive = teams.filter(t => {
                     const teamMembers = players.filter(p => p.team === t);
                     if (teamMembers.length === 0) return false;
-                    // Team is alive if any member is alive OR any member is still respawning
-                    return teamMembers.some(p => p.currentHp > 0 || p.respawnTimer > 0);
+                    // Team is alive only if at least one member is alive (hp > 0)
+                    // Dead members can only respawn while a living teammate exists,
+                    // so if all are dead the team is eliminated regardless of respawnTimer
+                    return teamMembers.some(p => p.currentHp > 0);
                 });
 
                 if (teamsAlive.length === 1) {
@@ -2647,6 +3222,319 @@
             }
         }
 
+        // ─── BOUNTY TIMER ────────────────────────────────────────────────────────
+
+        const BOUNTY_WIN_STARS = 20;
+
+        function checkBountyWin() {
+            if (currentGameMode !== 'bounty' || !gameStarted) return;
+            const redStars  = players.filter(p => p.team === 'red').reduce((s, p) => s + p.kills, 0);
+            const blueStars = players.filter(p => p.team === 'blue').reduce((s, p) => s + p.kills, 0);
+            if (redStars >= BOUNTY_WIN_STARS) {
+                endGame(`Red Team Wins! ⭐ ${redStars} – ${blueStars}`, player.team === 'red');
+            } else if (blueStars >= BOUNTY_WIN_STARS) {
+                endGame(`Blue Team Wins! ⭐ ${blueStars} – ${redStars}`, player.team === 'blue');
+            }
+        }
+
+        function updateBountyTimer() {
+            if (currentGameMode !== 'bounty' || !gameStarted) return;
+            bountyTimerFrames--;
+            if (bountyTimerFrames <= 0) {
+                bountyTimerFrames = 0;
+                // Count team kills
+                const redStars  = players.filter(p => p.team === 'red').reduce((s, p) => s + p.kills, 0);
+                const blueStars = players.filter(p => p.team === 'blue').reduce((s, p) => s + p.kills, 0);
+                if (redStars > blueStars) {
+                    endGame(`Red Team Wins! ⭐ ${redStars} – ${blueStars}`, player.team === 'red');
+                } else if (blueStars > redStars) {
+                    endGame(`Blue Team Wins! ⭐ ${blueStars} – ${redStars}`, player.team === 'blue');
+                } else {
+                    endGame(`Draw! ⭐ ${redStars} – ${blueStars}`, false);
+                }
+            }
+        }
+
+        // ─── SUPER ABILITY SYSTEM ────────────────────────────────────────────────
+
+        // Helper: launch a radial burst of N lasers from a player
+        function fireRadialBurst(p, count, damage, speed, life) {
+            for (let i = 0; i < count; i++) {
+                const angle = (2 * Math.PI / count) * i;
+                lasers.push({
+                    x: p.x + p.size / 2,
+                    y: p.y + p.size / 2,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life,
+                    damage,
+                    shooter: p,
+                    isSuperLaser: true
+                });
+            }
+        }
+
+        // Helper: deal AoE damage from a centre point
+        function dealAoeDamage(cx, cy, radius, damage, shooter) {
+            for (const p of players) {
+                if (p === shooter) continue;
+                if (shooter.team && p.team === shooter.team) continue;
+                if (p.currentHp <= 0) continue;
+                const px = p.x + p.size / 2, py = p.y + p.size / 2;
+                if ((px - cx) ** 2 + (py - cy) ** 2 <= radius * radius) {
+                    const actual = Math.min(damage, Math.max(0, p.currentHp));
+                    p.currentHp -= damage;
+                    shooter.damageDealt += actual;
+                    p.bushRevealTimer = 90;
+                    // Super damage also charges a little
+                    if (shooter.superCharge !== undefined) shooter.superCharge = Math.min(100, shooter.superCharge + actual * 0.5);
+                    if (p.currentHp <= 0) {
+                        p.currentHp = 0;
+                        shooter.kills++;
+                        killFeed.push({ killerName: shooter.name, victimName: p.name, ts: Date.now(), isHumanKill: shooter.isHuman });
+                        if (shooter.isHuman) awardMedals(1);
+                        const isTeamMode = gameModes[currentGameMode] && gameModes[currentGameMode].teams;
+                        if (isTeamMode) {
+                            p.respawnTimer = currentGameMode === 'bounty' ? 300 : 900;
+                            p.dead = true;
+                        } else {
+                            matchStatsList.push({ name: p.name, kills: p.kills, damageDealt: p.damageDealt, healingReceived: p.healingReceived, team: p.team, isHuman: p.isHuman });
+                            const idx = players.indexOf(p);
+                            if (idx !== -1) players.splice(idx, 1);
+                            if (p.isBot) { const bi = bots.findIndex(b => b.id === p.id); if (bi !== -1) bots.splice(bi, 1); }
+                            if (p.isHuman) endGame('Game Over! You were defeated!', false);
+                        }
+                    }
+                }
+            }
+        }
+
+        function activateSuper(p, targetX, targetY) {
+            if (!p || p.currentHp <= 0) return;
+            if (p.superCharge < 100) return;
+            if (p.superCooldown > 0) return;
+
+            const type = p.superType || 'burst';
+            p.superCharge = 0;
+            p.superCooldown = 300; // 5-second lockout before charge can fill again
+
+            const cx = p.x + p.size / 2;
+            const cy = p.y + p.size / 2;
+
+            switch (type) {
+                case 'burst': {
+                    // 8 lasers in all directions
+                    fireRadialBurst(p, 8, p.laserDamage * 3, 14, 100);
+                    break;
+                }
+                case 'piercebeam': {
+                    // Long beam toward target (or nearest enemy for bots)
+                    const tx = targetX ?? cx + 1;
+                    const ty = targetY ?? cy;
+                    const dist = Math.hypot(tx - cx, ty - cy) || 1;
+                    const vx = (tx - cx) / dist * 18;
+                    const vy = (ty - cy) / dist * 18;
+                    // Fire 3 staggered beams for a thick visual
+                    for (let o = -1; o <= 1; o++) {
+                        const perp = { x: -vy / 18 * (o * 8), y: vx / 18 * (o * 8) };
+                        lasers.push({ x: cx + perp.x, y: cy + perp.y, vx, vy, life: 160, damage: p.laserDamage * 4, shooter: p, isSuperLaser: true, piercing: true });
+                    }
+                    break;
+                }
+                case 'firezone': {
+                    const tx = targetX ?? cx;
+                    const ty = targetY ?? cy;
+                    superEffects.push({ type: 'firezone', x: tx, y: ty, radius: 120, timer: 180, tickTimer: 0, tickInterval: 30, damage: p.laserDamage * 2, shooter: p });
+                    break;
+                }
+                case 'bigshot': {
+                    const tx = targetX ?? cx + 1;
+                    const ty = targetY ?? cy;
+                    const dist = Math.hypot(tx - cx, ty - cy) || 1;
+                    superEffects.push({ type: 'bigshot', x: cx, y: cy, vx: (tx - cx) / dist * 7, vy: (ty - cy) / dist * 7, radius: 30, damage: p.laserDamage * 6, shooter: p, life: 200 });
+                    break;
+                }
+                case 'firedash': {
+                    // Dash toward target leaving a damage zone
+                    const tx = targetX ?? cx + 1;
+                    const ty = targetY ?? cy;
+                    const dist = Math.hypot(tx - cx, ty - cy) || 1;
+                    const dashDist = 300;
+                    const newX = Math.max(0, Math.min(MAP_WIDTH - p.size, p.x + (tx - cx) / dist * dashDist));
+                    const newY = Math.max(0, Math.min(MAP_HEIGHT - p.size, p.y + (ty - cy) / dist * dashDist));
+                    superEffects.push({ type: 'firezone', x: (cx + newX + p.size / 2) / 2, y: (cy + newY + p.size / 2) / 2, radius: 80, timer: 90, tickTimer: 0, tickInterval: 20, damage: p.laserDamage * 2, shooter: p });
+                    p.x = newX;
+                    p.y = newY;
+                    break;
+                }
+                case 'tornado': {
+                    superEffects.push({ type: 'tornado', x: cx, y: cy, radius: 150, timer: 240, tickTimer: 0, tickInterval: 20, damage: p.laserDamage, shooter: p, angle: 0 });
+                    break;
+                }
+                case 'berserk': {
+                    p.superActive = true;
+                    p.superTimer = 300; // 5 s
+                    p._baseLaserDamage = p.laserDamage;
+                    p.laserDamage = p.laserDamage * 2;
+                    p._baseShootMult = 1;
+                    p.superBuffType = 'berserk';
+                    break;
+                }
+                case 'coffeerush': {
+                    p.superActive = true;
+                    p.superTimer = 240; // 4 s
+                    p._baseSpeed = p.speed;
+                    p.speed = p.speed * 3;
+                    p._baseLaserDamage = p.laserDamage;
+                    p.laserDamage = p.laserDamage * 2;
+                    p.superBuffType = 'coffeerush';
+                    break;
+                }
+                case 'scream': {
+                    // Immediate AoE around self
+                    dealAoeDamage(cx, cy, 180, p.laserDamage * 5, p);
+                    // Slow nearby enemies
+                    for (const t of players) {
+                        if (t === p || (p.team && t.team === p.team) || t.currentHp <= 0) continue;
+                        if (Math.hypot(t.x + t.size / 2 - cx, t.y + t.size / 2 - cy) <= 180) {
+                            t._slowTimer = (t._slowTimer || 0);
+                            t._slowTimer = 150; // 2.5 s slow
+                        }
+                    }
+                    // Visual flash
+                    superEffects.push({ type: 'screamflash', x: cx, y: cy, radius: 180, timer: 30, shooter: p });
+                    break;
+                }
+                case 'megazord': {
+                    // Brief invincibility + 12-laser burst
+                    p.superInvincible = true;
+                    p.superActive = true;
+                    p.superTimer = 120; // 2 s
+                    p.superBuffType = 'megazord';
+                    fireRadialBurst(p, 12, p.laserDamage * 4, 15, 130);
+                    break;
+                }
+                case 'rockshield': {
+                    p.superInvincible = true;
+                    p.superActive = true;
+                    p.superTimer = 180; // 3 s
+                    p.superBuffType = 'rockshield';
+                    break;
+                }
+                case 'rockrush': {
+                    // Charge in facing direction damaging everything in path
+                    const tx2 = targetX ?? cx + 1;
+                    const ty2 = targetY ?? cy;
+                    const d2 = Math.hypot(tx2 - cx, ty2 - cy) || 1;
+                    const steps = 20;
+                    const stepX = (tx2 - cx) / d2 * 20;
+                    const stepY = (ty2 - cy) / d2 * 20;
+                    for (let s = 0; s < steps; s++) {
+                        p.x = Math.max(0, Math.min(MAP_WIDTH - p.size, p.x + stepX));
+                        p.y = Math.max(0, Math.min(MAP_HEIGHT - p.size, p.y + stepY));
+                    }
+                    dealAoeDamage(p.x + p.size / 2, p.y + p.size / 2, 100, p.laserDamage * 6, p);
+                    superEffects.push({ type: 'screamflash', x: p.x + p.size / 2, y: p.y + p.size / 2, radius: 100, timer: 25, shooter: p });
+                    break;
+                }
+                default:
+                    fireRadialBurst(p, 8, p.laserDamage * 3, 14, 100);
+            }
+        }
+
+        function updateSupers() {
+            // Tick active buff timers
+            for (const p of players) {
+                if (p.superCooldown > 0) p.superCooldown--;
+                if (p._slowTimer > 0) {
+                    p._slowTimer--;
+                    // Applied in movement (speed halved when slow active — see handleInputFrame)
+                }
+                if (!p.superActive || p.superTimer <= 0) {
+                    if (p.superActive) {
+                        // Buff expired — restore stats
+                        p.superActive = false;
+                        p.superInvincible = false;
+                        if (p.superBuffType === 'berserk') {
+                            p.laserDamage = p._baseLaserDamage ?? p.laserDamage;
+                        } else if (p.superBuffType === 'coffeerush') {
+                            p.speed = p._baseSpeed ?? p.speed;
+                            p.laserDamage = p._baseLaserDamage ?? p.laserDamage;
+                        } else if (p.superBuffType === 'megazord' || p.superBuffType === 'rockshield') {
+                            p.superInvincible = false;
+                        }
+                        p.superBuffType = null;
+                    }
+                    continue;
+                }
+                p.superTimer--;
+            }
+
+            // Update super effects (AoE zones, projectiles, etc.)
+            for (let i = superEffects.length - 1; i >= 0; i--) {
+                const fx = superEffects[i];
+
+                if (fx.type === 'firezone' || fx.type === 'tornado') {
+                    fx.timer--;
+                    fx.tickTimer++;
+                    if (fx.type === 'tornado') {
+                        fx.angle += 0.08;
+                        // Gentle pull toward tornado centre
+                        for (const p of players) {
+                            if (p === fx.shooter || (fx.shooter.team && p.team === fx.shooter.team) || p.currentHp <= 0) continue;
+                            const dx = fx.x - (p.x + p.size / 2);
+                            const dy = fx.y - (p.y + p.size / 2);
+                            const dist = Math.hypot(dx, dy);
+                            if (dist < fx.radius && dist > 5) {
+                                p.x += (dx / dist) * 2;
+                                p.y += (dy / dist) * 2;
+                            }
+                        }
+                    }
+                    if (fx.tickTimer >= fx.tickInterval) {
+                        fx.tickTimer = 0;
+                        dealAoeDamage(fx.x, fx.y, fx.radius, fx.damage, fx.shooter);
+                    }
+                    if (fx.timer <= 0) superEffects.splice(i, 1);
+
+                } else if (fx.type === 'bigshot') {
+                    fx.x += fx.vx;
+                    fx.y += fx.vy;
+                    fx.life--;
+                    let hit = false;
+                    for (const obs of obstacles) {
+                        if (fx.x > obs.x && fx.x < obs.x + obs.width && fx.y > obs.y && fx.y < obs.y + obs.height) { hit = true; break; }
+                    }
+                    for (const p of players) {
+                        if (p === fx.shooter || (fx.shooter.team && p.team === fx.shooter.team) || p.currentHp <= 0) continue;
+                        if (Math.hypot(p.x + p.size / 2 - fx.x, p.y + p.size / 2 - fx.y) < fx.radius + p.size / 2) { hit = true; break; }
+                    }
+                    if (hit || fx.life <= 0) {
+                        dealAoeDamage(fx.x, fx.y, fx.radius * 3, fx.damage, fx.shooter);
+                        superEffects.push({ type: 'screamflash', x: fx.x, y: fx.y, radius: fx.radius * 3, timer: 25, shooter: fx.shooter });
+                        superEffects.splice(i, 1);
+                    }
+
+                } else if (fx.type === 'screamflash') {
+                    fx.timer--;
+                    if (fx.timer <= 0) superEffects.splice(i, 1);
+                }
+            }
+
+            // Bots: activate super when fully charged and have a target in range
+            for (const bot of bots) {
+                if (bot.currentHp <= 0 || bot.superCharge < 100 || bot.superCooldown > 0) continue;
+                if (Math.random() > 0.04) continue; // 4% chance per frame to fire
+                const target = findClosestTarget(bot);
+                if (!target && bot.superType !== 'berserk' && bot.superType !== 'coffeerush' && bot.superType !== 'rockshield') continue;
+                const tx = target ? target.x + target.size / 2 : bot.x;
+                const ty = target ? target.y + target.size / 2 : bot.y;
+                activateSuper(bot, tx, ty);
+            }
+        }
+
+        // ─── END SUPER ABILITY SYSTEM ────────────────────────────────────────────
+
         // ADD THIS MISSING FUNCTION - Game end handler
         function endGame(message, isVictory) {
             if (!gameStarted) return; // Guard against double calls
@@ -2659,11 +3547,14 @@
             const messageEl = document.getElementById('game-over-message');
 
             // Scale rewards by game mode (3v3 is harder = more reward)
-            const is3v3 = currentGameMode === '3v3' || currentGameMode === 'ballGoal';
+            const is3v3 = currentGameMode === '3v3' || currentGameMode === 'ballGoal' || currentGameMode === 'bounty';
             const winCoins  = is3v3 ? 150 : 100;
             const loseCoins = is3v3 ? 50  : 25;
             const winMedals  = is3v3 ? 12  : 8;
             const loseMedals = is3v3 ? -4  : -2;
+
+            const winCredits = is3v3 ? 30 : 20;
+            const loseCredits = is3v3 ? 15 : 10;
 
             if (isVictory) {
                 title.textContent = 'Victory!';
@@ -2671,20 +3562,22 @@
                 messageEl.textContent = message;
 
                 playerCoins += winCoins;
-                awardXP(winMedals);
+                playerCredits += winCredits;
+                awardMedals(winMedals);
                 saveProgress();
                 showCoins();
-                messageEl.innerHTML += `<br><br>🎉 You earned ${winCoins} coins and +${winMedals} 🏅 medals!`;
+                messageEl.innerHTML += `<br><br>🎉 You earned ${winCoins} coins, +${winMedals} 🏅 medals, and +${winCredits} 🎖️ credits!`;
             } else {
                 title.textContent = 'Game Over';
                 title.style.color = '#ff4444';
                 messageEl.textContent = message;
 
                 playerCoins += loseCoins;
-                awardXP(loseMedals);
+                playerCredits += loseCredits;
+                awardMedals(loseMedals);
                 saveProgress();
                 showCoins();
-                messageEl.innerHTML += `<br><br>💫 You earned ${loseCoins} coins and ${loseMedals} 🏅 medals.`;
+                messageEl.innerHTML += `<br><br>💫 You earned ${loseCoins} coins, ${loseMedals} 🏅 medals, and +${loseCredits} 🎖️ credits.`;
             }
 
             // Snapshot surviving players before clearing
@@ -2758,19 +3651,21 @@
                 ],
                 // Rare
                 [
-                    { type: 'coins', amount: 50,  weight: 30, icon: '💰', text: '+50 Coins' },
-                    { type: 'coins', amount: 100, weight: 25, icon: '💰', text: '+100 Coins' },
+                    { type: 'coins', amount: 50,  weight: 25, icon: '💰', text: '+50 Coins' },
+                    { type: 'coins', amount: 100, weight: 20, icon: '💰', text: '+100 Coins' },
                     { type: 'sparks', amount: 50, weight: 20, icon: '⚡', text: '+50 Energy Sparks' },
                     { type: 'killfeedcolor', weight: 10, icon: '🎨', text: '', colors: killFeedColors },
-                    { type: 'medals', amount: 3, weight: 15, icon: '🏅', text: '+3 Medals' },
+                    { type: 'medals', amount: 3, weight: 10, icon: '🏅', text: '+3 Medals' },
+                    { type: 'credits', amount: 50, weight: 15, icon: '🎖️', text: '+50 Credits' },
                 ],
                 // Epic
                 [
-                    { type: 'coins', amount: 100, weight: 25, icon: '💰', text: '+100 Coins' },
-                    { type: 'coins', amount: 200, weight: 20, icon: '💰', text: '+200 Coins!' },
-                    { type: 'sparks', amount: 30, weight: 20, icon: '⚡', text: '+50 Energy Sparks' },
+                    { type: 'coins', amount: 100, weight: 20, icon: '💰', text: '+100 Coins' },
+                    { type: 'coins', amount: 200, weight: 15, icon: '💰', text: '+200 Coins!' },
+                    { type: 'sparks', amount: 30, weight: 15, icon: '⚡', text: '+30 Energy Sparks' },
                     { type: 'killfeedcolor', weight: 10, icon: '🎨', text: '', colors: killFeedColors },
-                    { type: 'medals', amount: 5, weight: 25, icon: '🏅', text: '+5 Medals' },
+                    { type: 'medals', amount: 5, weight: 15, icon: '🏅', text: '+5 Medals' },
+                    { type: 'credits', amount: 100, weight: 25, icon: '🎖️', text: '+100 Credits!' },
                 ],
                 // Mythic
                 [
@@ -2779,7 +3674,7 @@
                     { type: 'sparks', amount: 60, weight: 20, icon: '⚡', text: '+60 Energy Sparks' },
                     { type: 'medals', amount: 8, weight: 15, icon: '🏅', text: '+8 Medals!' },
                     { type: 'killfeedcolor', weight: 20, icon: '🎨', text: '', colors: killFeedColors },
-                    { type: 'player', weight: 15, icon: '🎭', text: '' },
+                    { type: 'credits', amount: 150, weight: 15, icon: '🎖️', text: '+150 Credits!' },
                 ],
                 // Legendary
                 [
@@ -2788,7 +3683,7 @@
                     { type: 'sparks', amount: 100, weight: 25, icon: '⚡', text: '+100 Energy Sparks!' },
                     { type: 'medals', amount: 12, weight: 15, icon: '🏅', text: '+12 Medals!!' },
                     { type: 'killfeedcolor', weight: 10, icon: '🎨', text: '', colors: killFeedColors },
-                    { type: 'player', weight: 25, icon: '🎭', text: '' },
+                    { type: 'credits', amount: 250, weight: 25, icon: '🎖️', text: '+250 Credits!!' },
                 ],
             ];
 
@@ -2802,15 +3697,8 @@
                         const picked = r.colors[Math.floor(Math.random() * r.colors.length)];
                         return { type: 'killfeedcolor', icon: '🎨', text: `${picked.name} Kill Feed Color!`, color: picked.color };
                     }
-                    if (r.type === 'player') {
-                        // Pick a random locked player
-                        const locked = Object.values(playersData).filter(p => !unlockedPlayers.includes(p.id) && p.id !== 'default');
-                        if (locked.length > 0) {
-                            const picked = locked[Math.floor(Math.random() * locked.length)];
-                            return { type: 'player', icon: '🎭', text: `${picked.name} Unlocked!`, playerId: picked.id };
-                        }
-                        // Fallback: all players owned, give coins instead
-                        return { type: 'coins', amount: 400, icon: '💰', text: '+400 Coins (all players owned!)' };
+                    if (r.type === 'credits') {
+                        return r;
                     }
                     return r;
                 }
@@ -2904,13 +3792,11 @@
                             if (reward.type === 'coins') {
                                 playerCoins += reward.amount;
                             } else if (reward.type === 'medals') {
-                                awardXP(reward.amount);
+                                awardMedals(reward.amount);
                             } else if (reward.type === 'killfeedcolor') {
                                 killFeedColor = reward.color;
-                            } else if (reward.type === 'player') {
-                                if (reward.playerId && !unlockedPlayers.includes(reward.playerId)) {
-                                    unlockedPlayers.push(reward.playerId);
-                                }
+                            } else if (reward.type === 'credits') {
+                                playerCredits += reward.amount;
                             } else if (reward.type === 'sparks') {
                                 energySparks += reward.amount;
                             }
@@ -2969,8 +3855,10 @@
             updateAllBots();
             updateRespawns();
             updateLasers();
+            updateSupers();
             updatePoisonZone();
             updateBall();
+            updateBountyTimer();
             checkGameEnd();
 
             drawBackground();
@@ -2979,6 +3867,7 @@
             drawHealthPacks();
             drawPlayers();
             drawBushes();
+            drawSuperEffects();
             drawBall();
             drawLasers();
             drawPoisonZone();
@@ -2993,17 +3882,20 @@
 
         // UI Functions
         const levelRewards = [
-            { level: 2,  reward: '50 coins',  icon: '💰' },
-            { level: 3,  reward: '75 coins',  icon: '💰' },
-            { level: 5,  reward: '100 coins', icon: '💰' },
-            { level: 7,  reward: '150 coins', icon: '💰' },
-            { level: 10, reward: '150 coins', icon: '💰' },
-            { level: 12, reward: '200 coins', icon: '💰' },
-            { level: 15, reward: '200 coins', icon: '💰' },
-            { level: 20, reward: '250 coins', icon: '💰' },
-            { level: 25, reward: '250 coins', icon: '💰' },
-            { level: 30, reward: '300 coins', icon: '💰' },
+            { level: 2,  reward: '50 coins',  icon: '💰', claimed: false },
+            { level: 3,  reward: '75 coins',  icon: '💰', claimed: false },
+            { level: 5,  reward: '100 coins', icon: '💰', claimed: false },
+            { level: 7,  reward: '150 coins', icon: '💰', claimed: false },
+            { level: 10, reward: '150 coins', icon: '💰', claimed: false },
+            { level: 12, reward: '200 coins', icon: '💰', claimed: false },
+            { level: 15, reward: '200 coins', icon: '💰', claimed: false },
+            { level: 20, reward: '250 coins', icon: '💰', claimed: false },
+            { level: 25, reward: '250 coins', icon: '💰', claimed: false },
+            { level: 30, reward: '300 coins', icon: '💰', claimed: false },
         ];
+        // Restore claimed state from localStorage
+        const _claimedLevels = JSON.parse(localStorage.getItem('claimedLevelRewards') ?? '[]');
+        for (const _m of levelRewards) { if (_claimedLevels.includes(_m.level)) _m.claimed = true; }
 
         function claimLevelRewards() {
             for (const milestone of levelRewards) {
@@ -3017,11 +3909,11 @@
         }
 
         function showCoins() {
-            const medalsIntoLevel = playerXP % 10;
+            const medalsIntoLevel = playerMedals % 10;
             // Check and auto-claim any newly reached rewards
             claimLevelRewards();
             document.getElementById('coins-display').innerHTML =
-                `💰 Coins: ${playerCoins}<br>🏅 Medals: ${playerXP} &nbsp;(Lv ${playerLevel})<br>⚡ Energy Sparks: ${energySparks}`;
+                `💰 Coins: ${playerCoins}<br>🏅 Medals: ${playerMedals} &nbsp;(Lv ${playerLevel})<br>⚡ Energy Sparks: ${energySparks}<br>🎖️ Credits: ${playerCredits}`;
         }
 
         function renderLevelRewards() {
@@ -3045,7 +3937,7 @@
                     (milestone.claimed ? ' reached' : isNext ? ' current' : ' next');
 
                 const medalsNeeded = (milestone.level - 1) * 10;
-                const medalsLeft = Math.max(0, medalsNeeded - playerXP);
+                const medalsLeft = Math.max(0, medalsNeeded - playerMedals);
 
                 row.innerHTML = `
                     <span class="reward-level-badge">Lv ${milestone.level}</span>
@@ -3083,8 +3975,10 @@
         function showAllUI() {
             document.querySelector('.guide').style.display = 'block';
             document.querySelector('.menu').style.display = 'flex';
-            document.getElementById('joystick-container').style.display = 'block';
-            document.getElementById('shoot-joystick-container').style.display = 'block';
+            if (window.innerWidth <= 1024 || ('ontouchstart' in window)) {
+                document.getElementById('joystick-container').style.display = 'block';
+                document.getElementById('shoot-joystick-container').style.display = 'block';
+            }
             document.getElementById('game-over-overlay').style.display = 'none';
             document.getElementById('stardrop-overlay').style.display = 'none';
         }
@@ -3107,6 +4001,252 @@
             gameLoop();
         }
 
+        // Credits Panel
+        function initCreditsPanel() {
+            document.getElementById('credits-btn').addEventListener('click', () => {
+                document.getElementById('credits-panel').style.display = 'block';
+                renderCreditsPanel();
+            });
+            document.getElementById('close-credits-panel').addEventListener('click', () => {
+                document.getElementById('credits-panel').style.display = 'none';
+            });
+        }
+
+        // ── BATTLE MAP AUTO-LOADER ───────────────────────────────────────────────
+        // Map files live in images/. Naming rules:
+        //   Contains "team"     → used for team-battle modes (2v2, 3v3, ballGoal)
+        //   Contains "showdown" → used for Showdown mode
+        //   Plain "battlemap"   → falls into team pool as default
+        // The game picks a random matching map at battle start.
+        // Examples: battlemap_team.png, battlemap_team2.png, battlemap_showdown.png
+
+        const mapPools = { team: [], showdown: [] };
+        let currentBattleMapData = null; // set per-game by pickMap()
+
+        function discoverMaps() {
+            const candidates = [];
+            // Plain battlemap (goes to team pool)
+            candidates.push('images/battlemap.png');
+            // Numbered team & showdown variants 1-10
+            for (let n = 0; n <= 10; n++) {
+                const s = n === 0 ? '' : String(n);
+                candidates.push(`images/battlemap_team${s}.png`);
+                candidates.push(`images/battlemap_showdown${s}.png`);
+            }
+            candidates.forEach(src => parseBattleMapFile(src, data => {
+                if (!data) return;
+                const lower = src.toLowerCase();
+                if (lower.includes('showdown')) mapPools.showdown.push(data);
+                else mapPools.team.push(data);
+            }));
+        }
+
+        function parseBattleMapFile(src, callback) {
+            const img = new Image();
+            img.onload = function() {
+                const W = 200, H = 200;
+                const cellW = MAP_WIDTH / W;
+                const cellH = MAP_HEIGHT / H;
+                const tmp = document.createElement('canvas');
+                tmp.width = W; tmp.height = H;
+                const tCtx = tmp.getContext('2d');
+                tCtx.drawImage(img, 0, 0, W, H);
+                let px;
+                try { px = tCtx.getImageData(0, 0, W, H).data; }
+                catch(e) { callback(null); return; }
+
+                const obsGrid  = Array.from({length:H}, () => new Array(W).fill(false));
+                const bushGrid = Array.from({length:H}, () => new Array(W).fill(false));
+                const spawnPoints = { red:[], blue:[], green:[], yellow:[] };
+
+                for (let row = 0; row < H; row++) {
+                    for (let col = 0; col < W; col++) {
+                        const i = (row * W + col) * 4;
+                        const r = px[i], g = px[i+1], b = px[i+2];
+                        const cx = col * cellW + cellW / 2;
+                        const cy = row * cellH + cellH / 2;
+                        if      (r > 200 && g <  80 && b <  80) spawnPoints.red.push({x:cx, y:cy});
+                        else if (b > 200 && r <  80 && g <  80) spawnPoints.blue.push({x:cx, y:cy});
+                        else if (g > 180 && r <  80 && b <  80) spawnPoints.green.push({x:cx, y:cy});
+                        else if (r > 200 && g > 180 && b <  80) spawnPoints.yellow.push({x:cx, y:cy});
+                        else if (r > 100 && g < 100 && b < 80 && r > g + 30) obsGrid[row][col]  = true;
+                        else if (g > 60  && g < 170  && r < 80 && b < 80 && g > r * 1.5) bushGrid[row][col] = true;
+                    }
+                }
+
+                const obstacles = mergeGridToRects(obsGrid, W, H, cellW, cellH);
+                const bushCells = [];
+                for (let row = 0; row < H; row++)
+                    for (let col = 0; col < W; col++)
+                        if (bushGrid[row][col])
+                            bushCells.push({ x: col * cellW, y: row * cellH, size: Math.max(cellW, cellH) });
+
+                const spawn = {};
+                for (const [team, pts] of Object.entries(spawnPoints))
+                    spawn[team] = pts.filter((_, i) => i % 4 === 0);
+
+                callback({ obstacles, bushCells, spawnPoints: spawn });
+            };
+            img.onerror = () => callback(null);
+            img.src = src + '?' + Date.now();
+        }
+
+        function pickMap(isTeamMode) {
+            const pool = isTeamMode ? mapPools.team : mapPools.showdown;
+            if (pool.length === 0) { currentBattleMapData = null; return; }
+            currentBattleMapData = pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        function mergeGridToRects(grid, W, H, cellW, cellH) {
+            const visited = Array.from({length:H}, () => new Array(W).fill(false));
+            const rects = [];
+            for (let r = 0; r < H; r++) {
+                for (let c = 0; c < W; c++) {
+                    if (!grid[r][c] || visited[r][c]) continue;
+                    let w = 1;
+                    while (c + w < W && grid[r][c + w] && !visited[r][c + w]) w++;
+                    let h = 1;
+                    outer: while (r + h < H) {
+                        for (let k = 0; k < w; k++)
+                            if (!grid[r+h][c+k] || visited[r+h][c+k]) break outer;
+                        h++;
+                    }
+                    for (let dr = 0; dr < h; dr++)
+                        for (let dc = 0; dc < w; dc++)
+                            visited[r+dr][c+dc] = true;
+                    rects.push({ x: c*cellW, y: r*cellH, width: w*cellW, height: h*cellH, type: 'brick' });
+                }
+            }
+            return rects;
+        }
+        // ── END BATTLE MAP AUTO-LOADER ───────────────────────────────────────────
+
+        function renderCreditsPanel() {
+            const UNLOCK_THRESHOLD = 50; // need this many credits to unlock; NOT spent
+
+            // Progress bar toward next locked tier
+            const barEl = document.getElementById('credits-progress-bar');
+            const nextCost = !hasUnlockedRarity('epic') ? UNLOCK_THRESHOLD : !hasUnlockedRarity('mythic') ? UNLOCK_THRESHOLD : !hasUnlockedRarity('legendary') ? UNLOCK_THRESHOLD : null;
+            if (nextCost) {
+                const pct = Math.min(100, Math.round(playerCredits / nextCost * 100));
+                barEl.innerHTML = `
+                    <div style="color:#4ae8d8; font-size:13px; margin-bottom:4px; text-align:center;">
+                        🎖️ <strong>${playerCredits}</strong> credits &nbsp;—&nbsp; you need <strong>${nextCost}</strong> to unlock your next player
+                    </div>
+                    <div style="background:#222; border-radius:8px; height:14px; overflow:hidden;">
+                        <div style="width:${pct}%; height:100%; background:linear-gradient(90deg,#4ae8d8,#44ccff); border-radius:8px; transition:width 0.4s;"></div>
+                    </div>
+                    <p style="color:#888; font-size:11px; text-align:center; margin:4px 0 0;">Credits are kept — unlocking does not spend them</p>`;
+            } else {
+                barEl.innerHTML = `<p style="text-align:center; color:#ffcc00;">🏆 All credit tiers unlocked!</p>`;
+            }
+
+            const list = document.getElementById('credits-tier-list');
+            list.innerHTML = '';
+
+            const tiers = [
+                { rarity: 'epic',      label: '⚫ Epic',      prereq: null,     threshold: UNLOCK_THRESHOLD },
+                { rarity: 'mythic',    label: '🔴 Mythic',    prereq: 'epic',   threshold: UNLOCK_THRESHOLD },
+                { rarity: 'legendary', label: '🟡 Legendary', prereq: 'mythic', threshold: UNLOCK_THRESHOLD },
+            ];
+
+            tiers.forEach(tier => {
+                const rc = rarityColors[tier.rarity];
+                const tierUnlocked = hasUnlockedRarity(tier.rarity);
+                const prereqMet = !tier.prereq || hasUnlockedRarity(tier.prereq);
+                const canUnlock = prereqMet && playerCredits >= tier.threshold;
+                const ownedInTier = Object.values(playersData).find(p => p.rarity === tier.rarity && unlockedPlayers.includes(p.id));
+
+                // Section header
+                const header = document.createElement('div');
+                header.style.cssText = `padding:8px 0 4px; color:${rc}; font-weight:bold; font-size:16px; border-bottom:1px solid ${rc}44; margin-bottom:12px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;`;
+                let headerHtml = `${tier.label}`;
+                if (tierUnlocked) {
+                    headerHtml += ` <span style="color:#44cc88; font-size:12px; font-weight:normal;">✅ Unlocked — <em>switch for free</em></span>`;
+                } else if (!prereqMet) {
+                    const prereqLabel = tier.prereq.charAt(0).toUpperCase() + tier.prereq.slice(1);
+                    headerHtml += ` <span style="color:#888; font-size:12px; font-weight:normal;">🔒 Unlock ${prereqLabel} tier first</span>`;
+                } else {
+                    headerHtml += ` <span style="color:${canUnlock ? '#4ae8d8' : '#888'}; font-size:12px; font-weight:normal;">— need ${tier.threshold} credits to pick one (you have ${playerCredits})</span>`;
+                }
+                header.innerHTML = headerHtml;
+                list.appendChild(header);
+
+                const rowWrap = document.createElement('div');
+                rowWrap.style.cssText = 'overflow-x:auto; margin-bottom:24px; padding-bottom:4px;';
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex; flex-direction:row; align-items:flex-start; gap:12px; min-width:max-content;';
+
+                const all = Object.values(playersData).filter(p => p.rarity === tier.rarity);
+                const ordered = ownedInTier ? [ownedInTier, ...all.filter(p => p.id !== ownedInTier.id)] : all;
+
+                ordered.forEach(playerData => {
+                    const isCurrentlyOwned = ownedInTier?.id === playerData.id;
+                    const locked = !prereqMet;
+                    const bBonus = getStatBonus(playerData.id);
+
+                    const card = document.createElement('div');
+                    card.className = 'skin-card';
+                    card.style.cssText += 'min-width:155px; max-width:165px; display:inline-block; vertical-align:top; flex-shrink:0; position:relative;';
+
+                    if (isCurrentlyOwned) {
+                        card.style.border = `3px solid ${rc}`;
+                        card.style.boxShadow = `0 0 16px ${rc}88`;
+                        card.style.background = '#1a1a2e';
+                    } else if (locked || (!canUnlock && !tierUnlocked)) {
+                        card.style.opacity = '0.45';
+                    }
+
+                    const imageHtml = playerData.img
+                        ? `<img src="${playerData.img}" class="skin-img" alt="${playerData.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width:100%; height:100px; object-fit:cover; border-radius:10px;">`
+                        : '';
+                    const fallbackHtml = `<div style="background:${playerData.color}; height:100px; border-radius:10px; display:${playerData.img ? 'none' : 'flex'}; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:12px;">${playerData.name}</div>`;
+
+                    let btnLabel, btnDisabled, btnStyle;
+                    if (isCurrentlyOwned) {
+                        btnLabel = '✅ Your Pick'; btnDisabled = true; btnStyle = `background:${rc}44; color:${rc}; border:1px solid ${rc};`;
+                    } else if (locked) {
+                        btnLabel = '🔒 Locked';    btnDisabled = true; btnStyle = '';
+                    } else if (tierUnlocked) {
+                        // free switch
+                        btnLabel = '🔄 Switch (free)'; btnDisabled = false; btnStyle = 'background:#336644; color:#aaffcc;';
+                    } else if (canUnlock) {
+                        btnLabel = '🎖️ Unlock';   btnDisabled = false; btnStyle = 'background:#4ae8d8; color:#000;';
+                    } else {
+                        btnLabel = `❌ Need ${tier.threshold - playerCredits} more`; btnDisabled = true; btnStyle = '';
+                    }
+
+                    const ownedBadge = isCurrentlyOwned
+                        ? `<div style="position:absolute; top:-10px; left:50%; transform:translateX(-50%); background:${rc}; color:#000; font-size:10px; font-weight:bold; padding:2px 8px; border-radius:10px; white-space:nowrap;">YOUR PICK</div>`
+                        : '';
+
+                    const costLine = !tierUnlocked && !isCurrentlyOwned
+                        ? `<p style="font-size:11px; margin:2px 0; color:#4ae8d8;">🎖️ 50 credits to pick</p>`
+                        : (isCurrentlyOwned ? '' : `<p style="font-size:11px; margin:2px 0; color:#88cc88;">switch: free</p>`);
+
+                    card.innerHTML = `${ownedBadge}${imageHtml}${fallbackHtml}
+                        <h3 style="font-size:13px; margin:6px 0 2px; color:${isCurrentlyOwned ? rc : '#fff'};">${playerData.name}</h3>
+                        <p style="color:${rc}; font-weight:bold; margin:2px 0; font-size:12px;">${rarityLabels[tier.rarity]}</p>
+                        <p style="font-size:11px; margin:2px 0;">HP:${Math.round(playerData.hp * bBonus)} Dmg:${Math.round(playerData.laserDamage * bBonus)}</p>
+                        <p style="font-size:11px; margin:2px 0;">Spd:${playerData.speed} Rng:${playerData.laserRange}</p>
+                        ${playerData.attackType ? `<p style="font-size:10px; margin:2px 0; color:#88aaff;">🎯 ${playerData.attackType}</p>` : ''}
+                        ${costLine}
+                        <button class="btn choose-btn" ${btnDisabled ? 'disabled' : ''} style="font-size:12px; padding:5px 10px; margin-top:4px; width:100%; ${btnStyle}">${btnLabel}</button>`;
+
+                    if (!btnDisabled) {
+                        card.querySelector('.choose-btn').addEventListener('click', () => {
+                            if (tierUnlocked && !isCurrentlyOwned) switchPlayerInTier(tier.rarity, playerData.id);
+                            else buyPlayerWithCredits(playerData.id);
+                        });
+                    }
+                    row.appendChild(card);
+                });
+
+                rowWrap.appendChild(row);
+                list.appendChild(rowWrap);
+            });
+        }
+
         // Bazaar System
         function initBazaar() {
             document.getElementById('shop-btn').addEventListener('click', () => {
@@ -3123,51 +4263,30 @@
             const container = document.getElementById('bazaar-items');
             container.innerHTML = '';
 
-            Object.values(playersData).forEach(playerData => {
-                if (playerData.id === 'default') return;
-
+            // Rare players only — bought with coins
+            Object.values(playersData).filter(p => p.rarity === 'rare').forEach(playerData => {
                 const isUnlocked = unlockedPlayers.includes(playerData.id);
                 const canAfford = playerCoins >= playerData.price;
-
-                const card = document.createElement('div');
-                card.className = 'skin-card';
-
-                // Use image if available, otherwise use color
-                const imageHtml = playerData.img ?
-                    `<img src="${playerData.img}" class="skin-img" alt="${playerData.name}"
-                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                                      style="width:100%; height:120px; object-fit:cover; border-radius:10px;">` :
-                    '';
-
-                const fallbackHtml = `<div style="background:${playerData.color}; height:120px; border-radius:10px;
-                                                  display:${playerData.img ? 'none' : 'flex'}; align-items:center;
-                                                  justify-content:center; color:white; font-weight:bold;">
-                                                  ${playerData.name}</div>`;
-
-                const rarityColor = rarityColors[playerData.rarity] || '#b0b0b0';
-                const rarityLabel = rarityLabels[playerData.rarity] || 'Common';
+                const rarityColor = rarityColors.rare;
                 const bPLevel = getPlayerPowerLevel(playerData.id);
                 const bBonus = getStatBonus(playerData.id);
 
-                card.innerHTML = `
-                                ${imageHtml}
-                                ${fallbackHtml}
-                                <h3>${playerData.name}</h3>
-                                <p style="color:${rarityColor}; font-weight:bold; margin:2px 0;">${rarityLabel}</p>
-                                ${isUnlocked ? `<p style="color:#44ccff; font-size:12px; margin:2px 0;">⚡ Lv ${bPLevel}/14</p>` : ''}
-                                <p>HP: ${Math.round(playerData.hp * bBonus)} | Damage: ${Math.round(playerData.laserDamage * bBonus)}</p>
-                                <p>Speed: ${playerData.speed} | Range: ${playerData.laserRange}</p>
-                                <p><strong>💰 ${playerData.price} coins</strong></p>
-                                <button class="btn buy-btn" ${isUnlocked || !canAfford ? 'disabled' : ''}>
-                                    ${isUnlocked ? '✅ Owned' : (!canAfford ? '❌ Need Coins' : 'Buy Now')}
-                                </button>
-                            `;
-
-                const buyBtn = card.querySelector('.buy-btn');
-                if (!isUnlocked && canAfford) {
-                    buyBtn.addEventListener('click', () => buyPlayer(playerData.id));
-                }
-
+                const card = document.createElement('div');
+                card.className = 'skin-card';
+                const imageHtml = playerData.img ? `<img src="${playerData.img}" class="skin-img" alt="${playerData.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width:100%; height:120px; object-fit:cover; border-radius:10px;">` : '';
+                const fallbackHtml = `<div style="background:${playerData.color}; height:120px; border-radius:10px; display:${playerData.img ? 'none' : 'flex'}; align-items:center; justify-content:center; color:white; font-weight:bold;">${playerData.name}</div>`;
+                card.innerHTML = `${imageHtml}${fallbackHtml}
+                    <h3>${playerData.name}</h3>
+                    <p style="color:${rarityColor}; font-weight:bold; margin:2px 0;">Rare</p>
+                    ${isUnlocked ? `<p style="color:#44ccff; font-size:12px; margin:2px 0;">⚡ Lv ${bPLevel}/14</p>` : ''}
+                    <p>HP: ${Math.round(playerData.hp * bBonus)} | Dmg: ${Math.round(playerData.laserDamage * bBonus)}</p>
+                    <p>Speed: ${playerData.speed} | Range: ${playerData.laserRange}</p>
+                    ${playerData.attackType ? `<p style="font-size:11px; color:#88aaff; margin:2px 0;">🎯 ${playerData.attackType}</p>` : ''}
+                    <p><strong>💰 ${playerData.price} coins</strong></p>
+                    <button class="btn buy-btn" ${isUnlocked || !canAfford ? 'disabled' : ''}>
+                        ${isUnlocked ? '✅ Owned' : (!canAfford ? '❌ Need Coins' : 'Buy')}
+                    </button>`;
+                if (!isUnlocked && canAfford) card.querySelector('.buy-btn').addEventListener('click', () => buyPlayer(playerData.id));
                 container.appendChild(card);
             });
         }
@@ -3182,6 +4301,32 @@
                 showCoins();
                 renderBazaarItems();
             }
+        }
+
+        function buyPlayerWithCredits(playerId) {
+            const playerData = playersData[playerId];
+            if (hasUnlockedRarity(playerData.rarity)) return; // tier already has a pick
+            if (playerCredits < 50) return;                   // threshold not reached
+            if (unlockedPlayers.includes(playerId)) return;
+            // Credits are NOT subtracted — they are a threshold, not a currency
+            unlockedPlayers.push(playerId);
+            saveProgress();
+            showLootboxPopup(`${rarityLabels[playerData.rarity]} Unlocked: ${playerData.name}!`);
+            showCoins();
+            renderCreditsPanel();
+        }
+
+        function switchPlayerInTier(rarity, newPlayerId) {
+            // Free switch — no credit cost
+            const oldId = Object.values(playersData).find(p => p.rarity === rarity && unlockedPlayers.includes(p.id))?.id;
+            if (oldId) {
+                unlockedPlayers = unlockedPlayers.filter(id => id !== oldId);
+                if (selectedPlayerId === oldId) selectedPlayerId = 'default';
+            }
+            unlockedPlayers.push(newPlayerId);
+            saveProgress();
+            showLootboxPopup(`Switched to ${playersData[newPlayerId].name}!`);
+            renderCreditsPanel();
         }
 
         function showLootboxPopup(message) {
@@ -3337,13 +4482,35 @@
         }
 
         // Mouse shooting
+        let lastMouseWorldX = 0, lastMouseWorldY = 0;
         function initMouseShooting() {
+            gameCanvas.addEventListener('mousemove', (e) => {
+                if (!gameStarted) return;
+                const rect = gameCanvas.getBoundingClientRect();
+                lastMouseWorldX = e.clientX - rect.left + camera.x;
+                lastMouseWorldY = e.clientY - rect.top + camera.y;
+            });
             gameCanvas.addEventListener('mousedown', (e) => {
                 if (!gameStarted || !player) return;
                 const rect = gameCanvas.getBoundingClientRect();
                 const targetX = e.clientX - rect.left + camera.x;
                 const targetY = e.clientY - rect.top + camera.y;
+                lastMouseWorldX = targetX;
+                lastMouseWorldY = targetY;
                 playerShoot(targetX, targetY);
+            });
+        }
+
+        function initSuperButton() {
+            const btn = document.getElementById('super-btn');
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (!gameStarted || !player) return;
+                activateSuper(player, lastMouseWorldX || player.x + player.size / 2 + 100, lastMouseWorldY || player.y + player.size / 2);
+            }, { passive: false });
+            btn.addEventListener('click', () => {
+                if (!gameStarted || !player) return;
+                activateSuper(player, lastMouseWorldX || player.x + player.size / 2 + 100, lastMouseWorldY || player.y + player.size / 2);
             });
         }
 
@@ -3355,8 +4522,11 @@
             initJoysticks(); // Add this line to initialize joysticks
             initGameModes();
             initMouseShooting();
+            initSuperButton();
             initBazaar();
+            initCreditsPanel();
             initPlayerMenu();
+            discoverMaps();
             initLevelRewards();
             showCoins();
             //hide joystick on first screen

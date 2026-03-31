@@ -1,6 +1,26 @@
 # Cyprus Brainrots Game — TODO
 
-Last reviewed: 2026-03-29 (session 7)
+Last reviewed: 2026-03-31 (session 9)
+
+---
+
+## Bug Fixes (from code review)
+
+### Quick wins (1–5 min each)
+- [x] **Broken 2v2 heading tag** — `<h3></h3>⚔️ 2v2 Team Battle</h3>` → fix opening `<h3>` so text is inside the tag *(1 char fix)*
+- [x] **Typo in welcome guide** — `"red joistick"` → `"red joystick"` *(1 char fix)*
+- [x] **Remove vestigial CSS comment** — `/* Your existing CSS styles remain the same */` at top of `<style>` *(delete 1 line)*
+- [x] **Duplicate `#super-btn-container` CSS** — same rules defined at root level and inside `@media (max-width: 1024px)` *(remove the duplicate block)*
+
+### Medium fixes (~30 min each)
+- [x] **Level rewards not persisting** — `milestone.claimed` lives only in memory; re-claimable every page reload. Save/load `claimed` flags to `localStorage` *(add persistence around `levelRewards` array)*
+- [x] **`showAllUI()` shows joysticks on desktop** — unconditionally shows joystick elements regardless of device. Add touch/width check matching `startGame()` *(~5 lines)*
+- [x] **Bots don't pick up health packs during normal play** — `checkHealthPackCollision(bot)` only called in health-panic branch. Move call so it runs every frame *(move 1 line)*
+- [ ] **Naming inconsistency: XP → Medals** — `awardXP()`, `playerXP`, localStorage key `playerXP` still reference old XP name. Rename for clarity *(search-and-replace)*
+
+### Hard fixes (design/logic changes)
+- [ ] **Berserk super 2× fire rate broken** — `_baseShootMult` assigned but `shootCooldown` never halved. Implement the fire-rate half for the duration of the super *(add cooldown override in shoot logic)*
+- [ ] **Dash supers ignore obstacles** — `rockrush` and `firedash` teleport through walls. Add obstacle collision check along the dash path *(AABB sweep or step-check)*
 
 ---
 
@@ -14,16 +34,16 @@ Last reviewed: 2026-03-29 (session 7)
 ### Medium
 
 - [x] **Star drops** — Post-match loot box with chest open/close animation; random reward (coins or medals); weighted rolls *(chestclose.png → chestopen.png animation, star drop overlay)*
-- [ ] **Rarity system** — Add rarity tiers to characters (Common, Rare, Epic, Mythic, Legendary). Visual presentation in Bazaar *(data + UI, no new game logic)*
+- [x] **Rarity system** — Add rarity tiers to characters (Common, Rare, Epic, Mythic, Legendary). Visual presentation in Bazaar *(data + UI, no new game logic)*
 - [ ] **Gadgets** — One-time-use ability per match per character (e.g. dash, shield, heal burst, teleport). Activated by a button/key *(new ability system, UI button, cooldown tracking)*
-- [ ] **Bounty mode** — Kills give stars; team with most stars when timer ends wins *(new win condition + timer + star tracking HUD)*
+- [x] **Bounty mode** — Kills give stars; team with most stars when timer ends wins *(new win condition + timer + star tracking HUD)*
 
 ### Hard
-- [ ] **Super ability** — Each character charges a special attack by dealing damage (e.g. Tornader → tornado AoE, Lazerman → piercing beam, Fournakis → fire zone). Bar fills up, press key to unleash *(per-character super definitions, charge meter, new projectile/AoE rendering + collision)*
+- [x] **Super ability** — Each character charges a special attack by dealing damage (e.g. Tornader → tornado AoE, Lazerman → piercing beam, Fournakis → fire zone). Bar fills up, press key to unleash *(per-character super definitions, charge meter, new projectile/AoE rendering + collision)*
 
 
-- [ ] **Unique attacks per character** — Some characters get non-laser attacks (e.g. spread shot, boomerang, area blast, homing projectile) *(new projectile types, new rendering + collision logic per character)*
-- [ ] **Upgrade system** *(depends on rarity)* — Spend coins/medals to upgrade character stats. Based on rarity tier *(depends on rarity system)*
+- [x] **Unique attacks per character** — Some characters get non-laser attacks (e.g. spread shot, boomerang, area blast, homing projectile) *(new projectile types, new rendering + collision logic per character)*
+- [x] **Upgrade system** *(depends on rarity)* — Spend coins/medals to upgrade character stats. Based on rarity tier *(depends on rarity system)*
 
 ### Hardest
 - [ ] **Account system** — Username + password login, persist coins/medals/unlocks server-side (or localStorage profile switcher as a simpler first step) *(requires a backend or significant auth flow)*
@@ -67,3 +87,6 @@ Last reviewed: 2026-03-29 (session 7)
 - [x] **Ball-Goal mode** — Soccer-style: kick a ball into the enemy team's goal to score. First to 2 goals wins *(ball physics, goal zones, score tracking, reset on goal)*
 - [x] **Medal system** *(replaces XP)* — Rename XP to Medals (🏅); win = +medals, lose = −medals (like Brawl Stars trophies). Rank based on medal count instead of flat XP *(rework awardXP → awardMedals, update UI/localStorage, add medal loss on defeat)*
 - [x] **Respawn system (team modes)** — 15s respawn timer in team modes; respawn near teammate (team battle) or near goalpost (Ball-Goal); no respawn if all teammates dead *(respawnTimer, updateRespawns(), death overlay, skull countdown)*
+- [x] **Bug fix: Bazaar unlock** — Fixed Petras/Rocky key mismatch (`Petras:`/`Rocky:` → `petras:`/`rocky:`) that silently blocked unlocking those two characters
+- [x] **Bounty mode** — 2-minute 3v3 timer match; kills earn team stars; team with most stars wins; always-respawn (5s); bounty HUD shows countdown + team star counts *(bountyTimerFrames, updateBountyTimer(), drawHUD bounty branch)*
+- [x] **Unique attacks per character** — 8 distinct attack types: `standard`, `spread` (3-shot), `triple` (wide 3-fan), `double` (parallel beams), `heavy` (slow ball + AoE), `rapid` (2 quick shots), `homing` (tracks nearest enemy), `boomerang` (returns), `aoehit` (AoE on impact). Bot AI uses same system via `botFireAttack()`. Visual differentiation in `drawLasers()` *(attackType field in playersData, botFireAttack helper, homing/boomerang logic in updateLasers)*
