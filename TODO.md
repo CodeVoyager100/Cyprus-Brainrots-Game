@@ -1,6 +1,6 @@
 # Cyprus Brainrots Game — TODO
 
-Last reviewed: 2026-03-31 (session 9)
+Last reviewed: 2026-03-31 (session 10)
 
 ---
 
@@ -19,8 +19,8 @@ Last reviewed: 2026-03-31 (session 9)
 - [x] **Naming inconsistency: XP → Medals** — `awardXP()`, `playerXP`, localStorage key `playerXP` still reference old XP name. Rename for clarity *(search-and-replace)*
 
 ### Hard fixes (design/logic changes)
-- [ ] **Berserk super 2× fire rate broken** — `_baseShootMult` assigned but `shootCooldown` never halved. Implement the fire-rate half for the duration of the super *(add cooldown override in shoot logic)*
-- [ ] **Dash supers ignore obstacles** — `rockrush` and `firedash` teleport through walls. Add obstacle collision check along the dash path *(AABB sweep or step-check)*
+- [x] **Berserk super 2× fire rate broken** — `_baseShootMult` assigned but `shootCooldown` never halved. Implement the fire-rate half for the duration of the super *(add cooldown override in shoot logic)*
+- [x] **Dash supers ignore obstacles** — `rockrush` and `firedash` teleport through walls. Add obstacle collision check along the dash path *(AABB sweep or step-check)*
 
 ---
 
@@ -52,7 +52,11 @@ Last reviewed: 2026-03-31 (session 9)
 
 ## Completed
 
-- [x] **Background fix** — `background.png` was commented out of preload; restored. Team modes now use `teammap.png`, all others use `background.png`
+- [x] **Background fix** — `background.png` was commented out of preload; restored. Team modes (3v3/2v2) now use `teammap.png`, all others use `background.png`
+- [x] **Team map layout** — Fixed side spawns (margin 100px), symmetric obstacles: left/right water strips + bushes, central water pool with cardinal bushes + corner walls, top/bottom horizontal walls with bushes and 400px central lane
+- [x] **Team map respawn** — Players respawn in their team's guaranteed obstacle-free edge strip
+- [x] **Bot stuck detection** — Bots that haven't moved 10px in 3s pick a random escape direction for 1.5s, bypassing all AI
+- [x] **XP → Medals rename** — `playerXP`/`awardXP()`/localStorage key renamed to `playerMedals`/`awardMedals()` with one-time migration for existing saves
 
 - [x] Persist coins, unlocked characters, selected player and XP via localStorage
 - [x] XP system: +1 per kill, +2 for winning, level up every 10 XP

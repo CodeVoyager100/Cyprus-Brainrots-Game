@@ -16,16 +16,20 @@
 
         .guide {
             position: absolute;
-            top: 50%;
+            top: 10px;
             left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 100;
-            background: rgba(0,0,0,0.8);
-            padding: 20px;
-            border-radius: 15px;
-            max-width: 400px;
+            transform: translateX(-50%);
+            z-index: 5;
+            background: rgba(0,0,0,0.75);
+            padding: 8px 14px;
+            border-radius: 10px;
+            max-width: 340px;
+            width: max-content;
+            max-width: min(340px, 90vw);
             text-align: center;
-            border: 2px solid #ffcc00;
+            border: 1px solid #ffcc00;
+            font-size: 12px;
+            pointer-events: none;
         }
 
         #coins-display {
@@ -402,16 +406,14 @@
 </head>
 <body>
     <div class="guide">
-        <h2 style="color: #ffcc00; margin-top: 0;">Welcome to Cyprus Brainrot Game!</h2>
-        <p>
-            🎮 Use arrow keys or WASD or white joystick to move<br>
-            🖱️ Click mouse or red joystick or touch screen to shoot<br>
-            ⚔️ Click "Battle!" to start a game<br>
-            🎖️ Earn Credits by playing and unlock players in the Bazaar!<br>
-            ❤️ Collect green health packs to heal!<br>
-            🔁 Switch players between matches
+        <h3 style="color: #ffcc00; margin: 0 0 4px;">Welcome to Cyprus Brainrot Game!</h3>
+        <p style="margin: 0; line-height: 1.6;">
+            🎮 Arrow keys / WASD / white joystick to move<br>
+            🖱️ Click / red joystick / tap to shoot<br>
+            ⚔️ Press "Battle!" to start<br>
+            🎖️ Earn Credits &amp; unlock players in the Bazaar<br>
+            ❤️ Collect green packs to heal
         </p>
-        <p style="color: #ffcc00; font-weight: bold;">Good luck and have fun! 🎯</p>
     </div>
 
     <div id="lootbox-popup">
@@ -1357,6 +1359,11 @@
                 // standard
                 lasers.push(makeLaser(0, 0, nx * speed, ny * speed, 90, player.laserDamage, {}));
                 player.shootCooldown = 15;
+            }
+
+            // Berserk super: 2× fire rate (halve cooldown)
+            if (player.superActive && player.superBuffType === 'berserk') {
+                player.shootCooldown = Math.max(1, Math.floor(player.shootCooldown / 2));
             }
 
             // Shooting reveals you from bush
@@ -3484,13 +3491,33 @@
                     break;
                 }
                 case 'firedash': {
-                    // Dash toward target leaving a damage zone
+                    // Dash toward target, stopping at first obstacle
                     const tx = targetX ?? cx + 1;
                     const ty = targetY ?? cy;
                     const dist = Math.hypot(tx - cx, ty - cy) || 1;
                     const dashDist = 300;
-                    const newX = Math.max(0, Math.min(MAP_WIDTH - p.size, p.x + (tx - cx) / dist * dashDist));
-                    const newY = Math.max(0, Math.min(MAP_HEIGHT - p.size, p.y + (ty - cy) / dist * dashDist));
+                    const dirX = (tx - cx) / dist;
+                    const dirY = (ty - cy) / dist;
+                    const stepSize = p.size;
+                    const totalSteps = Math.ceil(dashDist / stepSize);
+                    let lastSafeX = p.x;
+                    let lastSafeY = p.y;
+                    for (let s = 1; s <= totalSteps; s++) {
+                        const nx = Math.max(0, Math.min(MAP_WIDTH - p.size, p.x + dirX * stepSize * s));
+                        const ny = Math.max(0, Math.min(MAP_HEIGHT - p.size, p.y + dirY * stepSize * s));
+                        let blocked = false;
+                        for (const obs of obstacles) {
+                            if (nx < obs.x + obs.width && nx + p.size > obs.x &&
+                                ny < obs.y + obs.height && ny + p.size > obs.y) {
+                                blocked = true; break;
+                            }
+                        }
+                        if (blocked) break;
+                        lastSafeX = nx;
+                        lastSafeY = ny;
+                    }
+                    const newX = lastSafeX;
+                    const newY = lastSafeY;
                     superEffects.push({ type: 'firezone', x: (cx + newX + p.size / 2) / 2, y: (cy + newY + p.size / 2) / 2, radius: 80, timer: 90, tickTimer: 0, tickInterval: 20, damage: p.laserDamage * 2, shooter: p });
                     p.x = newX;
                     p.y = newY;
@@ -3551,16 +3578,26 @@
                     break;
                 }
                 case 'rockrush': {
-                    // Charge in facing direction damaging everything in path
+                    // Charge in facing direction, stopping at first obstacle
                     const tx2 = targetX ?? cx + 1;
                     const ty2 = targetY ?? cy;
                     const d2 = Math.hypot(tx2 - cx, ty2 - cy) || 1;
-                    const steps = 20;
                     const stepX = (tx2 - cx) / d2 * 20;
                     const stepY = (ty2 - cy) / d2 * 20;
+                    const steps = 20;
                     for (let s = 0; s < steps; s++) {
-                        p.x = Math.max(0, Math.min(MAP_WIDTH - p.size, p.x + stepX));
-                        p.y = Math.max(0, Math.min(MAP_HEIGHT - p.size, p.y + stepY));
+                        const nx = Math.max(0, Math.min(MAP_WIDTH - p.size, p.x + stepX));
+                        const ny = Math.max(0, Math.min(MAP_HEIGHT - p.size, p.y + stepY));
+                        let blocked = false;
+                        for (const obs of obstacles) {
+                            if (nx < obs.x + obs.width && nx + p.size > obs.x &&
+                                ny < obs.y + obs.height && ny + p.size > obs.y) {
+                                blocked = true; break;
+                            }
+                        }
+                        if (blocked) break;
+                        p.x = nx;
+                        p.y = ny;
                     }
                     dealAoeDamage(p.x + p.size / 2, p.y + p.size / 2, 100, p.laserDamage * 6, p);
                     superEffects.push({ type: 'screamflash', x: p.x + p.size / 2, y: p.y + p.size / 2, radius: 100, timer: 25, shooter: p });
@@ -4250,53 +4287,79 @@
         }
         // ── END BATTLE MAP AUTO-LOADER ───────────────────────────────────────────
 
-        function renderCreditsPanel() {
-            const UNLOCK_THRESHOLD = 50; // need this many credits to unlock; NOT spent
+        // Returns the rarity that is next in the unlock cycle (epic→mythic→legendary→epic→…)
+        // or null if everything is unlocked.
+        function creditsNextTier() {
+            const sequence = ['epic', 'mythic', 'legendary'];
+            const allCreditPlayers = Object.values(playersData).filter(p => p.creditCost);
+            const counts = {}, totals = {};
+            sequence.forEach(r => {
+                counts[r] = allCreditPlayers.filter(p => p.rarity === r && unlockedPlayers.includes(p.id)).length;
+                totals[r] = allCreditPlayers.filter(p => p.rarity === r).length;
+            });
+            const total = counts.epic + counts.mythic + counts.legendary;
+            if (total >= totals.epic + totals.mythic + totals.legendary) return null;
+            for (let offset = 0; offset < 3; offset++) {
+                const rarity = sequence[(total + offset) % 3];
+                if (counts[rarity] < totals[rarity]) return rarity;
+            }
+            return null;
+        }
 
-            // Progress bar toward next locked tier
+        function renderCreditsPanel() {
+            const nextTier = creditsNextTier();
+
+            // Progress bar
             const barEl = document.getElementById('credits-progress-bar');
-            const nextCost = !hasUnlockedRarity('epic') ? UNLOCK_THRESHOLD : !hasUnlockedRarity('mythic') ? UNLOCK_THRESHOLD : !hasUnlockedRarity('legendary') ? UNLOCK_THRESHOLD : null;
-            if (nextCost) {
-                const pct = Math.min(100, Math.round(playerCredits / nextCost * 100));
+            if (nextTier) {
+                const sample = Object.values(playersData).find(p => p.rarity === nextTier && p.creditCost);
+                const cost = sample ? sample.creditCost : 0;
+                const pct  = cost > 0 ? Math.min(100, Math.round(playerCredits / cost * 100)) : 100;
                 barEl.innerHTML = `
                     <div style="color:#4ae8d8; font-size:13px; margin-bottom:4px; text-align:center;">
-                        🎖️ <strong>${playerCredits}</strong> credits &nbsp;—&nbsp; you need <strong>${nextCost}</strong> to unlock your next player
+                        🎖️ <strong>${playerCredits}</strong> credits &nbsp;→&nbsp;
+                        Next: <strong style="color:${rarityColors[nextTier]}">${rarityLabels[nextTier]}</strong>
+                        costs <strong>${cost}</strong> credits
                     </div>
                     <div style="background:#222; border-radius:8px; height:14px; overflow:hidden;">
                         <div style="width:${pct}%; height:100%; background:linear-gradient(90deg,#4ae8d8,#44ccff); border-radius:8px; transition:width 0.4s;"></div>
                     </div>
-                    <p style="color:#888; font-size:11px; text-align:center; margin:4px 0 0;">Credits are kept — unlocking does not spend them</p>`;
+                    <p style="color:#888; font-size:11px; text-align:center; margin:4px 0 0;">
+                        Unlock order: ⚫ Epic → 🔴 Mythic → 🟡 Legendary → ⚫ Epic …</p>`;
             } else {
-                barEl.innerHTML = `<p style="text-align:center; color:#ffcc00;">🏆 All credit tiers unlocked!</p>`;
+                barEl.innerHTML = `<p style="text-align:center; color:#ffcc00;">🏆 All credit players unlocked!</p>`;
             }
 
             const list = document.getElementById('credits-tier-list');
             list.innerHTML = '';
 
             const tiers = [
-                { rarity: 'epic',      label: '⚫ Epic',      prereq: null,     threshold: UNLOCK_THRESHOLD },
-                { rarity: 'mythic',    label: '🔴 Mythic',    prereq: 'epic',   threshold: UNLOCK_THRESHOLD },
-                { rarity: 'legendary', label: '🟡 Legendary', prereq: 'mythic', threshold: UNLOCK_THRESHOLD },
+                { rarity: 'epic',      label: '⚫ Epic' },
+                { rarity: 'mythic',    label: '🔴 Mythic' },
+                { rarity: 'legendary', label: '🟡 Legendary' },
             ];
 
             tiers.forEach(tier => {
                 const rc = rarityColors[tier.rarity];
-                const tierUnlocked = hasUnlockedRarity(tier.rarity);
-                const prereqMet = !tier.prereq || hasUnlockedRarity(tier.prereq);
-                const canUnlock = prereqMet && playerCredits >= tier.threshold;
-                const ownedInTier = Object.values(playersData).find(p => p.rarity === tier.rarity && unlockedPlayers.includes(p.id));
+                const allInTier   = Object.values(playersData).filter(p => p.rarity === tier.rarity && p.creditCost);
+                const ownedInTier = allInTier.find(p => unlockedPlayers.includes(p.id));
+                const isActiveTier  = nextTier === tier.rarity;
+                const hasSwitchable = !!ownedInTier;
+                const cost = allInTier[0]?.creditCost ?? 0;
+                const canAfford = playerCredits >= cost;
 
                 // Section header
                 const header = document.createElement('div');
                 header.style.cssText = `padding:8px 0 4px; color:${rc}; font-weight:bold; font-size:16px; border-bottom:1px solid ${rc}44; margin-bottom:12px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;`;
-                let headerHtml = `${tier.label}`;
-                if (tierUnlocked) {
-                    headerHtml += ` <span style="color:#44cc88; font-size:12px; font-weight:normal;">✅ Unlocked — <em>switch for free</em></span>`;
-                } else if (!prereqMet) {
-                    const prereqLabel = tier.prereq.charAt(0).toUpperCase() + tier.prereq.slice(1);
-                    headerHtml += ` <span style="color:#888; font-size:12px; font-weight:normal;">🔒 Unlock ${prereqLabel} tier first</span>`;
+                let headerHtml = tier.label;
+                if (hasSwitchable) {
+                    const remaining = allInTier.filter(p => !unlockedPlayers.includes(p.id)).length;
+                    headerHtml += ` <span style="color:#44cc88; font-size:12px; font-weight:normal;">✅ Unlocked — switch is free` +
+                        (isActiveTier && remaining > 0 ? ` &nbsp;|&nbsp; <span style="color:${canAfford?'#4ae8d8':'#888'}">🎖️ Pick another (${cost} cr)</span>` : '') + `</span>`;
+                } else if (isActiveTier) {
+                    headerHtml += ` <span style="color:${canAfford ? '#4ae8d8' : '#888'}; font-size:12px; font-weight:normal;">— costs ${cost} credits (you have ${playerCredits})</span>`;
                 } else {
-                    headerHtml += ` <span style="color:${canUnlock ? '#4ae8d8' : '#888'}; font-size:12px; font-weight:normal;">— need ${tier.threshold} credits to pick one (you have ${playerCredits})</span>`;
+                    headerHtml += ` <span style="color:#666; font-size:12px; font-weight:normal;">🔒 not your turn yet</span>`;
                 }
                 header.innerHTML = headerHtml;
                 list.appendChild(header);
@@ -4306,66 +4369,61 @@
                 const row = document.createElement('div');
                 row.style.cssText = 'display:flex; flex-direction:row; align-items:flex-start; gap:12px; min-width:max-content;';
 
-                const all = Object.values(playersData).filter(p => p.rarity === tier.rarity);
-                const ordered = ownedInTier ? [ownedInTier, ...all.filter(p => p.id !== ownedInTier.id)] : all;
+                const ordered = ownedInTier
+                    ? [ownedInTier, ...allInTier.filter(p => p.id !== ownedInTier.id)]
+                    : allInTier;
 
-                ordered.forEach(playerData => {
-                    const isCurrentlyOwned = ownedInTier?.id === playerData.id;
-                    const locked = !prereqMet;
-                    const bBonus = getStatBonus(playerData.id);
+                ordered.forEach(pd => {
+                    const isOwned = ownedInTier?.id === pd.id;
+                    const bBonus  = getStatBonus(pd.id);
 
                     const card = document.createElement('div');
                     card.className = 'skin-card';
                     card.style.cssText += 'min-width:155px; max-width:165px; display:inline-block; vertical-align:top; flex-shrink:0; position:relative;';
 
-                    if (isCurrentlyOwned) {
+                    if (isOwned) {
                         card.style.border = `3px solid ${rc}`;
                         card.style.boxShadow = `0 0 16px ${rc}88`;
                         card.style.background = '#1a1a2e';
-                    } else if (locked || (!canUnlock && !tierUnlocked)) {
-                        card.style.opacity = '0.45';
                     }
-
-                    const imageHtml = playerData.img
-                        ? `<img src="${playerData.img}" class="skin-img" alt="${playerData.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width:100%; height:100px; object-fit:cover; border-radius:10px;">`
-                        : '';
-                    const fallbackHtml = `<div style="background:${playerData.color}; height:100px; border-radius:10px; display:${playerData.img ? 'none' : 'flex'}; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:12px;">${playerData.name}</div>`;
 
                     let btnLabel, btnDisabled, btnStyle;
-                    if (isCurrentlyOwned) {
-                        btnLabel = '✅ Your Pick'; btnDisabled = true; btnStyle = `background:${rc}44; color:${rc}; border:1px solid ${rc};`;
-                    } else if (locked) {
-                        btnLabel = '🔒 Locked';    btnDisabled = true; btnStyle = '';
-                    } else if (tierUnlocked) {
-                        // free switch
-                        btnLabel = '🔄 Switch (free)'; btnDisabled = false; btnStyle = 'background:#336644; color:#aaffcc;';
-                    } else if (canUnlock) {
-                        btnLabel = '🎖️ Unlock';   btnDisabled = false; btnStyle = 'background:#4ae8d8; color:#000;';
+                    if (isOwned) {
+                        btnLabel = '✅ Your Pick'; btnDisabled = true;
+                        btnStyle = `background:${rc}44; color:${rc}; border:1px solid ${rc};`;
+                    } else if (hasSwitchable) {
+                        btnLabel = '🔄 Switch (free)'; btnDisabled = false;
+                        btnStyle = 'background:#336644; color:#aaffcc;';
+                    } else if (isActiveTier && canAfford) {
+                        btnLabel = `🎖️ Unlock (${cost} cr)`; btnDisabled = false;
+                        btnStyle = 'background:#4ae8d8; color:#000; font-weight:bold;';
+                    } else if (isActiveTier) {
+                        btnLabel = `❌ Need ${cost - playerCredits} more`; btnDisabled = true; btnStyle = '';
                     } else {
-                        btnLabel = `❌ Need ${tier.threshold - playerCredits} more`; btnDisabled = true; btnStyle = '';
+                        btnLabel = '🔒 Locked'; btnDisabled = true; btnStyle = '';
+                        card.style.opacity = '0.4';
                     }
 
-                    const ownedBadge = isCurrentlyOwned
+                    const ownedBadge = isOwned
                         ? `<div style="position:absolute; top:-10px; left:50%; transform:translateX(-50%); background:${rc}; color:#000; font-size:10px; font-weight:bold; padding:2px 8px; border-radius:10px; white-space:nowrap;">YOUR PICK</div>`
                         : '';
+                    const imgHtml = pd.img
+                        ? `<img src="${pd.img}" class="skin-img" alt="${pd.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" style="width:100%; height:100px; object-fit:cover; border-radius:10px;">`
+                        : '';
+                    const fallback = `<div style="background:${pd.color}; height:100px; border-radius:10px; display:${pd.img?'none':'flex'}; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:12px;">${pd.name}</div>`;
 
-                    const costLine = !tierUnlocked && !isCurrentlyOwned
-                        ? `<p style="font-size:11px; margin:2px 0; color:#4ae8d8;">🎖️ 50 credits to pick</p>`
-                        : (isCurrentlyOwned ? '' : `<p style="font-size:11px; margin:2px 0; color:#88cc88;">switch: free</p>`);
-
-                    card.innerHTML = `${ownedBadge}${imageHtml}${fallbackHtml}
-                        <h3 style="font-size:13px; margin:6px 0 2px; color:${isCurrentlyOwned ? rc : '#fff'};">${playerData.name}</h3>
+                    card.innerHTML = `${ownedBadge}${imgHtml}${fallback}
+                        <h3 style="font-size:13px; margin:6px 0 2px; color:${isOwned ? rc : '#fff'};">${pd.name}</h3>
                         <p style="color:${rc}; font-weight:bold; margin:2px 0; font-size:12px;">${rarityLabels[tier.rarity]}</p>
-                        <p style="font-size:11px; margin:2px 0;">HP:${Math.round(playerData.hp * bBonus)} Dmg:${Math.round(playerData.laserDamage * bBonus)}</p>
-                        <p style="font-size:11px; margin:2px 0;">Spd:${playerData.speed} Rng:${playerData.laserRange}</p>
-                        ${playerData.attackType ? `<p style="font-size:10px; margin:2px 0; color:#88aaff;">🎯 ${playerData.attackType}</p>` : ''}
-                        ${costLine}
+                        <p style="font-size:11px; margin:2px 0;">HP:${Math.round(pd.hp*bBonus)} Dmg:${Math.round(pd.laserDamage*bBonus)}</p>
+                        <p style="font-size:11px; margin:2px 0;">Spd:${pd.speed} Rng:${pd.laserRange}</p>
+                        ${pd.attackType ? `<p style="font-size:10px; margin:2px 0; color:#88aaff;">🎯 ${pd.attackType}</p>` : ''}
                         <button class="btn choose-btn" ${btnDisabled ? 'disabled' : ''} style="font-size:12px; padding:5px 10px; margin-top:4px; width:100%; ${btnStyle}">${btnLabel}</button>`;
 
                     if (!btnDisabled) {
                         card.querySelector('.choose-btn').addEventListener('click', () => {
-                            if (tierUnlocked && !isCurrentlyOwned) switchPlayerInTier(tier.rarity, playerData.id);
-                            else buyPlayerWithCredits(playerData.id);
+                            if (hasSwitchable && !isOwned) switchPlayerInTier(tier.rarity, pd.id);
+                            else if (isActiveTier) buyPlayerWithCredits(pd.id);
                         });
                     }
                     row.appendChild(card);
@@ -4433,28 +4491,29 @@
         }
 
         function buyPlayerWithCredits(playerId) {
-            const playerData = playersData[playerId];
-            if (hasUnlockedRarity(playerData.rarity)) return; // tier already has a pick
-            if (playerCredits < 50) return;                   // threshold not reached
+            const pd = playersData[playerId];
+            if (!pd || !pd.creditCost) return;
             if (unlockedPlayers.includes(playerId)) return;
-            // Credits are NOT subtracted — they are a threshold, not a currency
+            if (creditsNextTier() !== pd.rarity) return;     // not your turn in cycle
+            if (playerCredits < pd.creditCost) return;       // can't afford
+            playerCredits -= pd.creditCost;
+            localStorage.setItem('playerCredits', playerCredits);
             unlockedPlayers.push(playerId);
             saveProgress();
-            showLootboxPopup(`${rarityLabels[playerData.rarity]} Unlocked: ${playerData.name}!`);
+            showLootboxPopup(`${rarityLabels[pd.rarity]} Unlocked: ${pd.name}! (-${pd.creditCost} credits)`);
             showCoins();
             renderCreditsPanel();
         }
 
         function switchPlayerInTier(rarity, newPlayerId) {
-            // Free switch — no credit cost
+            // Free switch — no credit cost, does NOT advance the unlock cycle
             const oldId = Object.values(playersData).find(p => p.rarity === rarity && unlockedPlayers.includes(p.id))?.id;
-            if (oldId) {
-                unlockedPlayers = unlockedPlayers.filter(id => id !== oldId);
-                if (selectedPlayerId === oldId) selectedPlayerId = 'default';
-            }
+            if (!oldId) return; // nothing to switch from
+            unlockedPlayers = unlockedPlayers.filter(id => id !== oldId);
+            if (selectedPlayerId === oldId) selectedPlayerId = 'default';
             unlockedPlayers.push(newPlayerId);
             saveProgress();
-            showLootboxPopup(`Switched to ${playersData[newPlayerId].name}!`);
+            showLootboxPopup(`Switched to ${playersData[newPlayerId].name}! (free)`);
             renderCreditsPanel();
         }
 
