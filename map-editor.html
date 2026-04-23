@@ -325,6 +325,26 @@ function fillRect(x0, y0, x1, y1, tile) {
       setPixel(x, y, tile);
 }
 
+function strokeRect(x0, y0, x1, y1, tile) {
+  const xMin = Math.min(x0, x1), xMax = Math.max(x0, x1);
+  const yMin = Math.min(y0, y1), yMax = Math.max(y0, y1);
+  const t = Math.max(1, Math.floor(brushSz / 2));
+  // top & bottom edges
+  for (let x = xMin; x <= xMax; x++) {
+    for (let k = 0; k < t; k++) {
+      setPixel(x, yMin + k, tile);
+      setPixel(x, yMax - k, tile);
+    }
+  }
+  // left & right edges
+  for (let y = yMin; y <= yMax; y++) {
+    for (let k = 0; k < t; k++) {
+      setPixel(xMin + k, y, tile);
+      setPixel(xMax - k, y, tile);
+    }
+  }
+}
+
 function floodFill(sx, sy, tile) {
   const targetName = getPixelTile(sx, sy);
   if (targetName === tile) return;
@@ -425,7 +445,7 @@ canvas.addEventListener('mousemove', (e) => {
     // restore snapshot + draw preview rect
     pixelData.data.set(rectSnapshot.data);
     const tile = (e.shiftKey || currentTool === 'erase') ? 'empty' : currentTile;
-    fillRect(rectStart.x, rectStart.y, x, y, tile);
+    strokeRect(rectStart.x, rectStart.y, x, y, tile);
     commitToCanvas();
     return;
   }

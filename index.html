@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>Cyprus Brainrot Game</title>
+    <title>Attackers.Game</title>
     <style>
         body, html {
             margin: 0;
@@ -88,6 +88,97 @@
             padding: 2px 6px;
             border-radius: 6px;
         }
+
+        /* ── Daily Challenges ── */
+        #daily-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+            background: rgba(0,0,0,0.75);
+            border: 1px solid #44aaff;
+            color: #44aaff;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 7px 13px;
+            border-radius: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+        #daily-btn:hover { background: rgba(0,40,80,0.9); }
+        #daily-btn .badge {
+            display: inline-block;
+            background: #e94560;
+            color: #fff;
+            border-radius: 50%;
+            font-size: 11px;
+            min-width: 17px;
+            height: 17px;
+            line-height: 17px;
+            text-align: center;
+            margin-left: 5px;
+            vertical-align: middle;
+        }
+
+        .challenge-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 12px; border-radius: 8px; margin: 5px 0;
+            background: rgba(255,255,255,0.04); border: 1px solid #333;
+            font-size: 14px;
+        }
+        .challenge-row.done {
+            border-color: #27ae60; background: rgba(39,174,96,0.08); color: #888;
+        }
+        .challenge-progress {
+            flex: 1; height: 6px; background: #333; border-radius: 3px; overflow: hidden;
+        }
+        .challenge-progress-fill {
+            height: 100%; background: #44aaff; border-radius: 3px; transition: width .3s;
+        }
+        .challenge-row.done .challenge-progress-fill { background: #27ae60; }
+
+        /* ── Kill Streak banner ── */
+        #streak-banner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 20;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            text-shadow: 0 0 16px #ff6600, 0 2px 4px #000;
+            opacity: 0;
+            transition: opacity 0.2s;
+            white-space: nowrap;
+        }
+
+        /* ── Match History ── */
+        #history-btn {
+            position: absolute;
+            top: 52px;
+            right: 10px;
+            z-index: 10;
+            background: rgba(0,0,0,0.75);
+            border: 1px solid #aaa;
+            color: #aaa;
+            font-size: 13px;
+            font-weight: bold;
+            padding: 5px 11px;
+            border-radius: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+        #history-btn:hover { background: rgba(30,30,30,0.9); }
+
+        .history-row {
+            display: flex; align-items: center; gap: 8px;
+            padding: 7px 10px; border-radius: 7px; margin: 4px 0;
+            font-size: 13px; border: 1px solid #2a2a2a;
+        }
+        .history-row.win  { background: rgba(39,174,96,0.12); border-color: #27ae60; }
+        .history-row.lose { background: rgba(220,53,69,0.10); border-color: #dc3545; }
 
         .skin-card {
             display: inline-block;
@@ -406,7 +497,7 @@
 </head>
 <body>
     <div class="guide">
-        <h3 style="color: #ffcc00; margin: 0 0 4px;">Welcome to Cyprus Brainrot Game!</h3>
+        <h3 style="color: #ffcc00; margin: 0 0 4px;">Welcome to Attackers!</h3>
         <p style="margin: 0; line-height: 1.6;">
             🎮 Arrow keys / WASD / white joystick to move<br>
             🖱️ Click / red joystick / tap to shoot<br>
@@ -452,11 +543,35 @@
 
     <div id="coins-display">💰 Coins: 500<br>🏅 Medals: 0<br>🎖️ Credits: 0</div>
 
+    <!-- Daily Challenges button -->
+    <button id="daily-btn" onclick="openDailyChallenges()">📋 Daily <span class="badge" id="daily-badge" style="display:none">!</span></button>
+
+    <!-- Match History button -->
+    <button id="history-btn" onclick="openMatchHistory()">📊 History</button>
+
+    <!-- Kill Streak banner (in-game, canvas-overlay) -->
+    <div id="streak-banner"></div>
+
     <div id="level-rewards-panel" class="modal-panel" style="width:420px;">
         <h2>🏆 Level Rewards</h2>
         <p style="color:#aaa; text-align:center; margin-top:-10px; font-size:13px;">Click your level badge anytime to check progress</p>
         <div id="level-rewards-list" style="margin: 16px 0;"></div>
         <button class="btn modal-close" id="close-level-rewards">Close</button>
+    </div>
+
+    <!-- Daily Challenges panel -->
+    <div id="daily-panel" class="modal-panel" style="width:440px; display:none;">
+        <h2>📋 Daily Challenges</h2>
+        <p id="daily-reset-label" style="color:#aaa; text-align:center; margin-top:-10px; font-size:12px;"></p>
+        <div id="daily-list" style="margin: 14px 0;"></div>
+        <button class="btn modal-close" id="close-daily-panel">Close</button>
+    </div>
+
+    <!-- Match History panel -->
+    <div id="history-panel" class="modal-panel" style="width:480px; display:none;">
+        <h2>📊 Match History</h2>
+        <div id="history-list" style="margin: 14px 0; max-height: 360px; overflow-y: auto;"></div>
+        <button class="btn modal-close" id="close-history-panel">Close</button>
     </div>
 
     <div id="skins-container" class="modal-panel">
@@ -2919,7 +3034,11 @@
                             laser.shooter.kills++;
                             killFeed.push({ killerName: laser.shooter.name, victimName: targetPlayer.name, ts: Date.now(), isHumanKill: laser.shooter.isHuman });
                             // Award XP for kill
-                            if (laser.shooter.isHuman) awardMedals(1);
+                            if (laser.shooter.isHuman) {
+                                awardMedals(1);
+                                registerKill();
+                                progressDaily('kills', 1);
+                            }
                             // Check bounty 20-star win
                             checkBountyWin();
                             // In team modes: keep player for respawn; in FFA: remove
@@ -3733,6 +3852,13 @@
                 saveProgress();
                 showCoins();
                 messageEl.innerHTML += `<br><br>🎉 You earned ${winCoins} coins, +${winMedals} 🏅 medals, and +${winCredits} 🎖️ credits!`;
+
+                // Progress daily challenges
+                progressDaily('wins', 1);
+                progressDaily('games', 1);
+                // Save to match history
+                const humanPlayer = matchStatsList.find(s => s.isHuman) || { kills: 0 };
+                saveMatchToHistory(true, currentGameMode, humanPlayer.kills || 0, winMedals);
             } else {
                 title.textContent = 'Game Over';
                 title.style.color = '#ff4444';
@@ -3744,7 +3870,14 @@
                 saveProgress();
                 showCoins();
                 messageEl.innerHTML += `<br><br>💫 You earned ${loseCoins} coins, ${loseMedals} 🏅 medals, and +${loseCredits} 🎖️ credits.`;
+
+                // Progress daily challenges
+                progressDaily('games', 1);
+                const humanPlayer2 = matchStatsList.find(s => s.isHuman) || { kills: 0 };
+                saveMatchToHistory(false, currentGameMode, humanPlayer2.kills || 0, loseMedals);
             }
+            // Reset streak on game end
+            currentStreak = 0; streakTimer = 0;
 
             // Snapshot surviving players before clearing
             for (const p of players) {
@@ -4022,6 +4155,7 @@
             updateRespawns();
             updateLasers();
             updateSupers();
+            updateStreak();
             updatePoisonZone();
             updateBall();
             updateBountyTimer();
@@ -4046,21 +4180,276 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // UI Functions
+        // ── DAILY CHALLENGES ─────────────────────────────────────────────────────
+
+        const DAILY_CHALLENGE_DEFS = [
+            { id: 'win1',    desc: 'Win 1 match',               type: 'wins',  target: 1,  reward: { type:'coins',  amount: 200 },  icon: '🏆' },
+            { id: 'win3',    desc: 'Win 3 matches',             type: 'wins',  target: 3,  reward: { type:'coins',  amount: 500 },  icon: '🥇' },
+            { id: 'kill5',   desc: 'Get 5 kills in total',      type: 'kills', target: 5,  reward: { type:'sparks', amount: 300 },  icon: '⚡' },
+            { id: 'kill10',  desc: 'Get 10 kills in total',     type: 'kills', target: 10, reward: { type:'sparks', amount: 700 },  icon: '⚡' },
+            { id: 'play2',   desc: 'Play 2 matches',            type: 'games', target: 2,  reward: { type:'coins',  amount: 150 },  icon: '🎮' },
+            { id: 'play5',   desc: 'Play 5 matches',            type: 'games', target: 5,  reward: { type:'coins',  amount: 300 },  icon: '🎮' },
+            { id: 'streak3', desc: 'Get a 3-kill streak',       type: 'streak',target: 3,  reward: { type:'sparks', amount: 400 },  icon: '🔥' },
+            { id: 'streak5', desc: 'Get a 5-kill streak',       type: 'streak',target: 5,  reward: { type:'sparks', amount: 900 },  icon: '🔥' },
+        ];
+
+        function getDailyKey() {
+            const d = new Date();
+            return `daily_${d.getFullYear()}_${d.getMonth()}_${d.getDate()}`;
+        }
+
+        function loadDailyChallenges() {
+            const key = getDailyKey();
+            const saved = JSON.parse(localStorage.getItem(key) || 'null');
+            if (saved) return saved;
+            // Pick 3 random challenges for today
+            const shuffled = [...DAILY_CHALLENGE_DEFS].sort(() => Math.random() - 0.5);
+            const picked = shuffled.slice(0, 3).map(c => ({
+                id: c.id, progress: 0, claimed: false
+            }));
+            localStorage.setItem(key, JSON.stringify(picked));
+            return picked;
+        }
+
+        let dailyState = loadDailyChallenges();
+
+        function getDailyDef(id) { return DAILY_CHALLENGE_DEFS.find(d => d.id === id); }
+
+        function progressDaily(type, amount = 1) {
+            let changed = false;
+            for (const s of dailyState) {
+                if (s.claimed) continue;
+                const def = getDailyDef(s.id);
+                if (!def || def.type !== type) continue;
+                s.progress = Math.min(def.target, s.progress + amount);
+                changed = true;
+            }
+            if (changed) {
+                localStorage.setItem(getDailyKey(), JSON.stringify(dailyState));
+                updateDailyBadge();
+            }
+        }
+
+        function updateDailyBadge() {
+            const badge = document.getElementById('daily-badge');
+            if (!badge) return;
+            const claimable = dailyState.filter(s => {
+                const def = getDailyDef(s.id);
+                return !s.claimed && def && s.progress >= def.target;
+            }).length;
+            badge.style.display = claimable > 0 ? 'inline-block' : 'none';
+            badge.textContent = claimable;
+        }
+
+        function openDailyChallenges() {
+            renderDailyChallenges();
+            document.getElementById('daily-panel').style.display = 'block';
+        }
+
+        function renderDailyChallenges() {
+            const list = document.getElementById('daily-list');
+            const label = document.getElementById('daily-reset-label');
+            // Time until midnight
+            const now = new Date();
+            const midnight = new Date(now); midnight.setHours(24,0,0,0);
+            const hoursLeft = Math.ceil((midnight - now) / 3600000);
+            label.textContent = `Resets in ${hoursLeft}h · New challenges every day`;
+            list.innerHTML = '';
+            for (const s of dailyState) {
+                const def = getDailyDef(s.id);
+                if (!def) continue;
+                const pct = Math.min(100, Math.round(s.progress / def.target * 100));
+                const ready = s.progress >= def.target && !s.claimed;
+                const row = document.createElement('div');
+                row.className = 'challenge-row' + (s.claimed ? ' done' : '');
+                row.innerHTML = `
+                    <span style="font-size:20px">${def.icon}</span>
+                    <div style="flex:1">
+                        <div style="font-size:13px;margin-bottom:4px">${def.desc}
+                            <span style="color:#aaa;font-size:11px;margin-left:6px">(${s.progress}/${def.target})</span>
+                        </div>
+                        <div class="challenge-progress"><div class="challenge-progress-fill" style="width:${pct}%"></div></div>
+                    </div>
+                    <div style="font-size:12px;color:${def.reward.type==='coins'?'#ffcc00':'#44aaff'}">
+                        ${def.reward.type==='coins'?'💰':'⚡'} +${def.reward.amount}
+                    </div>
+                    ${s.claimed
+                        ? '<span style="color:#27ae60;font-size:12px">✅</span>'
+                        : ready
+                            ? `<button onclick="claimDaily('${s.id}')" style="background:#27ae60;color:#fff;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:bold">Claim!</button>`
+                            : '<span style="color:#555;font-size:12px">🔒</span>'
+                    }
+                `;
+                list.appendChild(row);
+            }
+        }
+
+        function claimDaily(id) {
+            const s = dailyState.find(x => x.id === id);
+            const def = getDailyDef(id);
+            if (!s || !def || s.claimed || s.progress < def.target) return;
+            s.claimed = true;
+            if (def.reward.type === 'coins')  { playerCoins   += def.reward.amount; }
+            else if (def.reward.type === 'sparks')  { energySparks  += def.reward.amount; }
+            else if (def.reward.type === 'credits') { playerCredits += def.reward.amount; }
+            saveProgress();
+            showCoins();
+            localStorage.setItem(getDailyKey(), JSON.stringify(dailyState));
+            updateDailyBadge();
+            renderDailyChallenges();
+        }
+
+        // ── KILL STREAK ──────────────────────────────────────────────────────────
+
+        let currentStreak = 0;
+        let streakTimer   = 0; // frames since last kill
+        const STREAK_WINDOW = 600; // 10 seconds at 60fps
+
+        const STREAK_LABELS = {
+            2: { text: '💀 DOUBLE KILL!',  color: '#ffcc00', size: 30 },
+            3: { text: '🔥 TRIPLE KILL!',  color: '#ff8800', size: 34 },
+            4: { text: '⚡ QUAD KILL!',    color: '#ff4400', size: 38 },
+            5: { text: '💥 PENTA KILL!',   color: '#ff0000', size: 42 },
+        };
+
+        function registerKill() {
+            streakTimer = 0;
+            currentStreak++;
+            showStreakBanner(currentStreak);
+
+            // Progress daily streak challenge (check if current streak meets target)
+            for (const s of dailyState) {
+                if (s.claimed) continue;
+                const def = getDailyDef(s.id);
+                if (!def || def.type !== 'streak') continue;
+                if (currentStreak >= def.target) {
+                    s.progress = def.target;
+                    localStorage.setItem(getDailyKey(), JSON.stringify(dailyState));
+                    updateDailyBadge();
+                }
+            }
+        }
+
+        let streakBannerTimeout = null;
+        function showStreakBanner(n) {
+            if (n < 2) return;
+            const label = STREAK_LABELS[Math.min(n, 5)] || STREAK_LABELS[5];
+            const el = document.getElementById('streak-banner');
+            el.textContent = label.text;
+            el.style.fontSize = label.size + 'px';
+            el.style.color = label.color;
+            el.style.opacity = '1';
+            clearTimeout(streakBannerTimeout);
+            streakBannerTimeout = setTimeout(() => { el.style.opacity = '0'; }, 1800);
+        }
+
+        function updateStreak() {
+            if (!gameStarted || currentStreak === 0) return;
+            streakTimer++;
+            if (streakTimer > STREAK_WINDOW) {
+                currentStreak = 0;
+                streakTimer = 0;
+            }
+        }
+
+        // ── MATCH HISTORY ────────────────────────────────────────────────────────
+
+        function loadMatchHistory() {
+            return JSON.parse(localStorage.getItem('matchHistory') || '[]');
+        }
+
+        function saveMatchToHistory(isVictory, mode, kills, medals) {
+            const history = loadMatchHistory();
+            history.unshift({
+                date: new Date().toLocaleDateString(),
+                time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
+                result: isVictory ? 'win' : 'lose',
+                mode,
+                kills,
+                medals,
+            });
+            if (history.length > 20) history.length = 20;
+            localStorage.setItem('matchHistory', JSON.stringify(history));
+        }
+
+        function openMatchHistory() {
+            renderMatchHistory();
+            document.getElementById('history-panel').style.display = 'block';
+        }
+
+        function renderMatchHistory() {
+            const list = document.getElementById('history-list');
+            const history = loadMatchHistory();
+            if (history.length === 0) {
+                list.innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">No matches played yet.</p>';
+                return;
+            }
+            list.innerHTML = history.map(m => `
+                <div class="history-row ${m.result}">
+                    <span style="font-size:18px">${m.result === 'win' ? '🏆' : '💀'}</span>
+                    <div style="flex:1">
+                        <div style="font-weight:bold;font-size:13px">${m.result === 'win' ? 'Victory' : 'Defeat'} · ${m.mode}</div>
+                        <div style="color:#aaa;font-size:11px">${m.date} ${m.time}</div>
+                    </div>
+                    <div style="text-align:right;font-size:12px;color:#ccc">
+                        ⚔️ ${m.kills} kills<br>
+                        <span style="${m.medals >= 0 ? 'color:#ffcc00' : 'color:#ff6666'}">🏅 ${m.medals >= 0 ? '+' : ''}${m.medals}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ── UI Functions ─────────────────────────────────────────────────────────
+
         const levelRewards = [
-            { level: 2,  reward: '50 coins',  icon: '💰', claimed: false },
-            { level: 3,  reward: '50 energy sparks',  icon: '⚡', claimed: false },
-            { level: 4,  reward: '100 energy sparks',  icon: '⚡', claimed: false },
-            { level: 5,  reward: '100 coins', icon: '💰', claimed: false },
-            { level: 6,  reward: '150 energy sparks',  icon: '⚡', claimed: false },
-            { level: 7,  reward: '150 coins', icon: '💰', claimed: false },
-            { level: 8,  reward: '200 energy sparks',  icon: '⚡', claimed: false },
-            { level: 10, reward: '150 coins', icon: '💰', claimed: false },
-            { level: 12, reward: '200 coins', icon: '💰', claimed: false },
-            { level: 15, reward: '200 coins', icon: '💰', claimed: false },
-            { level: 20, reward: '250 coins', icon: '💰', claimed: false },
-            { level: 25, reward: '250 coins', icon: '💰', claimed: false },
-            { level: 30, reward: '300 coins', icon: '💰', claimed: false },
+            { level:  3, type:'sparks',  amount: 150,  icon: '⚡', reward: '150 energy sparks',   claimed: false },
+            { level:  4, type:'coins',   amount: 200,  icon: '💰', reward: '200 coins',           claimed: false },
+            { level:  5, type:'sparks',  amount: 250,  icon: '⚡', reward: '250 energy sparks',   claimed: false },
+            { level:  6, type:'coins',   amount: 300,  icon: '💰', reward: '300 coins',           claimed: false },
+            { level:  7, type:'credits', amount: 5,    icon: '🎖️', reward: '5 credits',           claimed: false },
+            { level:  8, type:'sparks',  amount: 350,  icon: '⚡', reward: '350 energy sparks',   claimed: false },
+            { level:  9, type:'coins',   amount: 400,  icon: '💰', reward: '400 coins',           claimed: false },
+            { level: 10, type:'coins',   amount: 600,  icon: '💰', reward: '600 coins',           claimed: false },
+            { level: 11, type:'sparks',  amount: 500,  icon: '⚡', reward: '500 energy sparks',   claimed: false },
+            { level: 12, type:'coins',   amount: 500,  icon: '💰', reward: '500 coins',           claimed: false },
+            { level: 13, type:'sparks',  amount: 600,  icon: '⚡', reward: '600 energy sparks',   claimed: false },
+            { level: 14, type:'credits', amount: 10,   icon: '🎖️', reward: '10 credits',          claimed: false },
+            { level: 15, type:'coins',   amount: 750,  icon: '💰', reward: '750 coins',           claimed: false },
+            { level: 16, type:'sparks',  amount: 700,  icon: '⚡', reward: '700 energy sparks',   claimed: false },
+            { level: 17, type:'coins',   amount: 750,  icon: '💰', reward: '750 coins',           claimed: false },
+            { level: 18, type:'sparks',  amount: 800,  icon: '⚡', reward: '800 energy sparks',   claimed: false },
+            { level: 19, type:'coins',   amount: 900,  icon: '💰', reward: '900 coins',           claimed: false },
+            { level: 20, type:'sparks',  amount: 1000, icon: '⚡', reward: '1000 energy sparks',  claimed: false },
+            { level: 21, type:'coins',   amount: 1000, icon: '💰', reward: '1000 coins',          claimed: false },
+            { level: 22, type:'sparks',  amount: 1100, icon: '⚡', reward: '1100 energy sparks',  claimed: false },
+            { level: 23, type:'coins',   amount: 1100, icon: '💰', reward: '1100 coins',          claimed: false },
+            { level: 24, type:'credits', amount: 15,   icon: '🎖️', reward: '15 credits',          claimed: false },
+            { level: 25, type:'coins',   amount: 1500, icon: '💰', reward: '1500 coins',          claimed: false },
+            { level: 26, type:'sparks',  amount: 1200, icon: '⚡', reward: '1200 energy sparks',  claimed: false },
+            { level: 27, type:'coins',   amount: 1200, icon: '💰', reward: '1200 coins',          claimed: false },
+            { level: 28, type:'sparks',  amount: 1500, icon: '⚡', reward: '1500 energy sparks',  claimed: false },
+            { level: 29, type:'coins',   amount: 1500, icon: '💰', reward: '1500 coins',          claimed: false },
+            { level: 30, type:'credits', amount: 20,   icon: '🎖️', reward: '20 credits',          claimed: false },
+            { level: 31, type:'sparks',  amount: 1800, icon: '⚡', reward: '1800 energy sparks',  claimed: false },
+            { level: 32, type:'coins',   amount: 1800, icon: '💰', reward: '1800 coins',          claimed: false },
+            { level: 33, type:'sparks',  amount: 2000, icon: '⚡', reward: '2000 energy sparks',  claimed: false },
+            { level: 34, type:'coins',   amount: 2000, icon: '💰', reward: '2000 coins',          claimed: false },
+            { level: 35, type:'coins',   amount: 2500, icon: '💰', reward: '2500 coins',          claimed: false },
+            { level: 36, type:'sparks',  amount: 2200, icon: '⚡', reward: '2200 energy sparks',  claimed: false },
+            { level: 37, type:'coins',   amount: 2200, icon: '💰', reward: '2200 coins',          claimed: false },
+            { level: 38, type:'sparks',  amount: 2500, icon: '⚡', reward: '2500 energy sparks',  claimed: false },
+            { level: 39, type:'credits', amount: 25,   icon: '🎖️', reward: '25 credits',          claimed: false },
+            { level: 40, type:'coins',   amount: 3000, icon: '💰', reward: '3000 coins',          claimed: false },
+            { level: 41, type:'sparks',  amount: 3000, icon: '⚡', reward: '3000 energy sparks',  claimed: false },
+            { level: 42, type:'coins',   amount: 3000, icon: '💰', reward: '3000 coins',          claimed: false },
+            { level: 43, type:'sparks',  amount: 3500, icon: '⚡', reward: '3500 energy sparks',  claimed: false },
+            { level: 44, type:'coins',   amount: 3500, icon: '💰', reward: '3500 coins',          claimed: false },
+            { level: 45, type:'credits', amount: 30,   icon: '🎖️', reward: '30 credits',          claimed: false },
+            { level: 46, type:'sparks',  amount: 4000, icon: '⚡', reward: '4000 energy sparks',  claimed: false },
+            { level: 47, type:'coins',   amount: 4000, icon: '💰', reward: '4000 coins',          claimed: false },
+            { level: 48, type:'sparks',  amount: 4500, icon: '⚡', reward: '4500 energy sparks',  claimed: false },
+            { level: 49, type:'coins',   amount: 4500, icon: '💰', reward: '4500 coins',          claimed: false },
+            { level: 50, type:'credits', amount: 50,   icon: '🎖️', reward: '50 credits',          claimed: false },
         ];
         // Restore claimed state from localStorage
         const _claimedLevels = JSON.parse(localStorage.getItem('claimedLevelRewards') ?? '[]');
@@ -4070,8 +4459,13 @@
             for (const milestone of levelRewards) {
                 if (playerLevel >= milestone.level && !milestone.claimed) {
                     milestone.claimed = true;
-                    const amount = parseInt(milestone.reward);
-                    playerCoins += amount;
+                    if (milestone.type === 'sparks') {
+                        energySparks += milestone.amount;
+                    } else if (milestone.type === 'credits') {
+                        playerCredits += milestone.amount;
+                    } else {
+                        playerCoins += milestone.amount;
+                    }
                 }
             }
             saveProgress();
@@ -4127,6 +4521,14 @@
             document.getElementById('close-level-rewards').addEventListener('click', () => {
                 document.getElementById('level-rewards-panel').style.display = 'none';
             });
+            document.getElementById('close-daily-panel').addEventListener('click', () => {
+                document.getElementById('daily-panel').style.display = 'none';
+            });
+            document.getElementById('close-history-panel').addEventListener('click', () => {
+                document.getElementById('history-panel').style.display = 'none';
+            });
+            // Show badge if claimable on load
+            updateDailyBadge();
         }
 
         function hideAllUI() {
@@ -4139,11 +4541,15 @@
             document.getElementById('player-menu').style.display = 'none';
             document.getElementById('game-over-overlay').style.display = 'none';
             document.getElementById('stardrop-overlay').style.display = 'none';
+            document.getElementById('daily-btn').style.display = 'none';
+            document.getElementById('history-btn').style.display = 'none';
         }
 
         function showAllUI() {
             document.querySelector('.guide').style.display = 'block';
             document.querySelector('.menu').style.display = 'flex';
+            document.getElementById('daily-btn').style.display = 'block';
+            document.getElementById('history-btn').style.display = 'block';
             if (window.innerWidth <= 1024 || ('ontouchstart' in window)) {
                 document.getElementById('joystick-container').style.display = 'block';
                 document.getElementById('shoot-joystick-container').style.display = 'block';
@@ -4328,7 +4734,7 @@
                         <div style="width:${pct}%; height:100%; background:linear-gradient(90deg,#4ae8d8,#44ccff); border-radius:8px; transition:width 0.4s;"></div>
                     </div>
                     <p style="color:#888; font-size:11px; text-align:center; margin:4px 0 0;">
-                        Unlock order: ⚫ Epic → 🔴 Mythic → 🟡 Legendary → ⚫ Epic …</p>`;
+                        Pick ONE player per tier. After unlocking, that tier is done — next tier opens.</p>`;
             } else {
                 barEl.innerHTML = `<p style="text-align:center; color:#ffcc00;">🏆 All credit players unlocked!</p>`;
             }
@@ -4342,98 +4748,119 @@
                 { rarity: 'legendary', label: '🟡 Legendary' },
             ];
 
-            tiers.forEach(tier => {
-                const rc = rarityColors[tier.rarity];
-                const allInTier   = Object.values(playersData).filter(p => p.rarity === tier.rarity && p.creditCost);
-                const ownedInTier = allInTier.find(p => unlockedPlayers.includes(p.id));
-                const isActiveTier  = nextTier === tier.rarity;
-                const hasSwitchable = !!ownedInTier;
-                const cost = allInTier[0]?.creditCost ?? 0;
-                const canAfford = playerCredits >= cost;
+            // Helper to build a player card
+            function buildCard(pd, rc, tier, mode) {
+                // mode: 'active' | 'locked' | 'owned' | 'missed'
+                const bBonus = getStatBonus(pd.id);
+                const card = document.createElement('div');
+                card.className = 'skin-card';
+                card.style.cssText = 'min-width:155px; max-width:165px; display:inline-block; vertical-align:top; flex-shrink:0; position:relative; cursor:default;';
 
-                // Section header
-                const header = document.createElement('div');
-                header.style.cssText = `padding:8px 0 4px; color:${rc}; font-weight:bold; font-size:16px; border-bottom:1px solid ${rc}44; margin-bottom:12px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;`;
-                let headerHtml = tier.label;
-                if (hasSwitchable) {
-                    const remaining = allInTier.filter(p => !unlockedPlayers.includes(p.id)).length;
-                    headerHtml += ` <span style="color:#44cc88; font-size:12px; font-weight:normal;">✅ Unlocked — switch is free` +
-                        (isActiveTier && remaining > 0 ? ` &nbsp;|&nbsp; <span style="color:${canAfford?'#4ae8d8':'#888'}">🎖️ Pick another (${cost} cr)</span>` : '') + `</span>`;
-                } else if (isActiveTier) {
-                    headerHtml += ` <span style="color:${canAfford ? '#4ae8d8' : '#888'}; font-size:12px; font-weight:normal;">— costs ${cost} credits (you have ${playerCredits})</span>`;
-                } else {
-                    headerHtml += ` <span style="color:#666; font-size:12px; font-weight:normal;">🔒 not your turn yet</span>`;
+                if (mode === 'owned') {
+                    card.style.border = `3px solid ${rc}`;
+                    card.style.boxShadow = `0 0 16px ${rc}88`;
+                    card.style.background = '#1a1a2e';
                 }
-                header.innerHTML = headerHtml;
+                if (mode === 'missed') {
+                    card.style.opacity = '0.35';
+                    card.style.filter = 'grayscale(0.7)';
+                }
+                if (mode === 'locked') {
+                    card.style.opacity = '0.4';
+                }
+
+                let btnLabel, btnDisabled, btnStyle;
+                if (mode === 'owned') {
+                    btnLabel = '✅ Your Pick'; btnDisabled = true;
+                    btnStyle = `background:${rc}44; color:${rc}; border:1px solid ${rc};`;
+                } else if (mode === 'active') {
+                    const canAfford = playerCredits >= pd.creditCost;
+                    btnLabel = canAfford ? `🎖️ Unlock (${pd.creditCost} cr)` : `❌ Need ${pd.creditCost - playerCredits} more`;
+                    btnDisabled = !canAfford;
+                    btnStyle = canAfford ? 'background:#4ae8d8; color:#000; font-weight:bold;' : 'background:#2a2a3a; color:#666;';
+                } else if (mode === 'missed') {
+                    btnLabel = '✖ Not chosen'; btnDisabled = true; btnStyle = 'background:#333; color:#666;';
+                } else {
+                    btnLabel = '🔒 Locked'; btnDisabled = true; btnStyle = '';
+                }
+
+                const badge = mode === 'owned'
+                    ? `<div style="position:absolute; top:-10px; left:50%; transform:translateX(-50%); background:${rc}; color:#000; font-size:10px; font-weight:bold; padding:2px 8px; border-radius:10px; white-space:nowrap;">YOUR PICK</div>`
+                    : '';
+                const imgHtml = pd.img
+                    ? `<img src="${pd.img}" class="skin-img" alt="${pd.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" style="width:100%; height:100px; object-fit:cover; border-radius:10px;">`
+                    : '';
+                const fallback = `<div style="background:${pd.color}; height:100px; border-radius:10px; display:${pd.img?'none':'flex'}; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:12px;">${pd.name}</div>`;
+
+                card.innerHTML = `${badge}${imgHtml}${fallback}
+                    <h3 style="font-size:13px; margin:6px 0 2px; color:${mode==='owned' ? rc : '#fff'};">${pd.name}</h3>
+                    <p style="color:${rc}; font-weight:bold; margin:2px 0; font-size:12px;">${rarityLabels[tier.rarity]}</p>
+                    <p style="font-size:11px; margin:2px 0;">HP:${Math.round(pd.hp*bBonus)} Dmg:${Math.round(pd.laserDamage*bBonus)}</p>
+                    <p style="font-size:11px; margin:2px 0;">Spd:${pd.speed} Rng:${pd.laserRange}</p>
+                    ${pd.attackType ? `<p style="font-size:10px; margin:2px 0; color:#88aaff;">🎯 ${pd.attackType}</p>` : ''}
+                    <button class="btn choose-btn" ${btnDisabled ? 'disabled' : ''} style="font-size:12px; padding:5px 10px; margin-top:4px; width:100%; ${btnStyle}">${btnLabel}</button>`;
+
+                if (mode === 'active' && !btnDisabled) {
+                    card.querySelector('.choose-btn').addEventListener('click', () => buyPlayerWithCredits(pd.id));
+                }
+                return card;
+            }
+
+            // ── Active tier (the one you're currently choosing) ──
+            if (nextTier) {
+                const tier = tiers.find(t => t.rarity === nextTier);
+                const rc   = rarityColors[tier.rarity];
+                const allInTier = Object.values(playersData).filter(p => p.rarity === tier.rarity && p.creditCost);
+                const tierCost = allInTier[0]?.creditCost ?? 0;
+
+                const header = document.createElement('div');
+                header.style.cssText = `padding:8px 0 4px; color:${rc}; font-weight:bold; font-size:16px; border-bottom:2px solid ${rc}; margin-bottom:8px;`;
+                header.textContent = `${tier.label} — Pick one to unlock`;
+                list.appendChild(header);
+
+                // Credits progress line
+                const pct = tierCost > 0 ? Math.min(100, Math.round(playerCredits / tierCost * 100)) : 100;
+                const credColor = playerCredits >= tierCost ? '#4ae8d8' : '#e94560';
+                const progressLine = document.createElement('div');
+                progressLine.style.cssText = 'display:flex; align-items:center; gap:8px; margin:0 0 14px; font-size:13px; color:#aaa;';
+                progressLine.innerHTML = `<span>🎖️</span><span style="color:${credColor}; font-weight:bold;">${playerCredits} / ${tierCost}</span><span style="color:#777;">credits needed</span><div style="flex:1; background:#333; border-radius:4px; height:8px; overflow:hidden;"><div style="width:${pct}%; height:100%; background:${credColor}; border-radius:4px;"></div></div>`;
+                list.appendChild(progressLine);
+
+                const rowWrap = document.createElement('div');
+                rowWrap.style.cssText = 'overflow-x:auto; margin-bottom:28px; padding-bottom:4px;';
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex; flex-direction:row; align-items:flex-start; gap:12px; min-width:max-content;';
+                allInTier.forEach(pd => row.appendChild(buildCard(pd, rc, tier, 'active')));
+                rowWrap.appendChild(row);
+                list.appendChild(rowWrap);
+            }
+
+            // ── Locked tiers (after the active one, not yet reachable) ──
+            const sequence = ['epic', 'mythic', 'legendary'];
+            const nextIdx = nextTier ? sequence.indexOf(nextTier) : sequence.length;
+            for (let i = nextIdx + 1; i < sequence.length; i++) {
+                const tier = tiers.find(t => t.rarity === sequence[i]);
+                const rc   = rarityColors[tier.rarity];
+                const allInTier = Object.values(playersData).filter(p => p.rarity === tier.rarity && p.creditCost);
+
+                const header = document.createElement('div');
+                header.style.cssText = `padding:8px 0 4px; color:#555; font-weight:bold; font-size:15px; border-bottom:1px solid #333; margin-bottom:12px;`;
+                header.innerHTML = `${tier.label} <span style="font-size:12px; font-weight:normal; color:#555;">🔒 Unlock previous tier first</span>`;
                 list.appendChild(header);
 
                 const rowWrap = document.createElement('div');
                 rowWrap.style.cssText = 'overflow-x:auto; margin-bottom:24px; padding-bottom:4px;';
                 const row = document.createElement('div');
                 row.style.cssText = 'display:flex; flex-direction:row; align-items:flex-start; gap:12px; min-width:max-content;';
-
-                const ordered = ownedInTier
-                    ? [ownedInTier, ...allInTier.filter(p => p.id !== ownedInTier.id)]
-                    : allInTier;
-
-                ordered.forEach(pd => {
-                    const isOwned = ownedInTier?.id === pd.id;
-                    const bBonus  = getStatBonus(pd.id);
-
-                    const card = document.createElement('div');
-                    card.className = 'skin-card';
-                    card.style.cssText += 'min-width:155px; max-width:165px; display:inline-block; vertical-align:top; flex-shrink:0; position:relative;';
-
-                    if (isOwned) {
-                        card.style.border = `3px solid ${rc}`;
-                        card.style.boxShadow = `0 0 16px ${rc}88`;
-                        card.style.background = '#1a1a2e';
-                    }
-
-                    let btnLabel, btnDisabled, btnStyle;
-                    if (isOwned) {
-                        btnLabel = '✅ Your Pick'; btnDisabled = true;
-                        btnStyle = `background:${rc}44; color:${rc}; border:1px solid ${rc};`;
-                    } else if (hasSwitchable) {
-                        btnLabel = '🔄 Switch (free)'; btnDisabled = false;
-                        btnStyle = 'background:#336644; color:#aaffcc;';
-                    } else if (isActiveTier && canAfford) {
-                        btnLabel = `🎖️ Unlock (${cost} cr)`; btnDisabled = false;
-                        btnStyle = 'background:#4ae8d8; color:#000; font-weight:bold;';
-                    } else if (isActiveTier) {
-                        btnLabel = `❌ Need ${cost - playerCredits} more`; btnDisabled = true; btnStyle = '';
-                    } else {
-                        btnLabel = '🔒 Locked'; btnDisabled = true; btnStyle = '';
-                        card.style.opacity = '0.4';
-                    }
-
-                    const ownedBadge = isOwned
-                        ? `<div style="position:absolute; top:-10px; left:50%; transform:translateX(-50%); background:${rc}; color:#000; font-size:10px; font-weight:bold; padding:2px 8px; border-radius:10px; white-space:nowrap;">YOUR PICK</div>`
-                        : '';
-                    const imgHtml = pd.img
-                        ? `<img src="${pd.img}" class="skin-img" alt="${pd.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" style="width:100%; height:100px; object-fit:cover; border-radius:10px;">`
-                        : '';
-                    const fallback = `<div style="background:${pd.color}; height:100px; border-radius:10px; display:${pd.img?'none':'flex'}; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:12px;">${pd.name}</div>`;
-
-                    card.innerHTML = `${ownedBadge}${imgHtml}${fallback}
-                        <h3 style="font-size:13px; margin:6px 0 2px; color:${isOwned ? rc : '#fff'};">${pd.name}</h3>
-                        <p style="color:${rc}; font-weight:bold; margin:2px 0; font-size:12px;">${rarityLabels[tier.rarity]}</p>
-                        <p style="font-size:11px; margin:2px 0;">HP:${Math.round(pd.hp*bBonus)} Dmg:${Math.round(pd.laserDamage*bBonus)}</p>
-                        <p style="font-size:11px; margin:2px 0;">Spd:${pd.speed} Rng:${pd.laserRange}</p>
-                        ${pd.attackType ? `<p style="font-size:10px; margin:2px 0; color:#88aaff;">🎯 ${pd.attackType}</p>` : ''}
-                        <button class="btn choose-btn" ${btnDisabled ? 'disabled' : ''} style="font-size:12px; padding:5px 10px; margin-top:4px; width:100%; ${btnStyle}">${btnLabel}</button>`;
-
-                    if (!btnDisabled) {
-                        card.querySelector('.choose-btn').addEventListener('click', () => {
-                            if (hasSwitchable && !isOwned) switchPlayerInTier(tier.rarity, pd.id);
-                            else if (isActiveTier) buyPlayerWithCredits(pd.id);
-                        });
-                    }
-                    row.appendChild(card);
-                });
-
+                allInTier.forEach(pd => row.appendChild(buildCard(pd, rc, tier, 'locked')));
                 rowWrap.appendChild(row);
                 list.appendChild(rowWrap);
+            }
+
+            // ── Past tiers (already unlocked one — show chosen + missed) ──
+            const completedTiers = tiers.filter(tier => {
+                const allInTier = Object.values(playersData).filter(p => p.rarity === tier.rarity && p.creditCost);
+                return allInTier.some(p => unlockedPlayers.includes(p.id));
             });
         }
 
@@ -4508,17 +4935,7 @@
             renderCreditsPanel();
         }
 
-        function switchPlayerInTier(rarity, newPlayerId) {
-            // Free switch — no credit cost, does NOT advance the unlock cycle
-            const oldId = Object.values(playersData).find(p => p.rarity === rarity && unlockedPlayers.includes(p.id))?.id;
-            if (!oldId) return; // nothing to switch from
-            unlockedPlayers = unlockedPlayers.filter(id => id !== oldId);
-            if (selectedPlayerId === oldId) selectedPlayerId = 'default';
-            unlockedPlayers.push(newPlayerId);
-            saveProgress();
-            showLootboxPopup(`Switched to ${playersData[newPlayerId].name}! (free)`);
-            renderCreditsPanel();
-        }
+        // switchPlayerInTier removed — no switching allowed after unlocking a tier
 
         function showLootboxPopup(message) {
             document.getElementById('lootbox-content').textContent = message;
