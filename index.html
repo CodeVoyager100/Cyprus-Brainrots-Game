@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>Attackers.Game</title>
+    <title>Vantare</title>
     <style>
         body, html {
             margin: 0;
@@ -430,6 +430,33 @@
             to   { box-shadow: 0 0 22px #ff8800; }
         }
 
+        /* Use item button */
+        #use-item-btn-container {
+            display: none;
+            position: fixed;
+            bottom: 240px;
+            right: 20px;
+            z-index: 100;
+        }
+        .game-active #use-item-btn-container {
+            display: block;
+        }
+        #use-item-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: rgba(30,30,60,0.85);
+            border: 3px solid #4ae8d8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 0 10px #4ae8d844;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
         #debug-status {
             position: fixed;
             right: 10px;
@@ -481,17 +508,13 @@
         }
 
         @keyframes pulse {
-            0% {
-                transform: scale(1);
-            }
-
-            50% {
-                transform: scale(1.1);
-            }
-
-            100% {
-                transform: scale(1);
-            }
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        @keyframes showcasePulse {
+            0%, 100% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.04); filter: brightness(1.15); }
         }
     </style>
 </head>
@@ -501,9 +524,10 @@
         <p style="margin: 0; line-height: 1.6;">
             🎮 Arrow keys / WASD / white joystick to move<br>
             🖱️ Click / red joystick / tap to shoot<br>
+            📦 Shoot crates to break them — collect the drop!<br>
+            🎒 Press F (or the item button) to use your first item<br>
             ⚔️ Press "Battle!" to start<br>
-            🎖️ Earn Credits &amp; unlock players in the Bazaar<br>
-            ❤️ Collect green packs to heal
+            🎖️ Earn Credits &amp; unlock players in the Bazaar
         </p>
     </div>
 
@@ -574,12 +598,6 @@
         <button class="btn modal-close" id="close-history-panel">Close</button>
     </div>
 
-    <div id="skins-container" class="modal-panel">
-        <h2>🛒 Bazaar</h2>
-        <div id="bazaar-items" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;"></div>
-        <button class="btn modal-close" id="close-bazaar">Close</button>
-    </div>
-
     <div id="credits-panel" class="modal-panel" style="width:700px;">
         <h2 style="color:#4ae8d8;">🎖️ Credits Progression</h2>
         <p style="text-align:center; color:#aaa; margin-top:-10px; font-size:13px;">Earn credits by playing &nbsp;|&nbsp; Unlock one player per tier &nbsp;|&nbsp; Must unlock Epic before Mythic, Mythic before Legendary</p>
@@ -648,9 +666,19 @@
     </div>
 
     <div class="menu">
+        <!-- Character showcase -->
+        <div id="char-showcase" style="display:flex; align-items:center; gap:14px; background:rgba(255,255,255,0.04); border:1px solid #333; border-radius:14px; padding:10px 16px; margin-bottom:6px; min-width:220px;">
+            <div id="char-showcase-img-wrap" style="width:72px; height:72px; flex-shrink:0; border-radius:10px; overflow:hidden; border:2px solid #555; background:#111;">
+                <img id="char-showcase-img" src="" style="width:100%; height:100%; object-fit:cover; animation: showcasePulse 2s ease-in-out infinite;" />
+            </div>
+            <div style="text-align:left;">
+                <div id="char-showcase-name" style="font-size:16px; font-weight:bold; color:#fff;"></div>
+                <div id="char-showcase-rarity" style="font-size:12px; font-weight:bold; margin:2px 0;"></div>
+                <div id="char-showcase-stats" style="font-size:11px; color:#aaa; line-height:1.5;"></div>
+            </div>
+        </div>
         <button class="btn" id="game-mode-btn">🎮 Game Modes</button>
         <button class="btn" id="start-btn">⚔️ Battle!</button>
-        <button class="btn" id="shop-btn">🛒 Bazaar</button>
         <button class="btn" id="credits-btn" style="background:#1a3a3a; border:1px solid #4ae8d8; color:#4ae8d8;">🎖️ Credits</button>
         <button class="btn" id="switch-player-btn"> Players</button>
     </div>
@@ -677,6 +705,16 @@
         </div>
     </div>
 
+    <!-- Super aim overlay (shown when dragging a directional super) -->
+    <canvas id="super-aim-canvas" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:250; pointer-events:none;"></canvas>
+
+    <!-- Use item button (mobile) — shown via .game-active class -->
+    <div id="use-item-btn-container">
+        <div id="use-item-btn">
+            <span id="use-item-icon">🎒</span>
+        </div>
+    </div>
+
     <div id="debug-status" style="display:none"></div>
 
     <script>
@@ -690,6 +728,8 @@
         let lasers = [];
         let aiLasers = [];
         let healthPacks = [];
+        let crateBoxes = [];
+        let pickupItems = [];
         let players = [];
         let bots = [];
         let player = null;
@@ -1047,6 +1087,74 @@
                 attackType: 'spread',        // 3-shot spread punch
                 superType: 'rockrush',       // charge forward, massive damage to everything in path
                 superName: '🥊 Rock Rush'
+            },
+            timor: {
+                id: 'timor',
+                name: 'Timor',
+                img: 'images/timor.png',
+                color: '#7c3aed',
+                hp: 50,
+                speed: 3,
+                laserDamage: 3,
+                size: 58,
+                laserRange: 420,
+                price: 600,
+                rarity: 'rare',
+                attackType: 'heavy',         // slow cannon ball
+                superType: 'bigshot',        // massive aimed projectile
+                superName: '💣 Heavy Shell',
+                superNeedsAim: true
+            },
+            shado: {
+                id: 'shado',
+                name: 'Shado',
+                img: 'images/shado.png',
+                color: '#06b6d4',
+                hp: 32,
+                speed: 6,
+                laserDamage: 3,
+                size: 50,
+                laserRange: 380,
+                creditCost: 200,
+                rarity: 'epic',
+                attackType: 'rapid',         // quick double shot
+                superType: 'shadowburst',    // teleport in aimed direction + burst at landing spot
+                superName: '🌑 Shadow Burst',
+                superNeedsAim: true
+            },
+            kleftros: {
+                id: 'kleftros',
+                name: 'Kleftros',
+                img: 'images/Kleftros.png',
+                color: '#f59e0b',
+                hp: 28,
+                speed: 6,
+                laserDamage: 2,
+                size: 50,
+                laserRange: 350,
+                price: 500,
+                rarity: 'rare',
+                attackType: 'boomerang',     // curved projectile that returns
+                superType: 'firedash',       // fast dash + fire trail
+                superName: '🏃 Dash & Burn',
+                superNeedsAim: true
+            },
+            kapnas: {
+                id: 'kapnas',
+                name: 'Kapnas',
+                img: 'images/Kapnas.png',
+                color: '#6b7280',
+                hp: 55,
+                speed: 3,
+                laserDamage: 4,
+                size: 60,
+                laserRange: 480,
+                creditCost: 500,
+                rarity: 'mythic',
+                attackType: 'spread',        // 3-shot smoke spread
+                superType: 'smokezone',      // large slow+poison zone placed at aim target
+                superName: '💨 Smoke Zone',
+                superNeedsAim: true
             }
         };
 
@@ -1209,15 +1317,12 @@
 
         function generateHealthPacks() {
             healthPacks = [];
-            for (let i = 0; i < 8; i++) {
-                const pos = getSpawnPosition(40);
-                healthPacks.push({
-                    x: pos.x,
-                    y: pos.y,
-                    size: 40,
-                    healAmount: 15,
-                    active: true
-                });
+            crateBoxes = [];
+            pickupItems = [];
+            // Spawn 10 destructible crates instead of plain health packs
+            for (let i = 0; i < 10; i++) {
+                const pos = getSpawnPosition(44);
+                crateBoxes.push({ x: pos.x, y: pos.y, size: 44, hp: 4, maxHp: 4 });
             }
         }
 
@@ -1355,50 +1460,92 @@
             return (ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1);
         }
 
-        // Health pack collision
-        // SIMPLIFIED Health pack collision - no cooldown for now
-        function checkHealthPackCollision(entity) {
-            if (!entity) return;
+        // ── CRATE & PICKUP SYSTEM ──────────────────────────────────────────────
+        const PICKUP_TYPES = ['heal', 'speed', 'damage', 'shield'];
+        const PICKUP_ICONS = { heal: '❤️', speed: '⚡', damage: '🔥', shield: '🛡️' };
 
-            for (let i = healthPacks.length - 1; i >= 0; i--) {
-                const pack = healthPacks[i];
-                if (!pack || !pack.active) continue;
+        function spawnPickupAt(x, y) {
+            const type = PICKUP_TYPES[Math.floor(Math.random() * PICKUP_TYPES.length)];
+            pickupItems.push({ x: x - 18, y: y - 18, size: 36, type });
+        }
 
-                // Simple rectangle collision
-                if (entity.x < pack.x + pack.size &&
-                    entity.x + entity.size > pack.x &&
-                    entity.y < pack.y + pack.size &&
-                    entity.y + entity.size > pack.y) {
+        function dropPlayerItems(entity) {
+            if (!entity.items || entity.items.length === 0) return;
+            for (const type of entity.items) {
+                pickupItems.push({ x: entity.x + Math.random() * 30 - 15, y: entity.y + Math.random() * 30 - 15, size: 36, type });
+            }
+            entity.items = [];
+        }
 
-                    const boostAmount = 10;
-
-                    // Increase max HP and current HP for this match
-                    if (entity.isHuman) {
-                        entity.maxHp += boostAmount;
-                        entity.currentHp += boostAmount;
-                        healMessage = { text: `+${boostAmount} Max HP!`, timer: 90 };
-                    } else {
-                        // Bots just heal normally
-                        entity.currentHp = Math.min(entity.maxHp, entity.currentHp + boostAmount);
+        // Check if a laser hits a crate — damages it and returns true if it did
+        function checkLaserCrateCollision(laser) {
+            const lx = laser.x, ly = laser.y;
+            for (let i = crateBoxes.length - 1; i >= 0; i--) {
+                const c = crateBoxes[i];
+                if (lx >= c.x && lx <= c.x + c.size && ly >= c.y && ly <= c.y + c.size) {
+                    c.hp -= laser.damage || 1;
+                    if (c.hp <= 0) {
+                        spawnPickupAt(c.x + c.size / 2, c.y + c.size / 2);
+                        crateBoxes.splice(i, 1);
+                        // Respawn a new crate after 25s
+                        setTimeout(() => {
+                            if (!gameStarted) return;
+                            const pos = getSpawnPosition(44);
+                            crateBoxes.push({ x: pos.x, y: pos.y, size: 44, hp: 4, maxHp: 4 });
+                        }, 25000);
                     }
-                    entity.healingReceived += boostAmount;
-
-                    // Always consume the pack
-                    healthPacks.splice(i, 1);
-                    setTimeout(() => {
-                        if (!gameStarted) return;
-                        const newPos = getSpawnPosition(40);
-                        healthPacks.push({
-                            x: newPos.x,
-                            y: newPos.y,
-                            size: 40,
-                            healAmount: 10,
-                            active: true
-                        });
-                    }, 10000);
-                    break;
+                    return true;
                 }
             }
+            return false;
+        }
+
+        // Pick up items from ground; auto-use heal if inventory full and it's a heal
+        function checkPickupCollision(entity) {
+            for (let i = pickupItems.length - 1; i >= 0; i--) {
+                const item = pickupItems[i];
+                if (entity.x < item.x + item.size && entity.x + entity.size > item.x &&
+                    entity.y < item.y + item.size && entity.y + entity.size > item.y) {
+                    if (entity.items.length < 3) {
+                        entity.items.push(item.type);
+                        pickupItems.splice(i, 1);
+                        // Bots auto-use heal when low; auto-use buffs when healthy
+                        if (entity.isBot) {
+                            const type = entity.items[entity.items.length - 1];
+                            if (type === 'heal' && entity.currentHp < entity.maxHp * 0.7) {
+                                useItem(entity);
+                            } else if (type !== 'heal' && entity.currentHp >= entity.maxHp * 0.5) {
+                                useItem(entity);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function useItem(entity) {
+            if (!entity.items || entity.items.length === 0) return;
+            const type = entity.items.shift();
+            if (type === 'heal') {
+                const amount = 30;
+                entity.currentHp = Math.min(entity.maxHp, entity.currentHp + amount);
+                if (entity.isHuman) healMessage = { text: `+${amount} HP!`, timer: 90 };
+                entity.healingReceived += amount;
+            } else if (type === 'speed') {
+                entity._speedTimer = 600; // 10 seconds
+                if (entity.isHuman) healMessage = { text: '⚡ Speed Boost!', timer: 90 };
+            } else if (type === 'damage') {
+                entity._damageTimer = 600;
+                if (entity.isHuman) healMessage = { text: '🔥 Damage Boost!', timer: 90 };
+            } else if (type === 'shield') {
+                entity._shieldHp = 30;
+                if (entity.isHuman) healMessage = { text: '🛡️ Shield Up!', timer: 90 };
+            }
+        }
+
+        // Health pack collision — kept for backward compat but does nothing now (replaced by crate system)
+        function checkHealthPackCollision(entity) {
+            checkPickupCollision(entity);
         }
 
 
@@ -1686,9 +1833,12 @@
                 if (bot.shootCooldown > 0) bot.shootCooldown--;
 
                 // Apply movement — stop on obstacle collision
+                const botSpeedMult = (bot._slowTimer > 0) ? 0.4 : (bot._speedTimer > 0) ? 1.6 : 1;
+                if (bot._speedTimer > 0) bot._speedTimer--;
+                if (bot._damageTimer > 0) bot._damageTimer--;
                 const oldX = bot.x, oldY = bot.y;
-                bot.x = Math.max(0, Math.min(bot.x + bot.vx, MAP_WIDTH - bot.size));
-                bot.y = Math.max(0, Math.min(bot.y + bot.vy, MAP_HEIGHT - bot.size));
+                bot.x = Math.max(0, Math.min(bot.x + bot.vx * botSpeedMult, MAP_WIDTH - bot.size));
+                bot.y = Math.max(0, Math.min(bot.y + bot.vy * botSpeedMult, MAP_HEIGHT - bot.size));
 
                 let hitObstacle = false;
                 for (let obs of obstacles) {
@@ -1795,13 +1945,15 @@
         function findNearestHealthPack(bot) {
             let nearest = null;
             let minDistance = Infinity;
-
-            for (let pack of healthPacks) {
-                if (!pack.active) continue;
-                const dist = getDistance(bot.x, bot.y, pack.x, pack.y);
+            // Find nearest heal pickup first, then any pickup
+            const targets = pickupItems.filter(p => p.type === 'heal').length > 0
+                ? pickupItems.filter(p => p.type === 'heal')
+                : pickupItems;
+            for (let item of targets) {
+                const dist = getDistance(bot.x, bot.y, item.x, item.y);
                 if (dist < minDistance) {
                     minDistance = dist;
-                    nearest = pack;
+                    nearest = item;
                 }
             }
             return nearest;
@@ -1927,7 +2079,11 @@
                 superCooldown: 0,     // frames before can use again after activation
                 superActive: false,   // buff supers (berserk, coffeerush, etc.)
                 superTimer: 0,        // frames remaining for active buff
-                superInvincible: false // for rockshield / megazord
+                superInvincible: false, // for rockshield / megazord
+                items: [],            // held pickups (max 3)
+                _speedTimer: 0,
+                _damageTimer: 0,
+                _shieldHp: 0
             };
             players.push(player);
 
@@ -1963,7 +2119,11 @@
                     superCooldown: 0,
                     superActive: false,
                     superTimer: 0,
-                    superInvincible: false
+                    superInvincible: false,
+                    items: [],
+                    _speedTimer: 0,
+                    _damageTimer: 0,
+                    _shieldHp: 0
                 };
                 players.push(bot);
                 bots.push(bot);
@@ -2043,27 +2203,55 @@
         }
 
         function drawHealthPacks() {
+            // ── Draw destructible crates ──
             ctx.save();
-            const pulse = 1 + Math.sin(Date.now() / 300) * 0.15;
-            for (let pack of healthPacks) {
-                if (!pack.active) continue;
-                const cx = pack.x - camera.x + pack.size / 2;
-                const cy = pack.y - camera.y + pack.size / 2;
-                const r = (pack.size / 2) * pulse;
-
-                // Background circle
-                ctx.fillStyle = 'rgba(0, 180, 60, 0.25)';
-                ctx.beginPath();
-                ctx.arc(cx, cy, r, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Cross shape
-                ctx.fillStyle = '#00ff66';
-                ctx.shadowColor = '#00ff66';
-                ctx.shadowBlur = 14;
-                ctx.fillRect(cx - 5, cy - 14, 10, 28);
-                ctx.fillRect(cx - 14, cy - 5, 28, 10);
+            for (const c of crateBoxes) {
+                const cx = c.x - camera.x, cy = c.y - camera.y;
+                const s = c.size;
+                // Shadow
+                ctx.shadowColor = '#8B4513';
+                ctx.shadowBlur = 6;
+                // Wood body
+                ctx.fillStyle = '#8B5E3C';
+                ctx.fillRect(cx, cy, s, s);
+                // Board lines
+                ctx.strokeStyle = '#5C3317';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(cx, cy, s, s);
+                ctx.beginPath(); ctx.moveTo(cx, cy + s / 2); ctx.lineTo(cx + s, cy + s / 2); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cx + s / 2, cy); ctx.lineTo(cx + s / 2, cy + s); ctx.stroke();
+                // Metal cross
+                ctx.strokeStyle = '#aaa';
+                ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.moveTo(cx + 4, cy + 4); ctx.lineTo(cx + s - 4, cy + s - 4); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cx + s - 4, cy + 4); ctx.lineTo(cx + 4, cy + s - 4); ctx.stroke();
                 ctx.shadowBlur = 0;
+                // HP bar
+                const hpPct = c.hp / c.maxHp;
+                ctx.fillStyle = '#333';
+                ctx.fillRect(cx, cy - 7, s, 4);
+                ctx.fillStyle = hpPct > 0.5 ? '#22dd55' : '#ff4444';
+                ctx.fillRect(cx, cy - 7, s * hpPct, 4);
+            }
+
+            // ── Draw pickup items on ground ──
+            const pulse = Math.sin(Date.now() / 280) * 0.12 + 1;
+            for (const item of pickupItems) {
+                const ix = item.x - camera.x + item.size / 2;
+                const iy = item.y - camera.y + item.size / 2;
+                const r = (item.size / 2) * pulse;
+                const colors = { heal: '#22cc55', speed: '#44aaff', damage: '#ff4422', shield: '#ffcc00' };
+                const col = colors[item.type] || '#fff';
+                ctx.shadowColor = col;
+                ctx.shadowBlur = 12;
+                ctx.fillStyle = col + '44';
+                ctx.beginPath(); ctx.arc(ix, iy, r, 0, Math.PI * 2); ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.font = `${Math.round(item.size * 0.7)}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(PICKUP_ICONS[item.type], ix, iy);
+                ctx.textBaseline = 'alphabetic';
             }
             ctx.restore();
         }
@@ -2201,6 +2389,21 @@
                     ctx.font = '12px Arial';
                     ctx.fillStyle = 'white';
                     ctx.fillText(p.name, px + p.size / 2, py - 28);
+                }
+
+                // Item icons above name
+                if (p.items && p.items.length > 0) {
+                    const iconY = py - (p.isHuman ? 42 : 32);
+                    ctx.font = '14px Arial';
+                    ctx.textAlign = 'center';
+                    const iconStr = p.items.map(t => PICKUP_ICONS[t] || '?').join(' ');
+                    ctx.fillText(iconStr, px + p.size / 2, iconY);
+                }
+                // Shield indicator
+                if (p._shieldHp > 0) {
+                    ctx.font = 'bold 11px Arial';
+                    ctx.fillStyle = '#ffcc00';
+                    ctx.fillText(`🛡️${p._shieldHp}`, px + p.size / 2, py - (p.isHuman ? 54 : 44));
                 }
 
                 // Stars above player in bounty mode
@@ -2450,6 +2653,24 @@
                     ctx.arc(sx, sy, fx.radius, 0, Math.PI * 2);
                     ctx.fillStyle = `rgba(255,220,60,${alpha})`;
                     ctx.fill();
+                } else if (fx.type === 'smokezone') {
+                    const alpha = Math.min(0.5, fx.timer / 60) * 0.6;
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, fx.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(100,110,120,${alpha})`;
+                    ctx.fill();
+                    ctx.strokeStyle = `rgba(80,90,100,${alpha + 0.15})`;
+                    ctx.lineWidth = 4;
+                    ctx.stroke();
+                    // Smoke wisps
+                    ctx.fillStyle = `rgba(160,170,180,${alpha * 0.7})`;
+                    for (let e = 0; e < 6; e++) {
+                        const ang = (Date.now() / 800 + e * Math.PI / 3) % (Math.PI * 2);
+                        const r = fx.radius * 0.6 * Math.random();
+                        ctx.beginPath();
+                        ctx.arc(sx + Math.cos(ang) * r, sy + Math.sin(ang) * r, 8 + Math.random() * 10, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
                 }
             }
             ctx.restore();
@@ -2989,6 +3210,11 @@
                     lasers.splice(i, 1);
                     continue;
                 }
+                // Check collision with destructible crates
+                if (checkLaserCrateCollision(laser)) {
+                    lasers.splice(i, 1);
+                    continue;
+                }
 
                 // Check collisions with all players (except the shooter and teammates)
                 let hit = false;
@@ -3011,8 +3237,17 @@
                            laser.y >= targetPlayer.y && laser.y <= targetPlayer.y + targetPlayer.size);
 
                     if (playerHit) {
-                        const actualDamage = Math.min(laser.damage, Math.max(0, targetPlayer.currentHp));
-                        targetPlayer.currentHp -= laser.damage;
+                        // Apply damage boost from shooter's buff
+                        let dmg = laser.damage;
+                        if (laser.shooter._damageTimer > 0) dmg = Math.round(dmg * 1.5);
+                        // Apply shield absorption on target
+                        if (targetPlayer._shieldHp > 0) {
+                            const absorbed = Math.min(targetPlayer._shieldHp, dmg);
+                            targetPlayer._shieldHp -= absorbed;
+                            dmg -= absorbed;
+                        }
+                        const actualDamage = Math.min(dmg, Math.max(0, targetPlayer.currentHp));
+                        targetPlayer.currentHp -= dmg;
                         laser.shooter.damageDealt += actualDamage;
                         // Charge super bar (4 damage = 1 charge point, capped at 100)
                         if (laser.shooter.superCharge !== undefined)
@@ -3046,7 +3281,9 @@
                             if (isTeamMode) {
                                 targetPlayer.respawnTimer = currentGameMode === 'bounty' ? 300 : 900;
                                 targetPlayer.dead = true;
+                                dropPlayerItems(targetPlayer);
                             } else {
+                                dropPlayerItems(targetPlayer);
                                 matchStatsList.push({ name: targetPlayer.name, kills: targetPlayer.kills, damageDealt: targetPlayer.damageDealt, healingReceived: targetPlayer.healingReceived, team: targetPlayer.team, isHuman: targetPlayer.isHuman });
                                 players.splice(j, 1);
                                 if (targetPlayer.isBot) {
@@ -3104,6 +3341,11 @@
                     aiLasers.splice(i, 1);
                     continue;
                 }
+                // Check collision with destructible crates
+                if (checkLaserCrateCollision(laser)) {
+                    aiLasers.splice(i, 1);
+                    continue;
+                }
 
                 // Check collisions with all players (except the shooter and teammates)
                 let hit = false;
@@ -3125,9 +3367,17 @@
                            laser.y >= targetPlayer.y && laser.y <= targetPlayer.y + targetPlayer.size);
 
                     if (aiPlayerHit) {
-
-                        const actualDamage = Math.min(laser.damage, Math.max(0, targetPlayer.currentHp));
-                        targetPlayer.currentHp -= laser.damage;
+                        // Apply damage boost from shooter's buff
+                        let dmg = laser.damage;
+                        if (laser.shooter._damageTimer > 0) dmg = Math.round(dmg * 1.5);
+                        // Apply shield absorption on target
+                        if (targetPlayer._shieldHp > 0) {
+                            const absorbed = Math.min(targetPlayer._shieldHp, dmg);
+                            targetPlayer._shieldHp -= absorbed;
+                            dmg -= absorbed;
+                        }
+                        const actualDamage = Math.min(dmg, Math.max(0, targetPlayer.currentHp));
+                        targetPlayer.currentHp -= dmg;
                         laser.shooter.damageDealt += actualDamage;
                         // Charge super bar
                         if (laser.shooter.superCharge !== undefined)
@@ -3161,7 +3411,9 @@
                             if (isTeamMode) {
                                 targetPlayer.respawnTimer = currentGameMode === 'bounty' ? 300 : 900;
                                 targetPlayer.dead = true;
+                                dropPlayerItems(targetPlayer);
                             } else {
+                                dropPlayerItems(targetPlayer);
                                 matchStatsList.push({ name: targetPlayer.name, kills: targetPlayer.kills, damageDealt: targetPlayer.damageDealt, healingReceived: targetPlayer.healingReceived, team: targetPlayer.team, isHuman: targetPlayer.isHuman });
                                 players.splice(j, 1);
                                 if (targetPlayer.isBot) {
@@ -3401,7 +3653,9 @@
             }
 
             // Apply slow debuff if active
-            const speedMult = (player._slowTimer > 0) ? 0.4 : 1;
+            const speedMult = (player._slowTimer > 0) ? 0.4 : (player._speedTimer > 0) ? 1.6 : 1;
+            if (player._speedTimer > 0) player._speedTimer--;
+            if (player._damageTimer > 0) player._damageTimer--;
 
             if (inputX !== 0 || inputY !== 0) {
                 const oldX = player.x, oldY = player.y;
@@ -3435,6 +3689,12 @@
                 keysPressed['e'] = false; // consume keypress
                 // Target = last known mouse world position (or centre of screen)
                 activateSuper(player, lastMouseWorldX, lastMouseWorldY);
+            }
+
+            // Use item: F key
+            if (keysPressed['f'] && player.items.length > 0) {
+                keysPressed['f'] = false;
+                useItem(player);
             }
         }
         /************************************************** */
@@ -3696,6 +3956,38 @@
                     p.superBuffType = 'rockshield';
                     break;
                 }
+                case 'shadowburst': {
+                    // Teleport toward target direction, then burst at landing
+                    const tx = targetX ?? cx + 200;
+                    const ty = targetY ?? cy;
+                    const dist = Math.hypot(tx - cx, ty - cy) || 1;
+                    const dashDist = 280;
+                    const dirX = (tx - cx) / dist;
+                    const dirY = (ty - cy) / dist;
+                    let lastSafeX = p.x, lastSafeY = p.y;
+                    for (let s = 1; s <= Math.ceil(dashDist / p.size); s++) {
+                        const nx = Math.max(0, Math.min(MAP_WIDTH - p.size, p.x + dirX * p.size * s));
+                        const ny = Math.max(0, Math.min(MAP_HEIGHT - p.size, p.y + dirY * p.size * s));
+                        let blocked = false;
+                        for (const obs of obstacles) {
+                            if (nx < obs.x + obs.width && nx + p.size > obs.x && ny < obs.y + obs.height && ny + p.size > obs.y) { blocked = true; break; }
+                        }
+                        if (blocked) break;
+                        lastSafeX = nx; lastSafeY = ny;
+                    }
+                    p.x = lastSafeX; p.y = lastSafeY;
+                    // Burst at landing spot
+                    fireRadialBurst(p, 10, p.laserDamage * 3, 13, 110);
+                    superEffects.push({ type: 'screamflash', x: p.x + p.size / 2, y: p.y + p.size / 2, radius: 90, timer: 25, shooter: p });
+                    break;
+                }
+                case 'smokezone': {
+                    const tx = targetX ?? cx;
+                    const ty = targetY ?? cy;
+                    // Large slow+damage zone at target position
+                    superEffects.push({ type: 'smokezone', x: tx, y: ty, radius: 160, timer: 300, tickTimer: 0, tickInterval: 40, damage: p.laserDamage, shooter: p });
+                    break;
+                }
                 case 'rockrush': {
                     // Charge in facing direction, stopping at first obstacle
                     const tx2 = targetX ?? cx + 1;
@@ -3759,7 +4051,7 @@
             for (let i = superEffects.length - 1; i >= 0; i--) {
                 const fx = superEffects[i];
 
-                if (fx.type === 'firezone' || fx.type === 'tornado') {
+                if (fx.type === 'firezone' || fx.type === 'tornado' || fx.type === 'smokezone') {
                     fx.timer--;
                     fx.tickTimer++;
                     if (fx.type === 'tornado') {
@@ -3773,6 +4065,15 @@
                             if (dist < fx.radius && dist > 5) {
                                 p.x += (dx / dist) * 2;
                                 p.y += (dy / dist) * 2;
+                            }
+                        }
+                    }
+                    if (fx.type === 'smokezone') {
+                        // Slow enemies in zone
+                        for (const p of players) {
+                            if (p === fx.shooter || (fx.shooter.team && p.team === fx.shooter.team) || p.currentHp <= 0) continue;
+                            if (Math.hypot(p.x + p.size / 2 - fx.x, p.y + p.size / 2 - fx.y) < fx.radius) {
+                                p._slowTimer = Math.max(p._slowTimer || 0, 60);
                             }
                         }
                     }
@@ -4177,6 +4478,12 @@
             drawRespawnOverlay();
             drawLevelUp();
 
+            // Update mobile use-item button icon
+            if (player) {
+                const uibEl = document.getElementById('use-item-icon');
+                if (uibEl) uibEl.textContent = (player.items && player.items.length > 0) ? PICKUP_ICONS[player.items[0]] + (player.items.length > 1 ? ` ×${player.items.length}` : '') : '🎒';
+            }
+
             requestAnimationFrame(gameLoop);
         }
 
@@ -4402,54 +4709,54 @@
         // ── UI Functions ─────────────────────────────────────────────────────────
 
         const levelRewards = [
-            { level:  3, type:'sparks',  amount: 150,  icon: '⚡', reward: '150 energy sparks',   claimed: false },
-            { level:  4, type:'coins',   amount: 200,  icon: '💰', reward: '200 coins',           claimed: false },
-            { level:  5, type:'sparks',  amount: 250,  icon: '⚡', reward: '250 energy sparks',   claimed: false },
-            { level:  6, type:'coins',   amount: 300,  icon: '💰', reward: '300 coins',           claimed: false },
-            { level:  7, type:'credits', amount: 5,    icon: '🎖️', reward: '5 credits',           claimed: false },
-            { level:  8, type:'sparks',  amount: 350,  icon: '⚡', reward: '350 energy sparks',   claimed: false },
-            { level:  9, type:'coins',   amount: 400,  icon: '💰', reward: '400 coins',           claimed: false },
-            { level: 10, type:'coins',   amount: 600,  icon: '💰', reward: '600 coins',           claimed: false },
-            { level: 11, type:'sparks',  amount: 500,  icon: '⚡', reward: '500 energy sparks',   claimed: false },
-            { level: 12, type:'coins',   amount: 500,  icon: '💰', reward: '500 coins',           claimed: false },
-            { level: 13, type:'sparks',  amount: 600,  icon: '⚡', reward: '600 energy sparks',   claimed: false },
-            { level: 14, type:'credits', amount: 10,   icon: '🎖️', reward: '10 credits',          claimed: false },
-            { level: 15, type:'coins',   amount: 750,  icon: '💰', reward: '750 coins',           claimed: false },
-            { level: 16, type:'sparks',  amount: 700,  icon: '⚡', reward: '700 energy sparks',   claimed: false },
-            { level: 17, type:'coins',   amount: 750,  icon: '💰', reward: '750 coins',           claimed: false },
-            { level: 18, type:'sparks',  amount: 800,  icon: '⚡', reward: '800 energy sparks',   claimed: false },
-            { level: 19, type:'coins',   amount: 900,  icon: '💰', reward: '900 coins',           claimed: false },
-            { level: 20, type:'sparks',  amount: 1000, icon: '⚡', reward: '1000 energy sparks',  claimed: false },
-            { level: 21, type:'coins',   amount: 1000, icon: '💰', reward: '1000 coins',          claimed: false },
-            { level: 22, type:'sparks',  amount: 1100, icon: '⚡', reward: '1100 energy sparks',  claimed: false },
-            { level: 23, type:'coins',   amount: 1100, icon: '💰', reward: '1100 coins',          claimed: false },
-            { level: 24, type:'credits', amount: 15,   icon: '🎖️', reward: '15 credits',          claimed: false },
-            { level: 25, type:'coins',   amount: 1500, icon: '💰', reward: '1500 coins',          claimed: false },
-            { level: 26, type:'sparks',  amount: 1200, icon: '⚡', reward: '1200 energy sparks',  claimed: false },
-            { level: 27, type:'coins',   amount: 1200, icon: '💰', reward: '1200 coins',          claimed: false },
-            { level: 28, type:'sparks',  amount: 1500, icon: '⚡', reward: '1500 energy sparks',  claimed: false },
-            { level: 29, type:'coins',   amount: 1500, icon: '💰', reward: '1500 coins',          claimed: false },
-            { level: 30, type:'credits', amount: 20,   icon: '🎖️', reward: '20 credits',          claimed: false },
-            { level: 31, type:'sparks',  amount: 1800, icon: '⚡', reward: '1800 energy sparks',  claimed: false },
-            { level: 32, type:'coins',   amount: 1800, icon: '💰', reward: '1800 coins',          claimed: false },
-            { level: 33, type:'sparks',  amount: 2000, icon: '⚡', reward: '2000 energy sparks',  claimed: false },
-            { level: 34, type:'coins',   amount: 2000, icon: '💰', reward: '2000 coins',          claimed: false },
-            { level: 35, type:'coins',   amount: 2500, icon: '💰', reward: '2500 coins',          claimed: false },
-            { level: 36, type:'sparks',  amount: 2200, icon: '⚡', reward: '2200 energy sparks',  claimed: false },
-            { level: 37, type:'coins',   amount: 2200, icon: '💰', reward: '2200 coins',          claimed: false },
-            { level: 38, type:'sparks',  amount: 2500, icon: '⚡', reward: '2500 energy sparks',  claimed: false },
-            { level: 39, type:'credits', amount: 25,   icon: '🎖️', reward: '25 credits',          claimed: false },
-            { level: 40, type:'coins',   amount: 3000, icon: '💰', reward: '3000 coins',          claimed: false },
-            { level: 41, type:'sparks',  amount: 3000, icon: '⚡', reward: '3000 energy sparks',  claimed: false },
-            { level: 42, type:'coins',   amount: 3000, icon: '💰', reward: '3000 coins',          claimed: false },
-            { level: 43, type:'sparks',  amount: 3500, icon: '⚡', reward: '3500 energy sparks',  claimed: false },
-            { level: 44, type:'coins',   amount: 3500, icon: '💰', reward: '3500 coins',          claimed: false },
-            { level: 45, type:'credits', amount: 30,   icon: '🎖️', reward: '30 credits',          claimed: false },
-            { level: 46, type:'sparks',  amount: 4000, icon: '⚡', reward: '4000 energy sparks',  claimed: false },
-            { level: 47, type:'coins',   amount: 4000, icon: '💰', reward: '4000 coins',          claimed: false },
-            { level: 48, type:'sparks',  amount: 4500, icon: '⚡', reward: '4500 energy sparks',  claimed: false },
-            { level: 49, type:'coins',   amount: 4500, icon: '💰', reward: '4500 coins',          claimed: false },
-            { level: 50, type:'credits', amount: 50,   icon: '🎖️', reward: '50 credits',          claimed: false },
+            { level:  3, type:'sparks',  amount: 150,   icon: '⚡', reward: '150 energy sparks',   claimed: false },
+            { level:  4, type:'coins',   amount: 200,   icon: '💰', reward: '200 coins',           claimed: false },
+            { level:  5, type:'unlock',  playerId: 'lazerman',        icon: '🔓', reward: 'Unlock Lazerman (Rare)', claimed: false },
+            { level:  6, type:'coins',   amount: 300,   icon: '💰', reward: '300 coins',           claimed: false },
+            { level:  7, type:'credits', amount: 5,     icon: '🎖️', reward: '5 credits',           claimed: false },
+            { level:  8, type:'unlock',  playerId: 'fournakis',       icon: '🔓', reward: 'Unlock Fournakis (Rare)', claimed: false },
+            { level:  9, type:'coins',   amount: 400,   icon: '💰', reward: '400 coins',           claimed: false },
+            { level: 10, type:'unlock',  playerId: 'firekoupepy',     icon: '🔓', reward: 'Unlock Firekoupepy (Rare)', claimed: false },
+            { level: 11, type:'sparks',  amount: 500,   icon: '⚡', reward: '500 energy sparks',   claimed: false },
+            { level: 12, type:'unlock',  playerId: 'baklavasbazookos',icon: '🔓', reward: 'Unlock Baklavasbazookos (Rare)', claimed: false },
+            { level: 13, type:'sparks',  amount: 600,   icon: '⚡', reward: '600 energy sparks',   claimed: false },
+            { level: 14, type:'credits', amount: 10,    icon: '🎖️', reward: '10 credits',          claimed: false },
+            { level: 15, type:'unlock',  playerId: 'timor',           icon: '🔓', reward: 'Unlock Timor (Rare)',    claimed: false },
+            { level: 16, type:'sparks',  amount: 700,   icon: '⚡', reward: '700 energy sparks',   claimed: false },
+            { level: 17, type:'unlock',  playerId: 'kleftros',        icon: '🔓', reward: 'Unlock Kleftros (Rare)', claimed: false },
+            { level: 18, type:'sparks',  amount: 800,   icon: '⚡', reward: '800 energy sparks',   claimed: false },
+            { level: 19, type:'coins',   amount: 900,   icon: '💰', reward: '900 coins',           claimed: false },
+            { level: 20, type:'sparks',  amount: 1000,  icon: '⚡', reward: '1000 energy sparks',  claimed: false },
+            { level: 21, type:'coins',   amount: 1000,  icon: '💰', reward: '1000 coins',          claimed: false },
+            { level: 22, type:'sparks',  amount: 1100,  icon: '⚡', reward: '1100 energy sparks',  claimed: false },
+            { level: 23, type:'coins',   amount: 1100,  icon: '💰', reward: '1100 coins',          claimed: false },
+            { level: 24, type:'credits', amount: 15,    icon: '🎖️', reward: '15 credits',          claimed: false },
+            { level: 25, type:'coins',   amount: 1500,  icon: '💰', reward: '1500 coins',          claimed: false },
+            { level: 26, type:'sparks',  amount: 1200,  icon: '⚡', reward: '1200 energy sparks',  claimed: false },
+            { level: 27, type:'coins',   amount: 1200,  icon: '💰', reward: '1200 coins',          claimed: false },
+            { level: 28, type:'sparks',  amount: 1500,  icon: '⚡', reward: '1500 energy sparks',  claimed: false },
+            { level: 29, type:'coins',   amount: 1500,  icon: '💰', reward: '1500 coins',          claimed: false },
+            { level: 30, type:'credits', amount: 20,    icon: '🎖️', reward: '20 credits',          claimed: false },
+            { level: 31, type:'sparks',  amount: 1800,  icon: '⚡', reward: '1800 energy sparks',  claimed: false },
+            { level: 32, type:'coins',   amount: 1800,  icon: '💰', reward: '1800 coins',          claimed: false },
+            { level: 33, type:'sparks',  amount: 2000,  icon: '⚡', reward: '2000 energy sparks',  claimed: false },
+            { level: 34, type:'coins',   amount: 2000,  icon: '💰', reward: '2000 coins',          claimed: false },
+            { level: 35, type:'coins',   amount: 2500,  icon: '💰', reward: '2500 coins',          claimed: false },
+            { level: 36, type:'sparks',  amount: 2200,  icon: '⚡', reward: '2200 energy sparks',  claimed: false },
+            { level: 37, type:'coins',   amount: 2200,  icon: '💰', reward: '2200 coins',          claimed: false },
+            { level: 38, type:'sparks',  amount: 2500,  icon: '⚡', reward: '2500 energy sparks',  claimed: false },
+            { level: 39, type:'credits', amount: 25,    icon: '🎖️', reward: '25 credits',          claimed: false },
+            { level: 40, type:'coins',   amount: 3000,  icon: '💰', reward: '3000 coins',          claimed: false },
+            { level: 41, type:'sparks',  amount: 3000,  icon: '⚡', reward: '3000 energy sparks',  claimed: false },
+            { level: 42, type:'coins',   amount: 3000,  icon: '💰', reward: '3000 coins',          claimed: false },
+            { level: 43, type:'sparks',  amount: 3500,  icon: '⚡', reward: '3500 energy sparks',  claimed: false },
+            { level: 44, type:'coins',   amount: 3500,  icon: '💰', reward: '3500 coins',          claimed: false },
+            { level: 45, type:'credits', amount: 30,    icon: '🎖️', reward: '30 credits',          claimed: false },
+            { level: 46, type:'sparks',  amount: 4000,  icon: '⚡', reward: '4000 energy sparks',  claimed: false },
+            { level: 47, type:'coins',   amount: 4000,  icon: '💰', reward: '4000 coins',          claimed: false },
+            { level: 48, type:'sparks',  amount: 4500,  icon: '⚡', reward: '4500 energy sparks',  claimed: false },
+            { level: 49, type:'coins',   amount: 4500,  icon: '💰', reward: '4500 coins',          claimed: false },
+            { level: 50, type:'credits', amount: 50,    icon: '🎖️', reward: '50 credits',          claimed: false },
         ];
         // Restore claimed state from localStorage
         const _claimedLevels = JSON.parse(localStorage.getItem('claimedLevelRewards') ?? '[]');
@@ -4463,6 +4770,10 @@
                         energySparks += milestone.amount;
                     } else if (milestone.type === 'credits') {
                         playerCredits += milestone.amount;
+                    } else if (milestone.type === 'unlock') {
+                        if (!unlockedPlayers.includes(milestone.playerId)) {
+                            unlockedPlayers.push(milestone.playerId);
+                        }
                     } else {
                         playerCoins += milestone.amount;
                     }
@@ -4501,12 +4812,13 @@
 
                 const medalsNeeded = (milestone.level - 1) * 10;
                 const medalsLeft = Math.max(0, medalsNeeded - playerMedals);
+                const alreadyOwned = milestone.type === 'unlock' && unlockedPlayers.includes(milestone.playerId);
 
                 row.innerHTML = `
                     <span class="reward-level-badge">Lv ${milestone.level}</span>
                     <span style="flex:1">${milestone.icon} ${milestone.reward}</span>
                     <span style="font-size:12px; color:${milestone.claimed ? '#555' : isNext ? '#ffcc00' : '#777'}">
-                        ${milestone.claimed ? '✅ Claimed' : medalsLeft === 0 ? '🎉 Ready!' : `${medalsLeft} 🏅 away`}
+                        ${(milestone.claimed || alreadyOwned) ? '✅ Claimed' : medalsLeft === 0 ? '🎉 Ready!' : `${medalsLeft} 🏅 away`}
                     </span>
                 `;
                 list.appendChild(row);
@@ -4537,7 +4849,6 @@
             document.getElementById('joystick-container').style.display = 'none';
             document.getElementById('shoot-joystick-container').style.display = 'none';
             document.getElementById('game-modes-container').style.display = 'none';
-            document.getElementById('skins-container').style.display = 'none';
             document.getElementById('player-menu').style.display = 'none';
             document.getElementById('game-over-overlay').style.display = 'none';
             document.getElementById('stardrop-overlay').style.display = 'none';
@@ -4807,116 +5118,86 @@
             }
 
             // ── Active tier (the one you're currently choosing) ──
-            if (nextTier) {
-                const tier = tiers.find(t => t.rarity === nextTier);
+            const sequence = ['epic', 'mythic', 'legendary'];
+            sequence.forEach(rarity => {
+                const tier = tiers.find(t => t.rarity === rarity);
                 const rc   = rarityColors[tier.rarity];
                 const allInTier = Object.values(playersData).filter(p => p.rarity === tier.rarity && p.creditCost);
                 const tierCost = allInTier[0]?.creditCost ?? 0;
 
-                const header = document.createElement('div');
-                header.style.cssText = `padding:8px 0 4px; color:${rc}; font-weight:bold; font-size:16px; border-bottom:2px solid ${rc}; margin-bottom:8px;`;
-                header.textContent = `${tier.label} — Pick one to unlock`;
-                list.appendChild(header);
+                // Check if this tier is already completed (someone in it is unlocked)
+                const isCompleted = allInTier.some(p => unlockedPlayers.includes(p.id));
+                const isActive = tier.rarity === nextTier;
+                const isLocked = !isCompleted && !isActive;
 
-                // Credits progress line
-                const pct = tierCost > 0 ? Math.min(100, Math.round(playerCredits / tierCost * 100)) : 100;
-                const credColor = playerCredits >= tierCost ? '#4ae8d8' : '#e94560';
-                const progressLine = document.createElement('div');
-                progressLine.style.cssText = 'display:flex; align-items:center; gap:8px; margin:0 0 14px; font-size:13px; color:#aaa;';
-                progressLine.innerHTML = `<span>🎖️</span><span style="color:${credColor}; font-weight:bold;">${playerCredits} / ${tierCost}</span><span style="color:#777;">credits needed</span><div style="flex:1; background:#333; border-radius:4px; height:8px; overflow:hidden;"><div style="width:${pct}%; height:100%; background:${credColor}; border-radius:4px;"></div></div>`;
-                list.appendChild(progressLine);
+                if (isActive) {
+                    const header = document.createElement('div');
+                    header.style.cssText = `padding:8px 0 4px; color:${rc}; font-weight:bold; font-size:16px; border-bottom:2px solid ${rc}; margin-bottom:8px;`;
+                    header.textContent = `${tier.label} — Pick one to unlock`;
+                    list.appendChild(header);
 
-                const rowWrap = document.createElement('div');
-                rowWrap.style.cssText = 'overflow-x:auto; margin-bottom:28px; padding-bottom:4px;';
-                const row = document.createElement('div');
-                row.style.cssText = 'display:flex; flex-direction:row; align-items:flex-start; gap:12px; min-width:max-content;';
-                allInTier.forEach(pd => row.appendChild(buildCard(pd, rc, tier, 'active')));
-                rowWrap.appendChild(row);
-                list.appendChild(rowWrap);
-            }
+                    // Credits progress line
+                    const pct = tierCost > 0 ? Math.min(100, Math.round(playerCredits / tierCost * 100)) : 100;
+                    const credColor = playerCredits >= tierCost ? '#4ae8d8' : '#e94560';
+                    const progressLine = document.createElement('div');
+                    progressLine.style.cssText = 'display:flex; align-items:center; gap:8px; margin:0 0 14px; font-size:13px; color:#aaa;';
+                    progressLine.innerHTML = `<span>🎖️</span><span style="color:${credColor}; font-weight:bold;">${playerCredits} / ${tierCost}</span><span style="color:#777;">credits needed</span><div style="flex:1; background:#333; border-radius:4px; height:8px; overflow:hidden;"><div style="width:${pct}%; height:100%; background:${credColor}; border-radius:4px;"></div></div>`;
+                    list.appendChild(progressLine);
 
-            // ── Locked tiers (after the active one, not yet reachable) ──
-            const sequence = ['epic', 'mythic', 'legendary'];
-            const nextIdx = nextTier ? sequence.indexOf(nextTier) : sequence.length;
-            for (let i = nextIdx + 1; i < sequence.length; i++) {
-                const tier = tiers.find(t => t.rarity === sequence[i]);
-                const rc   = rarityColors[tier.rarity];
-                const allInTier = Object.values(playersData).filter(p => p.rarity === tier.rarity && p.creditCost);
+                    const rowWrap = document.createElement('div');
+                    rowWrap.style.cssText = 'overflow-x:auto; margin-bottom:28px; padding-bottom:4px;';
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display:flex; flex-direction:row; align-items:flex-start; gap:12px; min-width:max-content;';
+                    allInTier.forEach(pd => row.appendChild(buildCard(pd, rc, tier, 'active')));
+                    rowWrap.appendChild(row);
+                    list.appendChild(rowWrap);
+                } else if (isCompleted) {
+                    const header = document.createElement('div');
+                    header.style.cssText = `padding:8px 0 4px; color:${rc}; font-weight:bold; font-size:15px; border-bottom:1px solid ${rc}44; margin-bottom:12px; opacity:0.7;`;
+                    header.innerHTML = `${tier.label} <span style="font-size:12px; font-weight:normal; color:#4ae8d8;">✅ Completed</span>`;
+                    list.appendChild(header);
 
-                const header = document.createElement('div');
-                header.style.cssText = `padding:8px 0 4px; color:#555; font-weight:bold; font-size:15px; border-bottom:1px solid #333; margin-bottom:12px;`;
-                header.innerHTML = `${tier.label} <span style="font-size:12px; font-weight:normal; color:#555;">🔒 Unlock previous tier first</span>`;
-                list.appendChild(header);
+                    const rowWrap = document.createElement('div');
+                    rowWrap.style.cssText = 'overflow-x:auto; margin-bottom:24px; padding-bottom:4px;';
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display:flex; flex-direction:row; align-items:flex-start; gap:12px; min-width:max-content;';
+                    allInTier.forEach(pd => {
+                        const mode = unlockedPlayers.includes(pd.id) ? 'owned' : 'missed';
+                        row.appendChild(buildCard(pd, rc, tier, mode));
+                    });
+                    rowWrap.appendChild(row);
+                    list.appendChild(rowWrap);
+                } else {
+                    // Locked — not yet reachable
+                    const header = document.createElement('div');
+                    header.style.cssText = `padding:8px 0 4px; color:#555; font-weight:bold; font-size:15px; border-bottom:1px solid #333; margin-bottom:12px;`;
+                    header.innerHTML = `${tier.label} <span style="font-size:12px; font-weight:normal; color:#555;">🔒 Unlock previous tier first</span>`;
+                    list.appendChild(header);
 
-                const rowWrap = document.createElement('div');
-                rowWrap.style.cssText = 'overflow-x:auto; margin-bottom:24px; padding-bottom:4px;';
-                const row = document.createElement('div');
-                row.style.cssText = 'display:flex; flex-direction:row; align-items:flex-start; gap:12px; min-width:max-content;';
-                allInTier.forEach(pd => row.appendChild(buildCard(pd, rc, tier, 'locked')));
-                rowWrap.appendChild(row);
-                list.appendChild(rowWrap);
-            }
-
-            // ── Past tiers (already unlocked one — show chosen + missed) ──
-            const completedTiers = tiers.filter(tier => {
-                const allInTier = Object.values(playersData).filter(p => p.rarity === tier.rarity && p.creditCost);
-                return allInTier.some(p => unlockedPlayers.includes(p.id));
+                    const rowWrap = document.createElement('div');
+                    rowWrap.style.cssText = 'overflow-x:auto; margin-bottom:24px; padding-bottom:4px;';
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display:flex; flex-direction:row; align-items:flex-start; gap:12px; min-width:max-content;';
+                    allInTier.forEach(pd => row.appendChild(buildCard(pd, rc, tier, 'locked')));
+                    rowWrap.appendChild(row);
+                    list.appendChild(rowWrap);
+                }
             });
         }
 
         // Bazaar System
-        function initBazaar() {
-            document.getElementById('shop-btn').addEventListener('click', () => {
-                document.getElementById('skins-container').style.display = 'block';
-                renderBazaarItems();
-            });
+        function initBazaar() { /* Bazaar removed */ }
 
-            document.getElementById('close-bazaar').addEventListener('click', () => {
-                document.getElementById('skins-container').style.display = 'none';
-            });
-        }
-
-        function renderBazaarItems() {
-            const container = document.getElementById('bazaar-items');
-            container.innerHTML = '';
-
-            // Rare players only — bought with coins
-            Object.values(playersData).filter(p => p.rarity === 'rare').forEach(playerData => {
-                const isUnlocked = unlockedPlayers.includes(playerData.id);
-                const canAfford = playerCoins >= playerData.price;
-                const rarityColor = rarityColors.rare;
-                const bPLevel = getPlayerPowerLevel(playerData.id);
-                const bBonus = getStatBonus(playerData.id);
-
-                const card = document.createElement('div');
-                card.className = 'skin-card';
-                const imageHtml = playerData.img ? `<img src="${playerData.img}" class="skin-img" alt="${playerData.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width:100%; height:120px; object-fit:cover; border-radius:10px;">` : '';
-                const fallbackHtml = `<div style="background:${playerData.color}; height:120px; border-radius:10px; display:${playerData.img ? 'none' : 'flex'}; align-items:center; justify-content:center; color:white; font-weight:bold;">${playerData.name}</div>`;
-                card.innerHTML = `${imageHtml}${fallbackHtml}
-                    <h3>${playerData.name}</h3>
-                    <p style="color:${rarityColor}; font-weight:bold; margin:2px 0;">Rare</p>
-                    ${isUnlocked ? `<p style="color:#44ccff; font-size:12px; margin:2px 0;">⚡ Lv ${bPLevel}/14</p>` : ''}
-                    <p>HP: ${Math.round(playerData.hp * bBonus)} | Dmg: ${Math.round(playerData.laserDamage * bBonus)}</p>
-                    <p>Speed: ${playerData.speed} | Range: ${playerData.laserRange}</p>
-                    ${playerData.attackType ? `<p style="font-size:11px; color:#88aaff; margin:2px 0;">🎯 ${playerData.attackType}</p>` : ''}
-                    <p><strong>💰 ${playerData.price} coins</strong></p>
-                    <button class="btn buy-btn" ${isUnlocked || !canAfford ? 'disabled' : ''}>
-                        ${isUnlocked ? '✅ Owned' : (!canAfford ? '❌ Need Coins' : 'Buy')}
-                    </button>`;
-                if (!isUnlocked && canAfford) card.querySelector('.buy-btn').addEventListener('click', () => buyPlayer(playerData.id));
-                container.appendChild(card);
-            });
-        }
+        function renderBazaarItems() { /* Bazaar removed */ }
 
         function buyPlayer(playerId) {
             const playerData = playersData[playerId];
-            if (playerCoins >= playerData.price && !unlockedPlayers.includes(playerId)) {
+            if (playerData && playerData.price && playerCoins >= playerData.price && !unlockedPlayers.includes(playerId)) {
                 playerCoins -= playerData.price;
                 unlockedPlayers.push(playerId);
                 saveProgress();
                 showLootboxPopup(`Unlocked ${playerData.name}!`);
                 showCoins();
-                renderBazaarItems();
             }
         }
 
@@ -5059,6 +5340,7 @@
                     saveProgress();
                     updatePlayerMenu();
                     showPlayerDetail(playerId);
+                    updateCharShowcase();
                 }
             };
 
@@ -5109,13 +5391,106 @@
             });
         }
 
+        // Supers that need the aim joystick on mobile
+        const DIRECTIONAL_SUPERS = new Set(['firedash', 'piercebeam', 'bigshot', 'firezone', 'tornado', 'rockrush', 'shadowburst', 'smokezone']);
+
         function initSuperButton() {
             const btn = document.getElementById('super-btn');
+            const aimCanvas = document.getElementById('super-aim-canvas');
+            const aimCtx = aimCanvas.getContext('2d');
+            let aimActive = false;
+            let startX = 0, startY = 0, curX = 0, curY = 0;
+
+            function resizeAimCanvas() {
+                aimCanvas.width = window.innerWidth;
+                aimCanvas.height = window.innerHeight;
+            }
+            resizeAimCanvas();
+            window.addEventListener('resize', resizeAimCanvas);
+
+            function drawAimArrow() {
+                aimCtx.clearRect(0, 0, aimCanvas.width, aimCanvas.height);
+                const dx = curX - startX, dy = curY - startY;
+                const len = Math.hypot(dx, dy);
+                if (len < 8) return;
+                const nx = dx / len, ny = dy / len;
+                // Dashed aim line
+                aimCtx.save();
+                aimCtx.setLineDash([8, 6]);
+                aimCtx.strokeStyle = 'rgba(255,200,0,0.85)';
+                aimCtx.lineWidth = 3;
+                aimCtx.beginPath();
+                aimCtx.moveTo(startX, startY);
+                aimCtx.lineTo(curX, curY);
+                aimCtx.stroke();
+                // Arrowhead
+                aimCtx.setLineDash([]);
+                aimCtx.fillStyle = '#ffcc00';
+                aimCtx.beginPath();
+                const ax = curX - nx * 18, ay = curY - ny * 18;
+                const px = -ny * 9, py = nx * 9;
+                aimCtx.moveTo(curX, curY);
+                aimCtx.lineTo(ax + px, ay + py);
+                aimCtx.lineTo(ax - px, ay - py);
+                aimCtx.closePath();
+                aimCtx.fill();
+                // Origin circle
+                aimCtx.beginPath();
+                aimCtx.arc(startX, startY, 22, 0, Math.PI * 2);
+                aimCtx.strokeStyle = 'rgba(255,200,0,0.5)';
+                aimCtx.lineWidth = 2;
+                aimCtx.stroke();
+                aimCtx.restore();
+            }
+
+            function fireDirectional() {
+                aimCanvas.style.display = 'none';
+                aimCtx.clearRect(0, 0, aimCanvas.width, aimCanvas.height);
+                aimActive = false;
+                if (!player) return;
+                const dx = curX - startX, dy = curY - startY;
+                const len = Math.hypot(dx, dy);
+                const worldTX = len < 10
+                    ? player.x + player.size / 2 + 200
+                    : player.x + player.size / 2 + (dx / len) * 400;
+                const worldTY = len < 10
+                    ? player.y + player.size / 2
+                    : player.y + player.size / 2 + (dy / len) * 400;
+                activateSuper(player, worldTX, worldTY);
+            }
+
+            // Touch: drag to aim directional supers
             btn.addEventListener('touchstart', (e) => {
                 e.preventDefault();
-                if (!gameStarted || !player) return;
-                activateSuper(player, lastMouseWorldX || player.x + player.size / 2 + 100, lastMouseWorldY || player.y + player.size / 2);
+                if (!gameStarted || !player || player.superCharge < 100 || player.superCooldown > 0) return;
+                const type = player.superType || 'burst';
+                if (DIRECTIONAL_SUPERS.has(type)) {
+                    aimActive = true;
+                    startX = curX = e.touches[0].clientX;
+                    startY = curY = e.touches[0].clientY;
+                    aimCanvas.width = window.innerWidth;
+                    aimCanvas.height = window.innerHeight;
+                    aimCanvas.style.display = 'block';
+                } else {
+                    activateSuper(player, lastMouseWorldX || player.x + 200, lastMouseWorldY || player.y);
+                }
             }, { passive: false });
+
+            btn.addEventListener('touchmove', (e) => {
+                if (!aimActive) return;
+                e.preventDefault();
+                curX = e.touches[0].clientX;
+                curY = e.touches[0].clientY;
+                drawAimArrow();
+            }, { passive: false });
+
+            btn.addEventListener('touchend', (e) => {
+                if (!aimActive) return;
+                e.preventDefault();
+                fireDirectional();
+            }, { passive: false });
+
+            // Click (desktop) — uses mouse world position as usual
             btn.addEventListener('click', () => {
                 if (!gameStarted || !player) return;
                 activateSuper(player, lastMouseWorldX || player.x + player.size / 2 + 100, lastMouseWorldY || player.y + player.size / 2);
@@ -5123,6 +5498,24 @@
         }
 
         // Initialize everything
+        function updateCharShowcase() {
+            const pd = playersData[selectedPlayerId];
+            if (!pd) return;
+            const rc = rarityColors[pd.rarity] || '#b0b0b0';
+            const rl = rarityLabels[pd.rarity] || 'Common';
+            const bonus = getStatBonus(selectedPlayerId);
+            const imgEl = document.getElementById('char-showcase-img');
+            imgEl.src = pd.img || '';
+            imgEl.style.display = pd.img ? 'block' : 'none';
+            document.getElementById('char-showcase-img-wrap').style.borderColor = rc;
+            document.getElementById('char-showcase-name').textContent = pd.name;
+            const rarityEl = document.getElementById('char-showcase-rarity');
+            rarityEl.textContent = rl;
+            rarityEl.style.color = rc;
+            document.getElementById('char-showcase-stats').innerHTML =
+                `❤️ ${Math.round(pd.hp * bonus)}  &nbsp;⚔️ ${Math.round(pd.laserDamage * bonus)}  &nbsp;💨 ${pd.speed}  &nbsp;🎯 ${pd.laserRange}`;
+        }
+
         function initGame() {
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
@@ -5137,9 +5530,17 @@
             discoverMaps();
             initLevelRewards();
             showCoins();
+            updateCharShowcase();
             //hide joystick on first screen
             document.getElementById('joystick-container').style.display = 'none';
             document.getElementById('shoot-joystick-container').style.display = 'none';
+
+            // Mobile use-item button
+            const useItemBtn = document.getElementById('use-item-btn');
+            useItemBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (player && player.items && player.items.length > 0) useItem(player);
+            });
 
             // Start game button
             document.getElementById('start-btn').addEventListener('click', startGame);
@@ -5162,6 +5563,7 @@
                 document.getElementById('shoot-joystick-container').style.display = 'none';
 
                 showAllUI();
+                updateCharShowcase();
             });
 
             // Debug
