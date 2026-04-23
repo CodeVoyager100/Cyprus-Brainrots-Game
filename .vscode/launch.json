@@ -5,10 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Chrome",
+            "name": "Launch Game",
             "request": "launch",
             "type": "chrome",
             "file": "${workspaceFolder}/index.html",
+            "webRoot": "${workspaceFolder}"
+        },
+        {
+            "name": "Launch Map Editor",
+            "request": "launch",
+            "type": "chrome",
+            "file": "${workspaceFolder}/map-editor.html",
             "webRoot": "${workspaceFolder}"
         }
     ]

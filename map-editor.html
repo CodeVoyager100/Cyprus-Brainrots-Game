@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cyprus Brainrots – Map Editor</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #1a1a2e; color: #eee; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+  /* ── Top bar ── */
+  #topbar {
+    display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+    background: #16213e; border-bottom: 2px solid #0f3460; flex-shrink: 0; flex-wrap: wrap;
+  }
+  #topbar h1 { font-size: 1.1rem; color: #e94560; margin-right: 6px; white-space: nowrap; }
+
+  .sep { width: 1px; height: 28px; background: #0f3460; margin: 0 4px; }
+
+  /* Tool buttons */
+  .tool-btn {
+    padding: 5px 11px; border-radius: 6px; border: 2px solid transparent;
+    cursor: pointer; font-size: 0.82rem; font-weight: 600; transition: filter .15s;
+    background: #0f3460; color: #ccc;
+  }
+  .tool-btn:hover { filter: brightness(1.3); }
+  .tool-btn.active { border-color: #e94560; color: #fff; }
+
+  /* Color swatches */
+  .color-group { display: flex; gap: 4px; align-items: center; }
+  .swatch {
+    width: 28px; height: 28px; border-radius: 5px; cursor: pointer;
+    border: 3px solid transparent; transition: transform .1s;
+    flex-shrink: 0;
+  }
+  .swatch:hover { transform: scale(1.15); }
+  .swatch.active { border-color: #fff; box-shadow: 0 0 6px #fff8; }
+
+  /* Size slider */
+  #brushSize { width: 70px; accent-color: #e94560; }
+
+  /* Action buttons */
+  .action-btn {
+    padding: 6px 14px; border-radius: 7px; border: none; cursor: pointer;
+    font-size: 0.85rem; font-weight: 700; transition: filter .15s;
+  }
+  .action-btn:hover { filter: brightness(1.2); }
+  #btnClear   { background: #c0392b; color: #fff; }
+  #btnFill    { background: #8e44ad; color: #fff; }
+  #btnUndo    { background: #2c3e50; color: #ccc; border: 2px solid #7f8c8d; }
+  #btnSave    { background: #27ae60; color: #fff; font-size: 0.95rem; margin-left: 6px; }
+  #btnLoad    { background: #2980b9; color: #fff; }
+
+  /* ── Main layout ── */
+  #main { display: flex; flex: 1; overflow: hidden; }
+
+  /* Sidebar */
+  #sidebar {
+    width: 180px; background: #16213e; border-right: 2px solid #0f3460;
+    padding: 10px; display: flex; flex-direction: column; gap: 10px;
+    overflow-y: auto; flex-shrink: 0;
+  }
+  #sidebar h3 { font-size: 0.8rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+  .side-swatch {
+    display: flex; align-items: center; gap: 8px; padding: 5px 7px; border-radius: 6px;
+    cursor: pointer; transition: background .15s;
+  }
+  .side-swatch:hover { background: #0f3460; }
+  .side-swatch.active { background: #0f3460; outline: 2px solid #e94560; }
+  .side-dot {
+    width: 22px; height: 22px; border-radius: 4px; flex-shrink: 0; border: 2px solid #333;
+  }
+  .side-label { font-size: 0.8rem; }
+
+  /* Canvas area */
+  #canvas-wrap {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    overflow: auto; background: #111827; padding: 10px; position: relative;
+  }
+  #editorCanvas {
+    image-rendering: pixelated;
+    cursor: crosshair;
+    border: 2px solid #0f3460;
+    box-shadow: 0 0 30px #0000009a;
+  }
+  #coords {
+    position: absolute; bottom: 8px; right: 14px;
+    font-size: 0.75rem; color: #aaa; pointer-events: none;
+  }
+
+  /* ── Modal ── */
+  #modal-overlay {
+    display: none; position: fixed; inset: 0; background: #000a;
+    align-items: center; justify-content: center; z-index: 100;
+  }
+  #modal-overlay.show { display: flex; }
+  #modal {
+    background: #16213e; border: 2px solid #0f3460; border-radius: 12px;
+    padding: 28px 32px; width: 360px; display: flex; flex-direction: column; gap: 14px;
+  }
+  #modal h2 { color: #e94560; font-size: 1.1rem; }
+  #modal label { font-size: 0.85rem; color: #bbb; margin-bottom: 3px; display: block; }
+  #modal select, #modal input {
+    width: 100%; padding: 7px 10px; border-radius: 6px; border: 1px solid #0f3460;
+    background: #1a1a2e; color: #eee; font-size: 0.9rem;
+  }
+  .modal-btns { display: flex; gap: 10px; margin-top: 6px; }
+  .modal-btns button {
+    flex: 1; padding: 9px; border-radius: 7px; border: none; cursor: pointer;
+    font-weight: 700; font-size: 0.9rem;
+  }
+  #btnModalSave   { background: #27ae60; color: #fff; }
+  #btnModalCancel { background: #7f8c8d; color: #fff; }
+
+  /* ── Instructions ── */
+  #info-bar {
+    padding: 4px 14px; font-size: 0.72rem; color: #667; background: #111; flex-shrink: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP TOOLBAR -->
+<div id="topbar">
+  <h1>🗺 Map Editor</h1>
+  <div class="sep"></div>
+
+  <!-- Draw tools -->
+  <button class="tool-btn active" id="toolPencil" onclick="setTool('pencil')">✏️ Draw</button>
+  <button class="tool-btn" id="toolRect"   onclick="setTool('rect')">▬ Rect</button>
+  <button class="tool-btn" id="toolErase"  onclick="setTool('erase')">🧹 Erase</button>
+  <button class="tool-btn" id="toolFill"   onclick="setTool('fill')">🪣 Fill</button>
+
+  <div class="sep"></div>
+  <label style="font-size:.8rem;color:#aaa">Brush:&nbsp;</label>
+  <input type="range" id="brushSize" min="1" max="20" value="3">
+  <span id="brushSizeLabel" style="font-size:.8rem;color:#aaa;min-width:22px">3</span>
+
+  <div class="sep"></div>
+  <button class="action-btn" id="btnUndo"  onclick="undo()">↩ Undo</button>
+  <button class="action-btn" id="btnClear" onclick="clearConfirm()">🗑 Clear</button>
+
+  <div class="sep"></div>
+  <button class="action-btn" id="btnLoad" onclick="triggerLoad()">📂 Open PNG</button>
+  <button class="action-btn" id="btnSave" onclick="showSaveModal()">💾 Save Map</button>
+  <input type="file" id="fileInput" accept="image/png" style="display:none" onchange="loadFromFile(event)">
+</div>
+
+<!-- MAIN AREA -->
+<div id="main">
+
+  <!-- SIDEBAR: color picker -->
+  <div id="sidebar">
+    <h3>Tiles</h3>
+
+    <div class="side-swatch active" id="sw_empty"   onclick="setColor('empty')">
+      <div class="side-dot" style="background:#c8b87a;"></div>
+      <span class="side-label">Sand (empty)</span>
+    </div>
+    <div class="side-swatch" id="sw_brick"   onclick="setColor('brick')">
+      <div class="side-dot" style="background:#9b5a1a;"></div>
+      <span class="side-label">Wall (brick)</span>
+    </div>
+    <div class="side-swatch" id="sw_water"   onclick="setColor('water')">
+      <div class="side-dot" style="background:#1e6fbf;"></div>
+      <span class="side-label">Water</span>
+    </div>
+    <div class="side-swatch" id="sw_bush"    onclick="setColor('bush')">
+      <div class="side-dot" style="background:#2e7d32;"></div>
+      <span class="side-label">Bush</span>
+    </div>
+
+    <h3 style="margin-top:6px">Spawns</h3>
+
+    <div class="side-swatch" id="sw_red"    onclick="setColor('red')">
+      <div class="side-dot" style="background:#ff0000;"></div>
+      <span class="side-label">Red spawn</span>
+    </div>
+    <div class="side-swatch" id="sw_blue"   onclick="setColor('blue')">
+      <div class="side-dot" style="background:#0000ff;"></div>
+      <span class="side-label">Blue spawn</span>
+    </div>
+    <div class="side-swatch" id="sw_green"  onclick="setColor('green')">
+      <div class="side-dot" style="background:#00c800;"></div>
+      <span class="side-label">Green spawn</span>
+    </div>
+    <div class="side-swatch" id="sw_yellow" onclick="setColor('yellow')">
+      <div class="side-dot" style="background:#ffd000;"></div>
+      <span class="side-label">Yellow spawn</span>
+    </div>
+
+    <div style="height:10px"></div>
+    <h3>Legend</h3>
+    <div style="font-size:0.7rem;color:#888;line-height:1.7">
+      Sand = walkable floor<br>
+      Wall = blocks movement<br>
+      Water = blocks movement<br>
+      Bush = hides players<br>
+      Colored = team spawns<br>
+      <br>
+      Map size: 200×200 px<br>
+      = 2000×2000 game units
+    </div>
+  </div>
+
+  <!-- CANVAS -->
+  <div id="canvas-wrap">
+    <canvas id="editorCanvas" width="200" height="200"></canvas>
+    <div id="coords">x:0 y:0</div>
+  </div>
+</div>
+
+<div id="info-bar">
+  Drag to draw · Shift+drag erases · Ctrl+Z undo · Right-click: pick color · Canvas is 200×200 px (each pixel = 10×10 game units)
+</div>
+
+<!-- SAVE MODAL -->
+<div id="modal-overlay">
+  <div id="modal">
+    <h2>💾 Save Map As…</h2>
+
+    <div>
+      <label>Game Mode</label>
+      <select id="saveMode">
+        <option value="team">Team (2v2 / 3v3 / Bounty / Ball-Goal)</option>
+        <option value="showdown">Showdown (FFA)</option>
+      </select>
+    </div>
+
+    <div>
+      <label>Map Number (leave blank for auto)</label>
+      <input type="number" id="saveNumber" min="1" max="99" placeholder="e.g. 1, 2, 3…">
+    </div>
+
+    <div id="savePreview" style="font-size:.82rem;color:#aaa;background:#111;padding:7px 10px;border-radius:6px;word-break:break-all"></div>
+
+    <div class="modal-btns">
+      <button id="btnModalCancel" onclick="closeSaveModal()">Cancel</button>
+      <button id="btnModalSave"   onclick="doSave()">Download PNG</button>
+    </div>
+
+    <div style="font-size:0.72rem;color:#667;line-height:1.6">
+      After downloading, move the file into the <strong style="color:#aaa">images/</strong> folder of the game. The game will automatically pick it up on next launch.
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Constants / colour map ─────────────────────────────────────────────────
+const TILE_COLORS = {
+  empty:  [200, 184, 122, 255],   // sandy ground — won't match any game pattern
+  brick:  [155,  90,  26, 255],   // brown: r>100, g<100, b<80, r>g+30  ✓
+  water:  [ 30, 111, 191, 255],   // blue-ish water: separate rendering
+  bush:   [ 46, 125,  50, 255],   // dark green: g=125, r=46<80, b=50<80, g>r*1.5 ✓
+  red:    [255,   0,   0, 255],   // red spawn
+  blue:   [  0,   0, 255, 255],   // blue spawn
+  green:  [  0, 200,   0, 255],   // green spawn  (g=200>180, r=0<80, b=0<80) ✓
+  yellow: [255, 220,   0, 255],   // yellow spawn (r=255>200, g=220>180, b=0<80) ✓
+};
+
+// Water doesn't fit any game pixel pattern (game uses 'water' type for obstacles parsed from PNG separately)
+// We encode water as deep blue which will be treated as obstacle by the game blue-ish check
+// Actually the game ONLY uses brick/water distinction at render time; the PNG maps use
+// brown = obstacle, dark-green = bush, colors = spawns.
+// Water obstacles in the generated maps are represented as brown bricks in the PNG.
+// We'll keep a separate WATER colour and store them as brown in export.
+
+const MAP_W = 200;
+const MAP_H = 200;
+const DISPLAY_SCALE = 3;   // canvas CSS scale; actual canvas is 200×200
+
+// ─── State ──────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('editorCanvas');
+const ctx    = canvas.getContext('2d');
+
+// ImageData-based pixel buffer (200×200 RGBA)
+let pixelData = ctx.createImageData(MAP_W, MAP_H);
+let history   = [];           // undo stack of ImageData snapshots
+const MAX_HIST = 40;
+
+let currentTile  = 'empty';
+let currentTool  = 'pencil';
+let brushSz      = 3;
+let isDrawing    = false;
+let rectStart    = null;       // for rect tool
+let rectSnapshot = null;       // pre-rect snapshot for live preview
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+canvas.style.width  = (MAP_W * DISPLAY_SCALE) + 'px';
+canvas.style.height = (MAP_H * DISPLAY_SCALE) + 'px';
+
+fillRect(0, 0, MAP_W, MAP_H, 'empty');
+commitToCanvas();
+pushHistory();
+
+// ─── Pixel helpers ──────────────────────────────────────────────────────────
+function setPixel(x, y, tile) {
+  if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H) return;
+  const i   = (y * MAP_W + x) * 4;
+  const col = TILE_COLORS[tile];
+  pixelData.data[i]   = col[0];
+  pixelData.data[i+1] = col[1];
+  pixelData.data[i+2] = col[2];
+  pixelData.data[i+3] = col[3];
+}
+
+function getPixelTile(x, y) {
+  // Returns closest tile name by color matching
+  const i = (y * MAP_W + x) * 4;
+  const d = pixelData.data;
+  const r = d[i], g = d[i+1], b = d[i+2];
+  let best = 'empty', bestDist = Infinity;
+  for (const [name, col] of Object.entries(TILE_COLORS)) {
+    const dist = Math.abs(r - col[0]) + Math.abs(g - col[1]) + Math.abs(b - col[2]);
+    if (dist < bestDist) { bestDist = dist; best = name; }
+  }
+  return best;
+}
+
+function fillRect(x0, y0, x1, y1, tile) {
+  const xMin = Math.min(x0, x1), xMax = Math.max(x0, x1);
+  const yMin = Math.min(y0, y1), yMax = Math.max(y0, y1);
+  for (let y = yMin; y <= yMax; y++)
+    for (let x = xMin; x <= xMax; x++)
+      setPixel(x, y, tile);
+}
+
+function floodFill(sx, sy, tile) {
+  const targetName = getPixelTile(sx, sy);
+  if (targetName === tile) return;
+  const stack = [[sx, sy]];
+  const visited = new Uint8Array(MAP_W * MAP_H);
+  visited[sy * MAP_W + sx] = 1;
+  while (stack.length) {
+    const [cx, cy] = stack.pop();
+    setPixel(cx, cy, tile);
+    const neighbors = [[cx-1,cy],[cx+1,cy],[cx,cy-1],[cx,cy+1]];
+    for (const [nx, ny] of neighbors) {
+      if (nx < 0 || ny < 0 || nx >= MAP_W || ny >= MAP_H) continue;
+      const idx = ny * MAP_W + nx;
+      if (visited[idx]) continue;
+      if (getPixelTile(nx, ny) === targetName) {
+        visited[idx] = 1;
+        stack.push([nx, ny]);
+      }
+    }
+  }
+}
+
+function drawBrush(x, y, tile) {
+  const half = Math.floor(brushSz / 2);
+  for (let dy = -half; dy <= half; dy++)
+    for (let dx = -half; dx <= half; dx++)
+      setPixel(x + dx, y + dy, tile);
+}
+
+function commitToCanvas() {
+  ctx.putImageData(pixelData, 0, 0);
+}
+
+// ─── History ────────────────────────────────────────────────────────────────
+function pushHistory() {
+  const snap = new ImageData(new Uint8ClampedArray(pixelData.data), MAP_W, MAP_H);
+  history.push(snap);
+  if (history.length > MAX_HIST) history.shift();
+}
+
+function undo() {
+  if (history.length <= 1) return;
+  history.pop();
+  const snap = history[history.length - 1];
+  pixelData.data.set(snap.data);
+  commitToCanvas();
+}
+
+// ─── Canvas position helper ─────────────────────────────────────────────────
+function canvasPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = MAP_W / rect.width;
+  const scaleY = MAP_H / rect.height;
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  return {
+    x: Math.floor((clientX - rect.left) * scaleX),
+    y: Math.floor((clientY - rect.top)  * scaleY)
+  };
+}
+
+// ─── Mouse events ────────────────────────────────────────────────────────────
+canvas.addEventListener('mousedown', (e) => {
+  e.preventDefault();
+  if (e.button === 2) { // right-click = color picker
+    const {x, y} = canvasPos(e);
+    setColor(getPixelTile(x, y));
+    return;
+  }
+  isDrawing = true;
+  const {x, y} = canvasPos(e);
+
+  if (currentTool === 'rect') {
+    rectStart    = {x, y};
+    rectSnapshot = new ImageData(new Uint8ClampedArray(pixelData.data), MAP_W, MAP_H);
+    return;
+  }
+  if (currentTool === 'fill') {
+    pushHistory();
+    floodFill(x, y, currentTile);
+    commitToCanvas();
+    return;
+  }
+
+  pushHistory();
+  const tile = (e.shiftKey || currentTool === 'erase') ? 'empty' : currentTile;
+  drawBrush(x, y, tile);
+  commitToCanvas();
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  const {x, y} = canvasPos(e);
+  document.getElementById('coords').textContent =
+    `x:${x} y:${y}  (game: ${x*10}, ${y*10})`;
+
+  if (!isDrawing) return;
+  if (currentTool === 'rect') {
+    // restore snapshot + draw preview rect
+    pixelData.data.set(rectSnapshot.data);
+    const tile = (e.shiftKey || currentTool === 'erase') ? 'empty' : currentTile;
+    fillRect(rectStart.x, rectStart.y, x, y, tile);
+    commitToCanvas();
+    return;
+  }
+  const tile = (e.shiftKey || currentTool === 'erase') ? 'empty' : currentTile;
+  drawBrush(x, y, tile);
+  commitToCanvas();
+});
+
+canvas.addEventListener('mouseup', (e) => {
+  if (currentTool === 'rect' && rectStart) {
+    pushHistory();
+  }
+  isDrawing  = false;
+  rectStart  = null;
+  rectSnapshot = null;
+});
+
+canvas.addEventListener('mouseleave', () => {
+  if (currentTool === 'rect' && rectStart) {
+    // commit
+    pushHistory();
+  }
+  isDrawing = false;
+  rectStart = null;
+  rectSnapshot = null;
+  document.getElementById('coords').textContent = '';
+});
+
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+// Touch support
+canvas.addEventListener('touchstart',  e => { e.preventDefault(); canvas.dispatchEvent(new MouseEvent('mousedown', {clientX: e.touches[0].clientX, clientY: e.touches[0].clientY, button:0})); }, {passive:false});
+canvas.addEventListener('touchmove',   e => { e.preventDefault(); canvas.dispatchEvent(new MouseEvent('mousemove', {clientX: e.touches[0].clientX, clientY: e.touches[0].clientY})); }, {passive:false});
+canvas.addEventListener('touchend',    e => { e.preventDefault(); canvas.dispatchEvent(new MouseEvent('mouseup', {})); }, {passive:false});
+
+// ─── Tool / colour selection ─────────────────────────────────────────────────
+function setTool(tool) {
+  currentTool = tool;
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tool' + tool.charAt(0).toUpperCase() + tool.slice(1)).classList.add('active');
+}
+
+function setColor(tile) {
+  if (!TILE_COLORS[tile]) return;
+  currentTile = tile;
+  document.querySelectorAll('.side-swatch').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('sw_' + tile);
+  if (el) el.classList.add('active');
+  // auto-switch to pencil if on erase
+  if (currentTool === 'erase') setTool('pencil');
+}
+
+// Brush size
+document.getElementById('brushSize').addEventListener('input', function() {
+  brushSz = parseInt(this.value);
+  document.getElementById('brushSizeLabel').textContent = brushSz;
+});
+
+// Keyboard shortcuts
+window.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
+  if (e.key === 'b') setTool('pencil');
+  if (e.key === 'r') setTool('rect');
+  if (e.key === 'e') setTool('erase');
+  if (e.key === 'f') setTool('fill');
+});
+
+// ─── Clear ───────────────────────────────────────────────────────────────────
+function clearConfirm() {
+  if (!confirm('Clear the entire map? This cannot be undone (undo history will be cleared too).')) return;
+  history = [];
+  fillRect(0, 0, MAP_W, MAP_H, 'empty');
+  commitToCanvas();
+  pushHistory();
+}
+
+// ─── Load from file ──────────────────────────────────────────────────────────
+function triggerLoad() {
+  document.getElementById('fileInput').click();
+}
+
+function loadFromFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    const tmp = document.createElement('canvas');
+    tmp.width = MAP_W; tmp.height = MAP_H;
+    const tCtx = tmp.getContext('2d');
+    tCtx.drawImage(img, 0, 0, MAP_W, MAP_H);
+    pixelData = tCtx.getImageData(0, 0, MAP_W, MAP_H);
+    commitToCanvas();
+    pushHistory();
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+  e.target.value = '';
+}
+
+// ─── Save modal ──────────────────────────────────────────────────────────────
+function showSaveModal() {
+  updatePreview();
+  document.getElementById('modal-overlay').classList.add('show');
+}
+
+function closeSaveModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+}
+
+function buildFilename() {
+  const mode = document.getElementById('saveMode').value;
+  const num  = document.getElementById('saveNumber').value.trim();
+  if (mode === 'team') {
+    return num ? `battlemap_team${num}.png` : 'battlemap_team.png';
+  } else {
+    return num ? `battlemap_showdown${num}.png` : 'battlemap_showdown.png';
+  }
+}
+
+function updatePreview() {
+  document.getElementById('savePreview').textContent =
+    '📁 images/' + buildFilename();
+}
+
+document.getElementById('saveMode').addEventListener('change', updatePreview);
+document.getElementById('saveNumber').addEventListener('input', updatePreview);
+
+function doSave() {
+  // Build export canvas: convert water tiles back to brown (same as brick)
+  // because the game parses brown pixels as obstacles and water is handled at runtime.
+  // We'll encode water as a distinct shade of brown so the editor can round-trip it.
+  // Actually we export water as the same blue as stored – the game's parseBattleMapFile
+  // only checks specific patterns. Water blue (30,111,191) doesn't match any pattern,
+  // so the game ignores it (no obstacle for water in PNG mode).
+  // To keep it simple and compatible: export water as a deep blue that the player
+  // won't be blocked by unless we add water support. For now export as brick (brown).
+
+  const expCanvas = document.createElement('canvas');
+  expCanvas.width  = MAP_W;
+  expCanvas.height = MAP_H;
+  const expCtx = expCanvas.getContext('2d');
+
+  // Clone pixel data
+  const expData = expCtx.createImageData(MAP_W, MAP_H);
+  expData.data.set(pixelData.data);
+
+  // Convert water tiles to brick for export (game doesn't distinguish from PNG)
+  const waterCol  = TILE_COLORS.water;
+  const brickCol  = TILE_COLORS.brick;
+  const d = expData.data;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i]===waterCol[0] && d[i+1]===waterCol[1] && d[i+2]===waterCol[2]) {
+      d[i]=brickCol[0]; d[i+1]=brickCol[1]; d[i+2]=brickCol[2];
+    }
+  }
+
+  expCtx.putImageData(expData, 0, 0);
+
+  const fname = buildFilename();
+  expCanvas.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = fname;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    closeSaveModal();
+    showToast(`✅ Saved "${fname}" — move it into images/ and reload the game.`);
+  }, 'image/png');
+}
+
+// ─── Toast ───────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    Object.assign(t.style, {
+      position:'fixed', bottom:'22px', left:'50%', transform:'translateX(-50%)',
+      background:'#27ae60', color:'#fff', padding:'10px 20px', borderRadius:'8px',
+      fontWeight:'700', fontSize:'0.88rem', zIndex:'999', boxShadow:'0 4px 16px #0008',
+      transition:'opacity .4s', maxWidth:'90vw', textAlign:'center'
+    });
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity = '0'; }, 4000);
+}
+</script>
+</body>
+</html>
