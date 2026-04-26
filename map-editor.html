@@ -25,6 +25,15 @@
   .tool-btn:hover { filter: brightness(1.3); }
   .tool-btn.active { border-color: #e94560; color: #fff; }
 
+  /* Mode buttons */
+  .mode-btn {
+    padding: 5px 11px; border-radius: 6px; border: 2px solid transparent;
+    cursor: pointer; font-size: 0.82rem; font-weight: 600; transition: filter .15s;
+    background: #1a2a1a; color: #aaa;
+  }
+  .mode-btn:hover { filter: brightness(1.3); }
+  .mode-btn.active { border-color: #ffcc00; color: #ffcc00; }
+
   /* Color swatches */
   .color-group { display: flex; gap: 4px; align-items: center; }
   .swatch {
@@ -76,12 +85,12 @@
     flex: 1; display: flex; align-items: center; justify-content: center;
     overflow: auto; background: #111827; padding: 10px; position: relative;
   }
-  #editorCanvas {
+  #bgCanvas, #editorCanvas {
     image-rendering: pixelated;
-    cursor: crosshair;
-    border: 2px solid #0f3460;
-    box-shadow: 0 0 30px #0000009a;
+    position: absolute;
   }
+  #bgCanvas { pointer-events: none; border: 2px solid #0f3460; box-shadow: 0 0 30px #0000009a; }
+  #editorCanvas { cursor: crosshair; background: transparent; }
   #coords {
     position: absolute; bottom: 8px; right: 14px;
     font-size: 0.75rem; color: #aaa; pointer-events: none;
@@ -144,6 +153,12 @@
   <button class="action-btn" id="btnLoad" onclick="triggerLoad()">📂 Open PNG</button>
   <button class="action-btn" id="btnSave" onclick="showSaveModal()">💾 Save Map</button>
   <input type="file" id="fileInput" accept="image/png" style="display:none" onchange="loadFromFile(event)">
+
+  <div class="sep"></div>
+  <label style="font-size:.8rem;color:#888">Mode:&nbsp;</label>
+  <button class="mode-btn active" id="modeShowdown" onclick="setMode('showdown')">👑 Showdown</button>
+  <button class="mode-btn" id="modeTeam"      onclick="setMode('team')">⚔️ Team</button>
+  <button class="mode-btn" id="modeBallGoal"  onclick="setMode('ballGoal')">⚽ Ball-Goal</button>
 </div>
 
 <!-- MAIN AREA -->
@@ -189,6 +204,18 @@
       <span class="side-label">Yellow spawn</span>
     </div>
 
+    <div id="ballgoal-tiles" style="display:none">
+      <h3 style="margin-top:6px; color:#e8a838;">Ball-Goal</h3>
+      <div class="side-swatch" id="sw_goal_red"  onclick="setColor('goal_red')">
+        <div class="side-dot" style="background:#ff6600; border-color:#ff4400;"></div>
+        <span class="side-label">Red Goal bar</span>
+      </div>
+      <div class="side-swatch" id="sw_goal_blue" onclick="setColor('goal_blue')">
+        <div class="side-dot" style="background:#0088ff; border-color:#0044ff;"></div>
+        <span class="side-label">Blue Goal bar</span>
+      </div>
+    </div>
+
     <div style="height:10px"></div>
     <h3>Legend</h3>
     <div style="font-size:0.7rem;color:#888;line-height:1.7">
@@ -205,6 +232,7 @@
 
   <!-- CANVAS -->
   <div id="canvas-wrap">
+    <canvas id="bgCanvas"     width="200" height="200"></canvas>
     <canvas id="editorCanvas" width="200" height="200"></canvas>
     <div id="coords">x:0 y:0</div>
   </div>
@@ -222,9 +250,15 @@
     <div>
       <label>Game Mode</label>
       <select id="saveMode">
-        <option value="team">Team (2v2 / 3v3 / Bounty / Ball-Goal)</option>
         <option value="showdown">Showdown (FFA)</option>
+        <option value="team">Team (2v2 / 3v3 / Bounty)</option>
+        <option value="ballGoal">Ball-Goal</option>
       </select>
+    </div>
+
+    <div id="ballgoal-hint" style="display:none; font-size:0.75rem; color:#e8a838; background:#2a1a00; padding:6px 10px; border-radius:6px; line-height:1.5">
+      🟡 Draw <strong>Yellow Goal</strong> tiles on the left for the Red team’s goal, and right for the Blue team’s goal.<br>
+      The game will read their positions from the map.
     </div>
 
     <div>
@@ -248,30 +282,35 @@
 <script>
 // ─── Constants / colour map ─────────────────────────────────────────────────
 const TILE_COLORS = {
-  empty:  [200, 184, 122, 255],   // sandy ground — won't match any game pattern
-  brick:  [155,  90,  26, 255],   // brown: r>100, g<100, b<80, r>g+30  ✓
-  water:  [ 30, 111, 191, 255],   // blue-ish water: separate rendering
-  bush:   [ 46, 125,  50, 255],   // dark green: g=125, r=46<80, b=50<80, g>r*1.5 ✓
-  red:    [255,   0,   0, 255],   // red spawn
-  blue:   [  0,   0, 255, 255],   // blue spawn
-  green:  [  0, 200,   0, 255],   // green spawn  (g=200>180, r=0<80, b=0<80) ✓
-  yellow: [255, 220,   0, 255],   // yellow spawn (r=255>200, g=220>180, b=0<80) ✓
+  empty:     [200, 184, 122,   0],   // transparent — background.png shows through
+  brick:     [155,  90,  26, 255],   // brown wall
+  water:     [ 30, 111, 191, 255],   // water (exported as brick)
+  bush:      [ 46, 125,  50, 255],   // dark green bush
+  red:       [255,   0,   0, 255],   // red spawn
+  blue:      [  0,   0, 255, 255],   // blue spawn
+  green:     [  0, 200,   0, 255],   // green spawn
+  yellow:    [255, 220,   0, 255],   // yellow spawn
+  goal_red:  [255, 102,   0, 255],   // red goal bar (orange-red)
+  goal_blue: [  0, 136, 255, 255],   // blue goal bar (bright blue)
 };
-
-// Water doesn't fit any game pixel pattern (game uses 'water' type for obstacles parsed from PNG separately)
-// We encode water as deep blue which will be treated as obstacle by the game blue-ish check
-// Actually the game ONLY uses brick/water distinction at render time; the PNG maps use
-// brown = obstacle, dark-green = bush, colors = spawns.
-// Water obstacles in the generated maps are represented as brown bricks in the PNG.
-// We'll keep a separate WATER colour and store them as brown in export.
 
 const MAP_W = 200;
 const MAP_H = 200;
 const DISPLAY_SCALE = 3;   // canvas CSS scale; actual canvas is 200×200
 
 // ─── State ──────────────────────────────────────────────────────────────────
-const canvas = document.getElementById('editorCanvas');
-const ctx    = canvas.getContext('2d');
+const canvas   = document.getElementById('editorCanvas');
+const ctx      = canvas.getContext('2d');
+const bgCanvas = document.getElementById('bgCanvas');
+const bgCtx    = bgCanvas.getContext('2d');
+
+let currentMode = 'showdown';
+
+// Preload background
+const bgImg = new Image();
+bgImg.onload = () => { bgCtx.drawImage(bgImg, 0, 0, MAP_W, MAP_H); };
+bgImg.onerror = () => { bgCtx.fillStyle = '#c8b87a'; bgCtx.fillRect(0, 0, MAP_W, MAP_H); };
+bgImg.src = 'images/background.png';
 
 // ImageData-based pixel buffer (200×200 RGBA)
 let pixelData = ctx.createImageData(MAP_W, MAP_H);
@@ -286,8 +325,10 @@ let rectStart    = null;       // for rect tool
 let rectSnapshot = null;       // pre-rect snapshot for live preview
 
 // ─── Init ────────────────────────────────────────────────────────────────────
-canvas.style.width  = (MAP_W * DISPLAY_SCALE) + 'px';
-canvas.style.height = (MAP_H * DISPLAY_SCALE) + 'px';
+canvas.style.width    = (MAP_W * DISPLAY_SCALE) + 'px';
+canvas.style.height   = (MAP_H * DISPLAY_SCALE) + 'px';
+bgCanvas.style.width  = (MAP_W * DISPLAY_SCALE) + 'px';
+bgCanvas.style.height = (MAP_H * DISPLAY_SCALE) + 'px';
 
 fillRect(0, 0, MAP_W, MAP_H, 'empty');
 commitToCanvas();
@@ -498,6 +539,18 @@ function setColor(tile) {
   if (currentTool === 'erase') setTool('pencil');
 }
 
+// ─── Mode selection ──────────────────────────────────────────────────────────
+function setMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  const ids = { showdown: 'modeShowdown', team: 'modeTeam', ballGoal: 'modeBallGoal' };
+  document.getElementById(ids[mode]).classList.add('active');
+  document.getElementById('ballgoal-tiles').style.display = mode === 'ballGoal' ? 'block' : 'none';
+  if (mode !== 'ballGoal' && (currentTile === 'goal_red' || currentTile === 'goal_blue')) {
+    setColor('empty');
+  }
+}
+
 // Brush size
 document.getElementById('brushSize').addEventListener('input', function() {
   brushSz = parseInt(this.value);
@@ -548,6 +601,7 @@ function loadFromFile(e) {
 
 // ─── Save modal ──────────────────────────────────────────────────────────────
 function showSaveModal() {
+  document.getElementById('saveMode').value = currentMode;
   updatePreview();
   document.getElementById('modal-overlay').classList.add('show');
 }
@@ -559,47 +613,44 @@ function closeSaveModal() {
 function buildFilename() {
   const mode = document.getElementById('saveMode').value;
   const num  = document.getElementById('saveNumber').value.trim();
-  if (mode === 'team') {
-    return num ? `battlemap_team${num}.png` : 'battlemap_team.png';
-  } else {
+  if (mode === 'showdown') {
     return num ? `battlemap_showdown${num}.png` : 'battlemap_showdown.png';
+  } else if (mode === 'ballGoal') {
+    return num ? `battlemap_ballgoal${num}.png` : 'battlemap_ballgoal.png';
+  } else {
+    return num ? `battlemap_team${num}.png` : 'battlemap_team.png';
   }
 }
 
 function updatePreview() {
   document.getElementById('savePreview').textContent =
     '📁 images/' + buildFilename();
+  const mode = document.getElementById('saveMode').value;
+  document.getElementById('ballgoal-hint').style.display  = mode === 'ballGoal' ? 'block' : 'none';
+  document.getElementById('ballgoal-tiles').style.display = mode === 'ballGoal' ? 'block' : 'none';
 }
 
 document.getElementById('saveMode').addEventListener('change', updatePreview);
 document.getElementById('saveNumber').addEventListener('input', updatePreview);
 
 function doSave() {
-  // Build export canvas: convert water tiles back to brown (same as brick)
-  // because the game parses brown pixels as obstacles and water is handled at runtime.
-  // We'll encode water as a distinct shade of brown so the editor can round-trip it.
-  // Actually we export water as the same blue as stored – the game's parseBattleMapFile
-  // only checks specific patterns. Water blue (30,111,191) doesn't match any pattern,
-  // so the game ignores it (no obstacle for water in PNG mode).
-  // To keep it simple and compatible: export water as a deep blue that the player
-  // won't be blocked by unless we add water support. For now export as brick (brown).
-
   const expCanvas = document.createElement('canvas');
   expCanvas.width  = MAP_W;
   expCanvas.height = MAP_H;
   const expCtx = expCanvas.getContext('2d');
 
-  // Clone pixel data
   const expData = expCtx.createImageData(MAP_W, MAP_H);
-  expData.data.set(pixelData.data);
-
-  // Convert water tiles to brick for export (game doesn't distinguish from PNG)
-  const waterCol  = TILE_COLORS.water;
-  const brickCol  = TILE_COLORS.brick;
-  const d = expData.data;
-  for (let i = 0; i < d.length; i += 4) {
-    if (d[i]===waterCol[0] && d[i+1]===waterCol[1] && d[i+2]===waterCol[2]) {
-      d[i]=brickCol[0]; d[i+1]=brickCol[1]; d[i+2]=brickCol[2];
+  const src = pixelData.data, dst = expData.data;
+  const sandCol  = [200, 184, 122, 255];
+  const waterCol = TILE_COLORS.water;
+  const brickCol = TILE_COLORS.brick;
+  for (let i = 0; i < src.length; i += 4) {
+    dst[i]=src[i]; dst[i+1]=src[i+1]; dst[i+2]=src[i+2]; dst[i+3]=src[i+3];
+    // Transparent (empty) → opaque sand for PNG export
+    if (dst[i+3] === 0) { dst[i]=sandCol[0]; dst[i+1]=sandCol[1]; dst[i+2]=sandCol[2]; dst[i+3]=255; }
+    // Water → brick
+    else if (dst[i]===waterCol[0] && dst[i+1]===waterCol[1] && dst[i+2]===waterCol[2]) {
+      dst[i]=brickCol[0]; dst[i+1]=brickCol[1]; dst[i+2]=brickCol[2];
     }
   }
 

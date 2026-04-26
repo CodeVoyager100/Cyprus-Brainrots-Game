@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>Vantare</title>
+    <title>Cyprus Brainrots Game</title>
     <style>
         body, html {
             margin: 0;
@@ -179,6 +179,33 @@
         }
         .history-row.win  { background: rgba(39,174,96,0.12); border-color: #27ae60; }
         .history-row.lose { background: rgba(220,53,69,0.10); border-color: #dc3545; }
+
+        .history-stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin: 10px 0 14px;
+        }
+
+        .history-stat-card {
+            border: 1px solid #2b2b2b;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.04);
+            padding: 8px 10px;
+            font-size: 12px;
+        }
+
+        .history-stat-card .label {
+            color: #a0a0a0;
+            font-size: 11px;
+        }
+
+        .history-stat-card .value {
+            color: #fff;
+            font-size: 15px;
+            font-weight: bold;
+            margin-top: 2px;
+        }
 
         .skin-card {
             display: inline-block;
@@ -430,6 +457,45 @@
             to   { box-shadow: 0 0 22px #ff8800; }
         }
 
+        /* Gadget button (mobile) */
+        #gadget-btn-container {
+            display: none;
+            position: fixed;
+            bottom: 160px;
+            right: 100px;
+            z-index: 100;
+        }
+        .game-active #gadget-btn-container { display: block; }
+        #gadget-btn {
+            position: relative;
+            width: 56px; height: 56px;
+            border-radius: 50%;
+            background: rgba(10,40,20,0.88);
+            border: 3px solid #44ff88;
+            overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; user-select: none; -webkit-user-select: none;
+        }
+        #gadget-btn-fill {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            height: 100%;
+            background: rgba(50,200,90,0.35);
+            transition: height 0.12s linear;
+        }
+        #gadget-btn-label {
+            position: relative; z-index: 1;
+            font-size: 11px; font-weight: bold; color: #44ff88;
+            text-align: center; pointer-events: none; line-height: 1.2;
+        }
+        #gadget-btn.ready {
+            box-shadow: 0 0 14px #44ff88;
+            animation: gadgetPulse 0.8s infinite alternate;
+        }
+        @keyframes gadgetPulse {
+            from { box-shadow: 0 0 8px #44ff88; }
+            to   { box-shadow: 0 0 22px #00ee66; }
+        }
+
         /* Use item button */
         #use-item-btn-container {
             display: none;
@@ -520,7 +586,7 @@
 </head>
 <body>
     <div class="guide">
-        <h3 style="color: #ffcc00; margin: 0 0 4px;">Welcome to Attackers!</h3>
+        <h3 style="color: #ffcc00; margin: 0 0 4px;">Welcome to Cyprus!</h3>
         <p style="margin: 0; line-height: 1.6;">
             🎮 Arrow keys / WASD / white joystick to move<br>
             🖱️ Click / red joystick / tap to shoot<br>
@@ -592,8 +658,9 @@
     </div>
 
     <!-- Match History panel -->
-    <div id="history-panel" class="modal-panel" style="width:480px; display:none;">
-        <h2>📊 Match History</h2>
+    <div id="history-panel" class="modal-panel" style="width:520px; display:none;">
+        <h2>📊 Match History & Stats</h2>
+        <div id="history-stats" class="history-stats-grid"></div>
         <div id="history-list" style="margin: 14px 0; max-height: 360px; overflow-y: auto;"></div>
         <button class="btn modal-close" id="close-history-panel">Close</button>
     </div>
@@ -603,7 +670,7 @@
         <p style="text-align:center; color:#aaa; margin-top:-10px; font-size:13px;">Earn credits by playing &nbsp;|&nbsp; Unlock one player per tier &nbsp;|&nbsp; Must unlock Epic before Mythic, Mythic before Legendary</p>
         <div id="credits-progress-bar" style="margin:10px auto 18px; max-width:420px;"></div>
         <div id="credits-tier-list"></div>
-        <button class="btn modal-close" id="close-credits-panel">Close</button>
+        <button class="btn modal-close" id="close-credits-panel" style="margin-top:12px;">Close</button>
     </div>
 
     <div id="player-menu" class="modal-panel">
@@ -633,6 +700,13 @@
         </div>
     </div>
 
+    <div id="map-select-panel" class="modal-panel" style="width:680px; max-width:95vw;">
+        <h2 style="color:#ffcc00;">🗺️ Choose a Map</h2>
+        <p style="text-align:center; color:#aaa; font-size:13px; margin-top:-8px;">Pick a map or let the game choose one randomly.</p>
+        <div id="map-select-grid" style="display:flex; flex-wrap:wrap; gap:14px; justify-content:center; margin:16px 0;"></div>
+        <button class="btn modal-close" id="close-map-select">Back</button>
+    </div>
+
     <div id="game-modes-container" class="modal-panel">
         <h2>🎮 Select Game Mode</h2>
         <div class="game-modes-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0;">
@@ -660,6 +734,11 @@
                 <h3>⭐ Bounty</h3>
                 <p>Kill enemies to earn stars! Most stars when time runs out wins!</p>
                 <div style="background: rgba(255, 204, 0, 0.2); padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">6 Players (3v3) · 2 min</div>
+            </div>
+            <div class="mode-card" data-mode="elimination">
+                <h3>🥊 Elimination</h3>
+                <p>Small map. No respawns. Eliminate the enemy team!</p>
+                <div style="background: rgba(255, 204, 0, 0.2); padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">6 Players (3v3) · No Respawn</div>
             </div>
         </div>
         <button class="btn modal-close" id="close-modes-btn">Close</button>
@@ -702,6 +781,14 @@
         <div id="super-btn">
             <div id="super-btn-fill"></div>
             <span id="super-btn-label">E</span>
+        </div>
+    </div>
+
+    <!-- Gadget button (mobile) -->
+    <div id="gadget-btn-container">
+        <div id="gadget-btn">
+            <div id="gadget-btn-fill"></div>
+            <span id="gadget-btn-label">G</span>
         </div>
     </div>
 
@@ -847,6 +934,27 @@
 
         // Super ability effects (AoE zones, etc.)
         let superEffects = [];
+
+        // ── Gadget system ────────────────────────────────────────────────────
+        let gadgetEffects = [];   // extra visual effects from gadgets
+
+        const gadgetData = {
+            default:          { name: '⚡ Sting Sprint',  icon: '⚡', cooldown: 480 },
+            lazerman:         { name: '⚡ Laser Dash',    icon: '⚡', cooldown: 480 },
+            fournakis:        { name: '🔥 Heat Burst',    icon: '🔥', cooldown: 480 },
+            baklavasbazookos: { name: '💥 Power Shot',    icon: '💥', cooldown: 600 },
+            firekoupepy:      { name: '🔥 Fire Trail',    icon: '🔥', cooldown: 480 },
+            tornader:         { name: '🌪️ Wind Gust',     icon: '🌪', cooldown: 600 },
+            boboshiros:       { name: '🛡️ Rage Shield',   icon: '🛡', cooldown: 720 },
+            kafekauboy:       { name: '☕ Coffee Boost',  icon: '☕', cooldown: 600 },
+            megagrinos:       { name: '😱 Micro Scream',  icon: '😱', cooldown: 600 },
+            kleftikomegazord: { name: '🤖 Cloak',         icon: '🤖', cooldown: 720 },
+            petras:           { name: '🪨 Rock Toss',     icon: '🪨', cooldown: 600 },
+            rocky:            { name: '🥊 Charge Punch',  icon: '🥊', cooldown: 480 },
+            timor:            { name: '💣 Grenade',       icon: '💣', cooldown: 600 },
+            kleftros:         { name: '🏃 Shadow Step',   icon: '🏃', cooldown: 600 },
+            kapnas:           { name: '💨 Smoke Puff',    icon: '💨', cooldown: 480 },
+        };
 
         // Image cache for all game images
         const imageCache = {};
@@ -1105,23 +1213,6 @@
                 superName: '💣 Heavy Shell',
                 superNeedsAim: true
             },
-            shado: {
-                id: 'shado',
-                name: 'Shado',
-                img: 'images/shado.png',
-                color: '#06b6d4',
-                hp: 32,
-                speed: 6,
-                laserDamage: 3,
-                size: 50,
-                laserRange: 380,
-                creditCost: 200,
-                rarity: 'epic',
-                attackType: 'rapid',         // quick double shot
-                superType: 'shadowburst',    // teleport in aimed direction + burst at landing spot
-                superName: '🌑 Shadow Burst',
-                superNeedsAim: true
-            },
             kleftros: {
                 id: 'kleftros',
                 name: 'Kleftros',
@@ -1182,7 +1273,8 @@
             '3v3': { name: "3v3 Team Battle", maxPlayers: 12, teams: true, teamSize: 3, teamNames: ['red','blue','green','yellow'], fillBots: true },
             '2v2': { name: "2v2 Team Battle", maxPlayers: 8, teams: true, teamSize: 2, teamNames: ['red','blue','green','yellow'], fillBots: true },
             'ballGoal': { name: "Ball-Goal", maxPlayers: 6, teams: true, teamSize: 3, teamNames: ['red','blue'], fillBots: true },
-            'bounty': { name: "Bounty", maxPlayers: 6, teams: true, teamSize: 3, teamNames: ['red','blue'], fillBots: true, bountyMode: true }
+            'bounty': { name: "Bounty", maxPlayers: 6, teams: true, teamSize: 3, teamNames: ['red','blue'], fillBots: true, bountyMode: true },
+            'elimination': { name: "Elimination", maxPlayers: 6, teams: true, teamSize: 3, teamNames: ['red','blue'], fillBots: true, noRespawn: true }
         };
 
         const teamColors = {
@@ -1221,9 +1313,18 @@
         function updateCamera() {
             if (!player) return;
 
-            // Center camera on player
-            camera.x = player.x + player.size / 2 - camera.width / 2;
-            camera.y = player.y + player.size / 2 - camera.height / 2;
+            let focusTarget = player;
+
+            // If player is dead, follow a living teammate (or center on dead player)
+            if (player.currentHp <= 0 && (player.respawnTimer > 0 || currentGameMode === 'elimination')) {
+                const livingTeammate = players.find(t => t !== player && t.team === player.team && t.currentHp > 0);
+                if (livingTeammate) focusTarget = livingTeammate;
+                else focusTarget = player;  // no living teammates, stay on dead player
+            }
+
+            // Center camera on focus target
+            camera.x = focusTarget.x + focusTarget.size / 2 - camera.width / 2;
+            camera.y = focusTarget.y + focusTarget.size / 2 - camera.height / 2;
 
             // Keep camera within map bounds
             camera.x = Math.max(0, Math.min(camera.x, MAP_WIDTH - camera.width));
@@ -1682,6 +1783,9 @@
             bots.forEach(bot => {
                 if (bot.currentHp <= 0) return;
 
+                // Stunned — skip all AI this frame
+                if (bot._stunTimer > 0) return;
+
                 // Init stuck-detection state once
                 if (bot.stuckTimer === undefined) {
                     bot.stuckTimer = 0; bot.stuckCheckX = bot.x; bot.stuckCheckY = bot.y;
@@ -1886,6 +1990,9 @@
                 // Can't see players hiding in bushes (unless revealed)
                 if (other.inBush && !(other.bushRevealTimer > 0)) return;
 
+                // Can't target cloaked (invisible) players
+                if (other.gadgetInvisibleTimer > 0) return;
+
                 const dist = getDistance(bot.x, bot.y, other.x, other.y);
 
                 // Prefer closer targets, slight randomness so they don't all fixate on same target
@@ -1971,7 +2078,7 @@
             matchStatsList = [];
 
             // Set map size per mode
-            if (mode === 'ballGoal') {
+            if (mode === 'ballGoal' || mode === 'elimination') {
                 MAP_WIDTH = 1500;
                 MAP_HEIGHT = 1000;
             } else {
@@ -2083,7 +2190,11 @@
                 items: [],            // held pickups (max 3)
                 _speedTimer: 0,
                 _damageTimer: 0,
-                _shieldHp: 0
+                _shieldHp: 0,
+                gadgetCooldown: 0,
+                gadgetInvisibleTimer: 0,
+                _stunTimer: 0,
+                _fireBoostTimer: 0
             };
             players.push(player);
 
@@ -2123,7 +2234,11 @@
                     items: [],
                     _speedTimer: 0,
                     _damageTimer: 0,
-                    _shieldHp: 0
+                    _shieldHp: 0,
+                    gadgetCooldown: 0,
+                    gadgetInvisibleTimer: 0,
+                    _stunTimer: 0,
+                    _fireBoostTimer: 0
                 };
                 players.push(bot);
                 bots.push(bot);
@@ -2329,6 +2444,13 @@
                     ctx.globalAlpha = 0.4;
                 }
 
+                // Invisible (gadget cloak) — faint for human, hidden for enemies
+                const isInvisible = (p.gadgetInvisibleTimer || 0) > 0;
+                if (isInvisible) {
+                    if (p.isHuman) ctx.globalAlpha = 0.25;
+                    else { ctx.restore(); return; }
+                }
+
                 const teamColor = p.team ? teamColors[p.team] : null;
                 const px = p.x - camera.x;
                 const py = p.y - camera.y;
@@ -2417,6 +2539,45 @@
                     const starText = '⭐'.repeat(Math.min(p.kills, 5)) + (p.kills > 5 ? ` ×${p.kills}` : '');
                     ctx.strokeText(starText, px + p.size / 2, starY);
                     ctx.fillText(starText, px + p.size / 2, starY);
+                }
+
+                // Gadget cooldown arc (drawn below the player sprite)
+                {
+                    const gdCD = p.gadgetCooldown || 0;
+                    const gdMax = (gadgetData[p.id] || gadgetData['default'])?.cooldown || 480;
+                    const gdReady = gdCD <= 0;
+                    const arcCx = px + p.size / 2;
+                    const arcCy = py + p.size + 8;
+                    const arcR = 7;
+                    // Background ring
+                    ctx.strokeStyle = '#333';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(arcCx, arcCy, arcR, 0, Math.PI * 2);
+                    ctx.stroke();
+                    // Fill arc (clockwise from top)
+                    const fillFraction = gdReady ? 1 : 1 - gdCD / gdMax;
+                    ctx.strokeStyle = gdReady ? '#44ff88' : '#2a7a44';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(arcCx, arcCy, arcR, -Math.PI / 2, -Math.PI / 2 + fillFraction * Math.PI * 2);
+                    ctx.stroke();
+                    if (gdReady) {
+                        ctx.fillStyle = '#44ff88';
+                        ctx.font = 'bold 9px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('G', arcCx, arcCy + 3);
+                    }
+                }
+
+                // Show stun indicator
+                if (p._stunTimer > 0) {
+                    ctx.save();
+                    ctx.fillStyle = '#ffaa00';
+                    ctx.font = 'bold 14px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('⭐ STUNNED', px + p.size / 2, py + p.size / 2);
+                    ctx.restore();
                 }
 
                 ctx.restore();
@@ -2599,6 +2760,35 @@
                 else superBtn.classList.remove('ready');
             }
 
+            // ── Gadget cooldown bar ───────────────────────────────────────────
+            const gdInfo = gadgetData[player.id] || gadgetData['default'];
+            const gdCD = player.gadgetCooldown || 0;
+            const gdMax = gdInfo?.cooldown || 480;
+            const gdReady = gdCD <= 0;
+            const gdPct = gdReady ? 1 : 1 - gdCD / gdMax;
+            const gdBarY = barY + barH + (player.superActive ? 32 : 18);
+            ctx.fillStyle = 'rgba(0,0,0,0.55)';
+            ctx.fillRect(barX, gdBarY, 162, 13);
+            ctx.fillStyle = '#111';
+            ctx.fillRect(barX + 1, gdBarY + 1, 160, 11);
+            ctx.fillStyle = gdReady ? '#44ff88' : '#1d6e3d';
+            ctx.fillRect(barX + 1, gdBarY + 1, Math.round(160 * gdPct), 11);
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = gdReady ? '#44ff88' : '#779966';
+            ctx.fillText(gdReady ? `${gdInfo?.name}  SPACE!` : `${gdInfo?.name}  ${Math.round(gdPct * 100)}%`, barX + 3, gdBarY + 9);
+
+            // Update mobile gadget button
+            const gadgetBtn  = document.getElementById('gadget-btn');
+            const gadgetFill = document.getElementById('gadget-btn-fill');
+            const gadgetLbl  = document.getElementById('gadget-btn-label');
+            if (gadgetBtn && gadgetFill && gadgetLbl) {
+                gadgetFill.style.height = Math.round(gdPct * 100) + '%';
+                gadgetLbl.textContent   = gdReady ? (gdInfo?.icon || 'G') : Math.ceil(gdCD / 60) + 's';
+                if (gdReady) gadgetBtn.classList.add('ready');
+                else gadgetBtn.classList.remove('ready');
+            }
+
             ctx.restore();
         }
 
@@ -2694,6 +2884,31 @@
 
         function drawRespawnOverlay() {
             if (!player || player.currentHp > 0) return;
+
+            if (currentGameMode === 'elimination') {
+                ctx.save();
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+                ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+                ctx.font = 'bold 46px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#ff3333';
+                ctx.shadowColor = '#990000';
+                ctx.shadowBlur = 18;
+                ctx.fillText('KNOCKED OUT', gameCanvas.width / 2, gameCanvas.height / 2 - 28);
+                ctx.font = 'bold 24px Arial';
+                ctx.fillStyle = '#ffcc00';
+                ctx.shadowColor = '#cc8800';
+                ctx.shadowBlur = 10;
+                const hasLivingTeammate = players.some(t => t !== player && t.team === player.team && t.currentHp > 0);
+                ctx.fillText(
+                    hasLivingTeammate ? 'Spectating teammates until round ends' : 'Team eliminated',
+                    gameCanvas.width / 2,
+                    gameCanvas.height / 2 + 20
+                );
+                ctx.restore();
+                return;
+            }
+
             if (!player.respawnTimer || player.respawnTimer <= 0) return;
 
             ctx.save();
@@ -2872,11 +3087,15 @@
                 x: cx - 15, y: cy - 15, size: 30,
                 vx: 0, vy: 0, carrier: null, pickupCooldown: 0
             };
-            // Goals: left side = red team, right side = blue team
-            goals = [
-                { team: 'red',  x: 10, y: MAP_HEIGHT / 2 - 104, w: 30, h: 208 },
-                { team: 'blue', x: MAP_WIDTH - 40, y: MAP_HEIGHT / 2 - 104, w: 30, h: 208 }
-            ];
+            // Use custom goals from map if available, else default positions
+            if (currentBattleMapData && currentBattleMapData.customGoals && currentBattleMapData.customGoals.length >= 2) {
+                goals = currentBattleMapData.customGoals.map(g => ({ team: g.team, x: g.x, y: g.y, w: g.w, h: g.h }));
+            } else {
+                goals = [
+                    { team: 'red',  x: 10, y: MAP_HEIGHT / 2 - 104, w: 30, h: 208 },
+                    { team: 'blue', x: MAP_WIDTH - 40, y: MAP_HEIGHT / 2 - 104, w: 30, h: 208 }
+                ];
+            }
             teamScores = { red: 0, blue: 0 };
         }
 
@@ -3081,7 +3300,32 @@
         function updateRespawns() {
             const isTeamMode = gameModes[currentGameMode] && gameModes[currentGameMode].teams;
             if (!isTeamMode) return;
+            if (currentGameMode === 'elimination') return; // elimination has no respawns
             const isBounty = currentGameMode === 'bounty';
+
+            function setSafeRespawnPosition(p, desiredX, desiredY) {
+                let x = Math.max(0, Math.min(desiredX, MAP_WIDTH - p.size));
+                let y = Math.max(0, Math.min(desiredY, MAP_HEIGHT - p.size));
+                if (isValidSpawnPosition(x, y, p.size)) {
+                    p.x = x;
+                    p.y = y;
+                    return;
+                }
+                for (let attempt = 0; attempt < 40; attempt++) {
+                    const rx = x + (Math.random() - 0.5) * 280;
+                    const ry = y + (Math.random() - 0.5) * 280;
+                    const nx = Math.max(0, Math.min(rx, MAP_WIDTH - p.size));
+                    const ny = Math.max(0, Math.min(ry, MAP_HEIGHT - p.size));
+                    if (isValidSpawnPosition(nx, ny, p.size)) {
+                        p.x = nx;
+                        p.y = ny;
+                        return;
+                    }
+                }
+                const fallback = getSpawnPosition(p.size);
+                p.x = fallback.x;
+                p.y = fallback.y;
+            }
 
             for (let p of players) {
                 if (p.currentHp > 0 || !p.respawnTimer) continue;
@@ -3100,10 +3344,23 @@
 
                 if (p.respawnTimer <= 0) {
                     // Respawn the player
+                    if (currentGameMode === 'ballGoal' && ball && ball.carrier === p) {
+                        dropBall(p);
+                    }
                     p.currentHp = p.maxHp;
                     p.dead = false;
                     p.respawnTimer = 0;
                     p.bushRevealTimer = 0;
+                    p.gadgetInvisibleTimer = 0;
+                    p._stunTimer = 0;
+                    p._slowTimer = 0;
+                    p.superInvincible = false;
+                    p.shootCooldown = 0;
+                    p.hasBall = false;
+                    let spawnX = p.x;
+                    let spawnY = p.y;
+                    // Show respawn message
+                    if (p.isHuman) levelUpMessage = { text: '✨ Respawned!', timer: 90 };
 
                     // Determine spawn position
                     if (currentGameMode === 'ballGoal') {
@@ -3111,8 +3368,8 @@
                         const ownGoal = goals.find(g => g.team === p.team);
                         if (ownGoal) {
                             const offsetX = p.team === 'red' ? 80 : -80;
-                            p.x = ownGoal.x + ownGoal.w / 2 + offsetX - p.size / 2;
-                            p.y = ownGoal.y + ownGoal.h / 2 + (Math.random() - 0.5) * 100 - p.size / 2;
+                            spawnX = ownGoal.x + ownGoal.w / 2 + offsetX - p.size / 2;
+                            spawnY = ownGoal.y + ownGoal.h / 2 + (Math.random() - 0.5) * 100 - p.size / 2;
                         }
                     } else if (currentGameMode === 'bounty') {
                         // Respawn in own team's half (red=left, blue=right)
@@ -3121,12 +3378,12 @@
                             const mate = livingTeammates[Math.floor(Math.random() * livingTeammates.length)];
                             const angle = Math.random() * Math.PI * 2;
                             const dist = 80 + Math.random() * 60;
-                            p.x = Math.max(0, Math.min(mate.x + Math.cos(angle) * dist, MAP_WIDTH - p.size));
-                            p.y = Math.max(0, Math.min(mate.y + Math.sin(angle) * dist, MAP_HEIGHT - p.size));
+                            spawnX = mate.x + Math.cos(angle) * dist;
+                            spawnY = mate.y + Math.sin(angle) * dist;
                         } else {
                             // Respawn in safe zone based on team
-                            p.x = p.team === 'red' ? 150 + Math.random() * 400 : MAP_WIDTH - 550 + Math.random() * 400;
-                            p.y = 150 + Math.random() * (MAP_HEIGHT - 300);
+                            spawnX = p.team === 'red' ? 150 + Math.random() * 400 : MAP_WIDTH - 550 + Math.random() * 400;
+                            spawnY = 150 + Math.random() * (MAP_HEIGHT - 300);
                         }
                     } else if (currentGameMode === '3v3' || currentGameMode === '2v2') {
                         // Respawn in team's edge strip — guaranteed obstacle-free zone (300px from edge)
@@ -3137,17 +3394,17 @@
                         const lateralMinX = 300;
                         const lateralMaxX = MAP_WIDTH - 300;
                         if (p.team === 'red') {
-                            p.x = edgeMargin + Math.random() * stripDepth;
-                            p.y = lateralMin + Math.random() * (lateralMax - lateralMin);
+                            spawnX = edgeMargin + Math.random() * stripDepth;
+                            spawnY = lateralMin + Math.random() * (lateralMax - lateralMin);
                         } else if (p.team === 'blue') {
-                            p.x = MAP_WIDTH - edgeMargin - stripDepth + Math.random() * stripDepth - p.size;
-                            p.y = lateralMin + Math.random() * (lateralMax - lateralMin);
+                            spawnX = MAP_WIDTH - edgeMargin - stripDepth + Math.random() * stripDepth - p.size;
+                            spawnY = lateralMin + Math.random() * (lateralMax - lateralMin);
                         } else if (p.team === 'green') {
-                            p.x = lateralMinX + Math.random() * (lateralMaxX - lateralMinX);
-                            p.y = edgeMargin + Math.random() * stripDepth;
+                            spawnX = lateralMinX + Math.random() * (lateralMaxX - lateralMinX);
+                            spawnY = edgeMargin + Math.random() * stripDepth;
                         } else if (p.team === 'yellow') {
-                            p.x = lateralMinX + Math.random() * (lateralMaxX - lateralMinX);
-                            p.y = MAP_HEIGHT - edgeMargin - stripDepth + Math.random() * stripDepth - p.size;
+                            spawnX = lateralMinX + Math.random() * (lateralMaxX - lateralMinX);
+                            spawnY = MAP_HEIGHT - edgeMargin - stripDepth + Math.random() * stripDepth - p.size;
                         }
                     } else {
                         // Respawn near a living teammate
@@ -3156,14 +3413,12 @@
                             const mate = livingTeammates[Math.floor(Math.random() * livingTeammates.length)];
                             const angle = Math.random() * Math.PI * 2;
                             const dist = 60 + Math.random() * 40;
-                            p.x = Math.max(0, Math.min(mate.x + Math.cos(angle) * dist, MAP_WIDTH - p.size));
-                            p.y = Math.max(0, Math.min(mate.y + Math.sin(angle) * dist, MAP_HEIGHT - p.size));
+                            spawnX = mate.x + Math.cos(angle) * dist;
+                            spawnY = mate.y + Math.sin(angle) * dist;
                         }
                     }
 
-                    // Clamp to map
-                    p.x = Math.max(0, Math.min(p.x, MAP_WIDTH - p.size));
-                    p.y = Math.max(0, Math.min(p.y, MAP_HEIGHT - p.size));
+                    setSafeRespawnPosition(p, spawnX, spawnY);
                 }
             }
         }
@@ -3249,6 +3504,7 @@
                         const actualDamage = Math.min(dmg, Math.max(0, targetPlayer.currentHp));
                         targetPlayer.currentHp -= dmg;
                         laser.shooter.damageDealt += actualDamage;
+                        if (laser.shooter.isHuman && actualDamage > 0) progressDaily('damage', actualDamage);
                         // Charge super bar (4 damage = 1 charge point, capped at 100)
                         if (laser.shooter.superCharge !== undefined)
                             laser.shooter.superCharge = Math.min(100, laser.shooter.superCharge + actualDamage * 4);
@@ -3266,6 +3522,7 @@
 
                         if (targetPlayer.currentHp <= 0) {
                             targetPlayer.currentHp = 0;
+                            if (targetPlayer.isHuman) { currentStreak = 0; streakTimer = 0; }
                             laser.shooter.kills++;
                             killFeed.push({ killerName: laser.shooter.name, victimName: targetPlayer.name, ts: Date.now(), isHumanKill: laser.shooter.isHuman });
                             // Award XP for kill
@@ -3279,7 +3536,7 @@
                             // In team modes: keep player for respawn; in FFA: remove
                             const isTeamMode = gameModes[currentGameMode] && gameModes[currentGameMode].teams;
                             if (isTeamMode) {
-                                targetPlayer.respawnTimer = currentGameMode === 'bounty' ? 300 : 900;
+                                targetPlayer.respawnTimer = currentGameMode === 'elimination' ? 0 : (currentGameMode === 'bounty' ? 300 : 900);
                                 targetPlayer.dead = true;
                                 dropPlayerItems(targetPlayer);
                             } else {
@@ -3379,6 +3636,7 @@
                         const actualDamage = Math.min(dmg, Math.max(0, targetPlayer.currentHp));
                         targetPlayer.currentHp -= dmg;
                         laser.shooter.damageDealt += actualDamage;
+                        if (laser.shooter.isHuman && actualDamage > 0) progressDaily('damage', actualDamage);
                         // Charge super bar
                         if (laser.shooter.superCharge !== undefined)
                             laser.shooter.superCharge = Math.min(100, laser.shooter.superCharge + actualDamage * 4);
@@ -3402,6 +3660,7 @@
 
                         if (targetPlayer.currentHp <= 0) {
                             targetPlayer.currentHp = 0;
+                            if (targetPlayer.isHuman) { currentStreak = 0; streakTimer = 0; }
                             laser.shooter.kills++;
                             killFeed.push({ killerName: laser.shooter.name, victimName: targetPlayer.name, ts: Date.now(), isHumanKill: laser.shooter.isHuman });
                             // Check bounty 20-star win
@@ -3409,7 +3668,7 @@
                             // In team modes: keep player for respawn; in FFA: remove
                             const isTeamMode = gameModes[currentGameMode] && gameModes[currentGameMode].teams;
                             if (isTeamMode) {
-                                targetPlayer.respawnTimer = currentGameMode === 'bounty' ? 300 : 900;
+                                targetPlayer.respawnTimer = currentGameMode === 'elimination' ? 0 : (currentGameMode === 'bounty' ? 300 : 900);
                                 targetPlayer.dead = true;
                                 dropPlayerItems(targetPlayer);
                             } else {
@@ -3681,7 +3940,20 @@
             player.prevY = player.y;
 
             checkHealthPackCollision(player);
+        }
 
+        function handleDeadPlayerInput() {
+            if (!player || player.currentHp > 0) return;
+            if (player.respawnTimer <= 0) return;
+            // Dead players can look around with arrow keys / WASD to scout
+            // (camera already follows living teammate, but dead player input can be used in future for spectating)
+        }
+
+        function handlePlayerAbilities() {
+            if (!player) return;
+            if (player.currentHp <= 0) return;
+
+            // Continue player input for living players
             if (player.shootCooldown > 0) player.shootCooldown--;
 
             // Super ability: E key
@@ -3689,6 +3961,17 @@
                 keysPressed['e'] = false; // consume keypress
                 // Target = last known mouse world position (or centre of screen)
                 activateSuper(player, lastMouseWorldX, lastMouseWorldY);
+            }
+
+            // Gadget ability: Space key
+            if (keysPressed[' '] && (player.gadgetCooldown || 0) <= 0) {
+                keysPressed[' '] = false;
+                activateGadget(player, lastMouseWorldX, lastMouseWorldY);
+            }
+
+            // Fire boost (kafekauboy gadget): reduce shoot cooldown increment by half
+            if (player.shootCooldown > 0 && player._fireBoostTimer > 0) {
+                player.shootCooldown = Math.max(0, player.shootCooldown - 1); // double decrement
             }
 
             // Use item: F key
@@ -3800,17 +4083,26 @@
                     const actual = Math.min(damage, Math.max(0, p.currentHp));
                     p.currentHp -= damage;
                     shooter.damageDealt += actual;
+                    if (shooter.isHuman && actual > 0) progressDaily('damage', actual);
                     p.bushRevealTimer = 90;
                     // Super damage also charges a little
                     if (shooter.superCharge !== undefined) shooter.superCharge = Math.min(100, shooter.superCharge + actual * 0.5);
                     if (p.currentHp <= 0) {
                         p.currentHp = 0;
+                        if (p.isHuman) { currentStreak = 0; streakTimer = 0; }
                         shooter.kills++;
                         killFeed.push({ killerName: shooter.name, victimName: p.name, ts: Date.now(), isHumanKill: shooter.isHuman });
                         if (shooter.isHuman) awardMedals(1);
                         const isTeamMode = gameModes[currentGameMode] && gameModes[currentGameMode].teams;
                         if (isTeamMode) {
-                            p.respawnTimer = currentGameMode === 'bounty' ? 300 : 900;
+                            if (currentGameMode === 'ballGoal' && p.hasBall && ball) {
+                                dropBall(p);
+                            }
+                            p.respawnTimer = currentGameMode === 'elimination' ? 0 : (currentGameMode === 'bounty' ? 300 : 900);
+                            if (shooter.isHuman) {
+                                registerKill();
+                                progressDaily('kills', 1);
+                            }
                             p.dead = true;
                         } else {
                             matchStatsList.push({ name: p.name, kills: p.kills, damageDealt: p.damageDealt, healingReceived: p.healingReceived, team: p.team, isHuman: p.isHuman });
@@ -4019,10 +4311,176 @@
             }
         }
 
+        // ── Gadget activation ────────────────────────────────────────────────
+        function activateGadget(p, aimX, aimY) {
+            const gd = gadgetData[p.id] || gadgetData['default'];
+            p.gadgetCooldown = gd.cooldown;
+            const cx = p.x + p.size / 2, cy = p.y + p.size / 2;
+
+            let dirX = p.vx || 0, dirY = p.vy || 0;
+            const dirLen = Math.hypot(dirX, dirY);
+            if (dirLen > 0) { dirX /= dirLen; dirY /= dirLen; }
+            else { dirX = 1; dirY = 0; }
+
+            let aimDx = (aimX || cx + 100) - cx, aimDy = (aimY || cy) - cy;
+            const aimLen = Math.hypot(aimDx, aimDy) || 1;
+            aimDx /= aimLen; aimDy /= aimLen;
+
+            switch (p.id) {
+                case 'default':
+                    p._speedTimer = 120; p._damageTimer = 120;
+                    superEffects.push({ type: 'screamflash', x: cx, y: cy, radius: 40, timer: 20, shooter: p });
+                    break;
+                case 'lazerman': {
+                    for (let s = 0; s < 25; s++) {
+                        const nx = Math.max(0, Math.min(MAP_WIDTH - p.size, p.x + dirX * 10));
+                        const ny = Math.max(0, Math.min(MAP_HEIGHT - p.size, p.y + dirY * 10));
+                        let blocked = false;
+                        for (const obs of obstacles) {
+                            if (nx < obs.x + obs.width && nx + p.size > obs.x &&
+                                ny < obs.y + obs.height && ny + p.size > obs.y) { blocked = true; break; }
+                        }
+                        if (blocked) break;
+                        p.x = nx; p.y = ny;
+                    }
+                    gadgetEffects.push({ type: 'dashtrail', x: cx, y: cy, ex: p.x + p.size/2, ey: p.y + p.size/2, timer: 20, color: '#4ae8ff' });
+                    break;
+                }
+                case 'fournakis':
+                    superEffects.push({ type: 'firezone', x: cx, y: cy, radius: 90, timer: 150, tickTimer: 0, tickInterval: 25, damage: p.laserDamage * 2, shooter: p });
+                    break;
+                case 'baklavasbazookos':
+                    p._damageTimer = 180;
+                    superEffects.push({ type: 'screamflash', x: cx, y: cy, radius: 35, timer: 18, shooter: p });
+                    break;
+                case 'firekoupepy':
+                    p._speedTimer = 90;
+                    superEffects.push({ type: 'firezone', x: cx, y: cy, radius: 70, timer: 120, tickTimer: 0, tickInterval: 20, damage: p.laserDamage, shooter: p });
+                    break;
+                case 'tornader': {
+                    for (const other of players) {
+                        if (other === p || other.currentHp <= 0) continue;
+                        if (p.team && other.team === p.team) continue;
+                        const dx = other.x + other.size/2 - cx, dy = other.y + other.size/2 - cy;
+                        const d = Math.hypot(dx, dy);
+                        if (d < 200 && d > 0) {
+                            const force = (1 - d/200) * 220;
+                            other.x = Math.max(0, Math.min(MAP_WIDTH - other.size, other.x + dx/d * force));
+                            other.y = Math.max(0, Math.min(MAP_HEIGHT - other.size, other.y + dy/d * force));
+                            if (other._slowTimer !== undefined) other._slowTimer = 60;
+                        }
+                    }
+                    superEffects.push({ type: 'tornado', x: cx, y: cy, radius: 200, timer: 40, tickTimer: 999, tickInterval: 999, damage: 0, shooter: p, angle: 0 });
+                    break;
+                }
+                case 'boboshiros':
+                    p._shieldHp = (p._shieldHp || 0) + 20;
+                    superEffects.push({ type: 'screamflash', x: cx, y: cy, radius: 45, timer: 20, shooter: p });
+                    break;
+                case 'kafekauboy':
+                    p._speedTimer = 180; p._damageTimer = 180; p._fireBoostTimer = 180;
+                    superEffects.push({ type: 'screamflash', x: cx, y: cy, radius: 40, timer: 18, shooter: p });
+                    break;
+                case 'megagrinos': {
+                    let nearest = null, minD = 350;
+                    for (const other of players) {
+                        if (other === p || other.currentHp <= 0) continue;
+                        if (p.team && other.team === p.team) continue;
+                        const d = Math.hypot(other.x - p.x, other.y - p.y);
+                        if (d < minD) { minD = d; nearest = other; }
+                    }
+                    if (nearest) {
+                        nearest._stunTimer = 90;
+                        superEffects.push({ type: 'screamflash', x: nearest.x + nearest.size/2, y: nearest.y + nearest.size/2, radius: 50, timer: 22, shooter: p });
+                    }
+                    superEffects.push({ type: 'screamflash', x: cx, y: cy, radius: 55, timer: 20, shooter: p });
+                    break;
+                }
+                case 'kleftikomegazord':
+                    p.gadgetInvisibleTimer = 120;
+                    gadgetEffects.push({ type: 'cloak', x: cx, y: cy, timer: 18, color: '#8844ff' });
+                    break;
+                case 'petras':
+                    superEffects.push({ type: 'bigshot', x: cx, y: cy, vx: aimDx * 6, vy: aimDy * 6, radius: 22, damage: p.laserDamage * 4, shooter: p, life: 180 });
+                    break;
+                case 'rocky': {
+                    for (let s = 0; s < 20; s++) {
+                        const nx = Math.max(0, Math.min(MAP_WIDTH - p.size, p.x + dirX * 12));
+                        const ny = Math.max(0, Math.min(MAP_HEIGHT - p.size, p.y + dirY * 12));
+                        let blocked = false;
+                        for (const obs of obstacles) {
+                            if (nx < obs.x + obs.width && nx + p.size > obs.x &&
+                                ny < obs.y + obs.height && ny + p.size > obs.y) { blocked = true; break; }
+                        }
+                        if (blocked) break;
+                        p.x = nx; p.y = ny;
+                    }
+                    dealAoeDamage(p.x + p.size/2, p.y + p.size/2, 80, p.laserDamage * 3, p);
+                    gadgetEffects.push({ type: 'dashtrail', x: cx, y: cy, ex: p.x + p.size/2, ey: p.y + p.size/2, timer: 20, color: '#ff8844' });
+                    superEffects.push({ type: 'screamflash', x: p.x + p.size/2, y: p.y + p.size/2, radius: 60, timer: 20, shooter: p });
+                    break;
+                }
+                case 'timor':
+                    superEffects.push({ type: 'bigshot', x: cx, y: cy, vx: aimDx * 7, vy: aimDy * 7, radius: 18, damage: p.laserDamage * 5, shooter: p, life: 120 });
+                    break;
+                case 'kleftros': {
+                    const tx = Math.max(0, Math.min(MAP_WIDTH - p.size, p.x + dirX * 300));
+                    const ty = Math.max(0, Math.min(MAP_HEIGHT - p.size, p.y + dirY * 300));
+                    let blocked = false;
+                    for (const obs of obstacles) {
+                        if (tx < obs.x + obs.width && tx + p.size > obs.x &&
+                            ty < obs.y + obs.height && ty + p.size > obs.y) { blocked = true; break; }
+                    }
+                    if (!blocked) {
+                        gadgetEffects.push({ type: 'dashtrail', x: cx, y: cy, ex: tx + p.size/2, ey: ty + p.size/2, timer: 20, color: '#cc44ff' });
+                        p.x = tx; p.y = ty;
+                    }
+                    break;
+                }
+                case 'kapnas':
+                    superEffects.push({ type: 'smokezone', x: cx, y: cy, radius: 110, timer: 180, tickTimer: 0, tickInterval: 40, damage: 0, shooter: p });
+                    break;
+                default:
+                    p._speedTimer = 90;
+                    break;
+            }
+        }
+
+        // ── Draw gadget trail / cloak effects ────────────────────────────────
+        function updateDrawGadgetEffects() {
+            for (let i = gadgetEffects.length - 1; i >= 0; i--) {
+                const fx = gadgetEffects[i];
+                fx.timer--;
+                const alpha = Math.max(0, fx.timer / 20);
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                if (fx.type === 'dashtrail') {
+                    ctx.strokeStyle = fx.color;
+                    ctx.lineWidth = 8; ctx.lineCap = 'round';
+                    ctx.setLineDash([8, 6]);
+                    ctx.beginPath();
+                    ctx.moveTo(fx.x - camera.x, fx.y - camera.y);
+                    ctx.lineTo(fx.ex - camera.x, fx.ey - camera.y);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                } else if (fx.type === 'cloak') {
+                    ctx.fillStyle = fx.color;
+                    ctx.beginPath();
+                    ctx.arc(fx.x - camera.x, fx.y - camera.y, 50, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+                if (fx.timer <= 0) gadgetEffects.splice(i, 1);
+            }
+        }
+
         function updateSupers() {
-            // Tick active buff timers
             for (const p of players) {
                 if (p.superCooldown > 0) p.superCooldown--;
+                if (p.gadgetCooldown > 0) p.gadgetCooldown--;
+                if (p.gadgetInvisibleTimer > 0) p.gadgetInvisibleTimer--;
+                if (p._stunTimer > 0) p._stunTimer--;
+                if (p._fireBoostTimer > 0) p._fireBoostTimer--;
                 if (p._slowTimer > 0) {
                     p._slowTimer--;
                     // Applied in movement (speed halved when slow active — see handleInputFrame)
@@ -4133,7 +4591,7 @@
             const messageEl = document.getElementById('game-over-message');
 
             // Scale rewards by game mode (3v3 is harder = more reward)
-            const is3v3 = currentGameMode === '3v3' || currentGameMode === 'ballGoal' || currentGameMode === 'bounty';
+            const is3v3 = currentGameMode === '3v3' || currentGameMode === 'ballGoal' || currentGameMode === 'bounty' || currentGameMode === 'elimination';
             const winCoins  = is3v3 ? 150 : 100;
             const loseCoins = is3v3 ? 50  : 25;
             const winMedals  = is3v3 ? 12  : 8;
@@ -4159,7 +4617,7 @@
                 progressDaily('games', 1);
                 // Save to match history
                 const humanPlayer = matchStatsList.find(s => s.isHuman) || { kills: 0 };
-                saveMatchToHistory(true, currentGameMode, humanPlayer.kills || 0, winMedals);
+                saveMatchToHistory(true, currentGameMode, humanPlayer.kills || 0, winMedals, selectedPlayerId, winCoins);
             } else {
                 title.textContent = 'Game Over';
                 title.style.color = '#ff4444';
@@ -4175,7 +4633,7 @@
                 // Progress daily challenges
                 progressDaily('games', 1);
                 const humanPlayer2 = matchStatsList.find(s => s.isHuman) || { kills: 0 };
-                saveMatchToHistory(false, currentGameMode, humanPlayer2.kills || 0, loseMedals);
+                saveMatchToHistory(false, currentGameMode, humanPlayer2.kills || 0, loseMedals, selectedPlayerId, loseCoins);
             }
             // Reset streak on game end
             currentStreak = 0; streakTimer = 0;
@@ -4204,8 +4662,8 @@
             // Show the overlay
             overlay.style.display = 'flex';
 
-            // Show star drop after a brief delay
-            setTimeout(() => showStarDrop(), 800);
+            // Mark that a chest is waiting — show it when player returns to menu
+            pendingStarDrop = true;
 
             // Reset game state but keep player progress
             players = [];
@@ -4413,6 +4871,8 @@
             chest.onmouseleave = () => { if (clicksLeft > 0) chest.style.transform = `scale(${1 + (5 - clicksLeft) * 0.02})`; };
         }
 
+        let pendingStarDrop = false;
+
         // Also update the return to menu button handler to properly reset the game
         document.getElementById('return-to-menu').addEventListener('click', () => {
             // Hide game over overlay
@@ -4431,6 +4891,11 @@
             // Clear the canvas
             ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
 
+            // Show the chest now that we're back at the menu
+            if (pendingStarDrop) {
+                pendingStarDrop = false;
+                setTimeout(() => showStarDrop(), 400);
+            }
         });
         // Game loop
         function updatePlayerRegen() {
@@ -4450,6 +4915,7 @@
 
             updateCamera();
             handleInputFrame();
+            handlePlayerAbilities();
             updatePlayerRegen();
 
             updateAllBots();
@@ -4469,6 +4935,7 @@
             drawPlayers();
             drawBushes();
             drawSuperEffects();
+            updateDrawGadgetEffects();
             drawBall();
             drawLasers();
             drawPoisonZone();
@@ -4490,14 +4957,13 @@
         // ── DAILY CHALLENGES ─────────────────────────────────────────────────────
 
         const DAILY_CHALLENGE_DEFS = [
-            { id: 'win1',    desc: 'Win 1 match',               type: 'wins',  target: 1,  reward: { type:'coins',  amount: 200 },  icon: '🏆' },
-            { id: 'win3',    desc: 'Win 3 matches',             type: 'wins',  target: 3,  reward: { type:'coins',  amount: 500 },  icon: '🥇' },
-            { id: 'kill5',   desc: 'Get 5 kills in total',      type: 'kills', target: 5,  reward: { type:'sparks', amount: 300 },  icon: '⚡' },
-            { id: 'kill10',  desc: 'Get 10 kills in total',     type: 'kills', target: 10, reward: { type:'sparks', amount: 700 },  icon: '⚡' },
-            { id: 'play2',   desc: 'Play 2 matches',            type: 'games', target: 2,  reward: { type:'coins',  amount: 150 },  icon: '🎮' },
-            { id: 'play5',   desc: 'Play 5 matches',            type: 'games', target: 5,  reward: { type:'coins',  amount: 300 },  icon: '🎮' },
-            { id: 'streak3', desc: 'Get a 3-kill streak',       type: 'streak',target: 3,  reward: { type:'sparks', amount: 400 },  icon: '🔥' },
-            { id: 'streak5', desc: 'Get a 5-kill streak',       type: 'streak',target: 5,  reward: { type:'sparks', amount: 900 },  icon: '🔥' },
+            { id: 'win2',      desc: 'Win 2 matches',             type: 'wins',   target: 2,    reward: { type:'sparks', amount: 250 },  icon: '🏆' },
+            { id: 'kill8',     desc: 'Get 8 kills in total',      type: 'kills',  target: 8,    reward: { type:'sparks', amount: 300 },  icon: '⚡' },
+            { id: 'play3',     desc: 'Play 3 matches',            type: 'games',  target: 3,    reward: { type:'sparks', amount: 220 },  icon: '🎮' },
+            { id: 'streak3',   desc: 'Get a 3-kill streak',       type: 'streak', target: 3,    reward: { type:'sparks', amount: 360 },  icon: '🔥' },
+            { id: 'streak5',   desc: 'Reach RAMPAGE (5 streak)',  type: 'streak', target: 5,    reward: { type:'sparks', amount: 650 },  icon: '💥' },
+            { id: 'damage1200',desc: 'Deal 1200 total damage',    type: 'damage', target: 1200, reward: { type:'sparks', amount: 320 },  icon: '💣' },
+            { id: 'damage2000',desc: 'Deal 2000 total damage',    type: 'damage', target: 2000, reward: { type:'sparks', amount: 520 },  icon: '💥' },
         ];
 
         function getDailyKey() {
@@ -4613,10 +5079,9 @@
         const STREAK_WINDOW = 600; // 10 seconds at 60fps
 
         const STREAK_LABELS = {
-            2: { text: '💀 DOUBLE KILL!',  color: '#ffcc00', size: 30 },
-            3: { text: '🔥 TRIPLE KILL!',  color: '#ff8800', size: 34 },
-            4: { text: '⚡ QUAD KILL!',    color: '#ff4400', size: 38 },
-            5: { text: '💥 PENTA KILL!',   color: '#ff0000', size: 42 },
+            2: { text: 'DOUBLE KILL!', color: '#ffcc00', size: 34 },
+            3: { text: 'TRIPLE KILL!', color: '#ff8800', size: 38 },
+            5: { text: 'RAMPAGE!',     color: '#ff3333', size: 46 },
         };
 
         function registerKill() {
@@ -4639,8 +5104,8 @@
 
         let streakBannerTimeout = null;
         function showStreakBanner(n) {
-            if (n < 2) return;
-            const label = STREAK_LABELS[Math.min(n, 5)] || STREAK_LABELS[5];
+            const label = STREAK_LABELS[n];
+            if (!label) return;
             const el = document.getElementById('streak-banner');
             el.textContent = label.text;
             el.style.fontSize = label.size + 'px';
@@ -4665,7 +5130,7 @@
             return JSON.parse(localStorage.getItem('matchHistory') || '[]');
         }
 
-        function saveMatchToHistory(isVictory, mode, kills, medals) {
+        function saveMatchToHistory(isVictory, mode, kills, medals, characterId, coinsEarned) {
             const history = loadMatchHistory();
             history.unshift({
                 date: new Date().toLocaleDateString(),
@@ -4674,6 +5139,9 @@
                 mode,
                 kills,
                 medals,
+                characterId: characterId || 'default',
+                coinsEarned: coinsEarned || 0,
+                ts: Date.now(),
             });
             if (history.length > 20) history.length = 20;
             localStorage.setItem('matchHistory', JSON.stringify(history));
@@ -4685,8 +5153,32 @@
         }
 
         function renderMatchHistory() {
+            const stats = document.getElementById('history-stats');
             const list = document.getElementById('history-list');
             const history = loadMatchHistory();
+
+            const totalMatches = history.length;
+            const wins = history.filter(h => h.result === 'win').length;
+            const losses = totalMatches - wins;
+            const totalKills = history.reduce((sum, h) => sum + (h.kills || 0), 0);
+            const lifetimeCoins = history.reduce((sum, h) => sum + (h.coinsEarned || 0), 0);
+
+            const charCounts = {};
+            for (const h of history) {
+                const cid = h.characterId || 'default';
+                charCounts[cid] = (charCounts[cid] || 0) + 1;
+            }
+            const favoriteCharId = Object.keys(charCounts).sort((a, b) => charCounts[b] - charCounts[a])[0] || 'default';
+            const favoriteChar = (playersData[favoriteCharId] && playersData[favoriteCharId].name) || 'N/A';
+            const wlText = totalMatches > 0 ? `${wins}-${losses}` : '0-0';
+
+            stats.innerHTML = `
+                <div class="history-stat-card"><div class="label">W / L</div><div class="value">${wlText}</div></div>
+                <div class="history-stat-card"><div class="label">Total Kills</div><div class="value">${totalKills}</div></div>
+                <div class="history-stat-card"><div class="label">Favorite Character</div><div class="value" style="font-size:13px;">${favoriteChar}</div></div>
+                <div class="history-stat-card"><div class="label">Lifetime Coins Earned</div><div class="value">${lifetimeCoins}</div></div>
+            `;
+
             if (history.length === 0) {
                 list.innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">No matches played yet.</p>';
                 return;
@@ -4700,6 +5192,7 @@
                     </div>
                     <div style="text-align:right;font-size:12px;color:#ccc">
                         ⚔️ ${m.kills} kills<br>
+                        <span style="color:#ffcc00">💰 +${m.coinsEarned || 0}</span><br>
                         <span style="${m.medals >= 0 ? 'color:#ffcc00' : 'color:#ff6666'}">🏅 ${m.medals >= 0 ? '+' : ''}${m.medals}</span>
                     </div>
                 </div>
@@ -4849,6 +5342,7 @@
             document.getElementById('joystick-container').style.display = 'none';
             document.getElementById('shoot-joystick-container').style.display = 'none';
             document.getElementById('game-modes-container').style.display = 'none';
+            document.getElementById('map-select-panel').style.display = 'none';
             document.getElementById('player-menu').style.display = 'none';
             document.getElementById('game-over-overlay').style.display = 'none';
             document.getElementById('stardrop-overlay').style.display = 'none';
@@ -4867,6 +5361,10 @@
             }
             document.getElementById('game-over-overlay').style.display = 'none';
             document.getElementById('stardrop-overlay').style.display = 'none';
+        }
+
+        function openMapSelect() {
+            startGame();
         }
 
         function startGame() {
@@ -4896,6 +5394,7 @@
             document.getElementById('close-credits-panel').addEventListener('click', () => {
                 document.getElementById('credits-panel').style.display = 'none';
             });
+
         }
 
         // ── BATTLE MAP AUTO-LOADER ───────────────────────────────────────────────
@@ -4906,23 +5405,25 @@
         // The game picks a random matching map at battle start.
         // Examples: battlemap_team.png, battlemap_team2.png, battlemap_showdown.png
 
-        const mapPools = { team: [], showdown: [] };
+        const mapPools = { team: [], showdown: [], ballGoal: [] };
         let currentBattleMapData = null; // set per-game by pickMap()
 
         function discoverMaps() {
             const candidates = [];
             // Plain battlemap (goes to team pool)
             candidates.push('images/battlemap.png');
-            // Numbered team & showdown variants 1-10
+            // Numbered team, showdown & ballgoal variants 1-10
             for (let n = 0; n <= 10; n++) {
                 const s = n === 0 ? '' : String(n);
                 candidates.push(`images/battlemap_team${s}.png`);
                 candidates.push(`images/battlemap_showdown${s}.png`);
+                candidates.push(`images/battlemap_ballgoal${s}.png`);
             }
             candidates.forEach(src => parseBattleMapFile(src, data => {
                 if (!data) return;
                 const lower = src.toLowerCase();
                 if (lower.includes('showdown')) mapPools.showdown.push(data);
+                else if (lower.includes('ballgoal')) mapPools.ballGoal.push(data);
                 else mapPools.team.push(data);
             }));
         }
@@ -4944,6 +5445,7 @@
                 const obsGrid  = Array.from({length:H}, () => new Array(W).fill(false));
                 const bushGrid = Array.from({length:H}, () => new Array(W).fill(false));
                 const spawnPoints = { red:[], blue:[], green:[], yellow:[] };
+                const goalPoints  = { red:[], blue:[] };
 
                 for (let row = 0; row < H; row++) {
                     for (let col = 0; col < W; col++) {
@@ -4955,6 +5457,10 @@
                         else if (b > 200 && r <  80 && g <  80) spawnPoints.blue.push({x:cx, y:cy});
                         else if (g > 180 && r <  80 && b <  80) spawnPoints.green.push({x:cx, y:cy});
                         else if (r > 200 && g > 180 && b <  80) spawnPoints.yellow.push({x:cx, y:cy});
+                        // goal_red: orange-red (255,102,0) — r>200, g>80&&g<150, b<30
+                        else if (r > 200 && g > 80 && g < 150 && b < 30) goalPoints.red.push({x:cx, y:cy});
+                        // goal_blue: bright blue (0,136,255) — b>200, r<30, g>100&&g<180
+                        else if (b > 200 && r < 30 && g > 100 && g < 180) goalPoints.blue.push({x:cx, y:cy});
                         else if (r > 100 && g < 100 && b < 80 && r > g + 30) obsGrid[row][col]  = true;
                         else if (g > 60  && g < 170  && r < 80 && b < 80 && g > r * 1.5) bushGrid[row][col] = true;
                     }
@@ -4971,16 +5477,127 @@
                 for (const [team, pts] of Object.entries(spawnPoints))
                     spawn[team] = pts.filter((_, i) => i % 4 === 0);
 
-                callback({ obstacles, bushCells, spawnPoints: spawn });
+                // Build goal rects from goal pixel clusters (bounding box of each color group)
+                const customGoals = [];
+                for (const team of ['red', 'blue']) {
+                    const pts = goalPoints[team];
+                    if (pts.length > 0) {
+                        const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+                        const minX = Math.min(...xs), maxX = Math.max(...xs);
+                        const minY = Math.min(...ys), maxY = Math.max(...ys);
+                        customGoals.push({ team, x: minX, y: minY, w: maxX - minX + cellW, h: maxY - minY + cellH });
+                    }
+                }
+
+                callback({ obstacles, bushCells, spawnPoints: spawn, customGoals });
             };
             img.onerror = () => callback(null);
             img.src = src + '?' + Date.now();
         }
 
         function pickMap(isTeamMode) {
-            const pool = isTeamMode ? mapPools.team : mapPools.showdown;
-            if (pool.length === 0) { currentBattleMapData = null; return; }
+            let pool;
+            if (currentGameMode === 'ballGoal') {
+                pool = mapPools.ballGoal.length > 0 ? mapPools.ballGoal : mapPools.team;
+            } else if (isTeamMode) {
+                pool = mapPools.team;
+            } else {
+                pool = mapPools.showdown;
+            }
+            if (pool.length === 0) {
+                currentBattleMapData = createFallbackRandomMap(isTeamMode, currentGameMode);
+                return;
+            }
             currentBattleMapData = pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        function createFallbackRandomMap(isTeamMode, mode) {
+            const rand = (min, max) => min + Math.random() * (max - min);
+            const obstacles = [];
+            const bushCells = [];
+            const obstacleCount = isTeamMode ? 22 : 16;
+            const bushCount = isTeamMode ? 70 : 48;
+            const minSide = Math.min(MAP_WIDTH, MAP_HEIGHT);
+            const obstacleMin = Math.max(100, Math.floor(minSide * 0.065));
+            const obstacleMax = Math.max(obstacleMin + 40, Math.floor(minSide * 0.145));
+            const edgePadding = Math.max(80, Math.floor(minSide * 0.06));
+            const bushSize = Math.max(26, Math.floor(minSide * 0.018));
+
+            const blockedZones = [
+                { x: MAP_WIDTH / 2 - 140, y: 0, width: 280, height: MAP_HEIGHT },
+                { x: 0, y: MAP_HEIGHT / 2 - 140, width: MAP_WIDTH, height: 280 },
+                { x: 0, y: 0, width: 260, height: 260 },
+                { x: MAP_WIDTH - 260, y: 0, width: 260, height: 260 },
+                { x: 0, y: MAP_HEIGHT - 260, width: 260, height: 260 },
+                { x: MAP_WIDTH - 260, y: MAP_HEIGHT - 260, width: 260, height: 260 }
+            ];
+
+            function intersectsBlocked(rect) {
+                return blockedZones.some(z =>
+                    rect.x < z.x + z.width &&
+                    rect.x + rect.width > z.x &&
+                    rect.y < z.y + z.height &&
+                    rect.y + rect.height > z.y
+                );
+            }
+
+            for (let i = 0; i < obstacleCount; i++) {
+                const w = Math.floor(rand(obstacleMin, obstacleMax));
+                const h = Math.floor(rand(obstacleMin, obstacleMax));
+                const rect = {
+                    x: Math.floor(rand(edgePadding, Math.max(edgePadding + 1, MAP_WIDTH - w - edgePadding))),
+                    y: Math.floor(rand(edgePadding, Math.max(edgePadding + 1, MAP_HEIGHT - h - edgePadding))),
+                    width: w,
+                    height: h,
+                    type: Math.random() < 0.2 ? 'water' : 'brick'
+                };
+                if (!intersectsBlocked(rect)) obstacles.push(rect);
+            }
+
+            for (let i = 0; i < bushCount; i++) {
+                const size = bushSize;
+                const bush = {
+                    x: Math.floor(rand(edgePadding, Math.max(edgePadding + 1, MAP_WIDTH - size - edgePadding))),
+                    y: Math.floor(rand(edgePadding, Math.max(edgePadding + 1, MAP_HEIGHT - size - edgePadding))),
+                    size
+                };
+                if (!intersectsBlocked({ x: bush.x, y: bush.y, width: bush.size, height: bush.size })) {
+                    bushCells.push(bush);
+                }
+            }
+
+            const spawnPoints = {
+                red: [
+                    { x: 140, y: MAP_HEIGHT * 0.35 },
+                    { x: 170, y: MAP_HEIGHT * 0.50 },
+                    { x: 140, y: MAP_HEIGHT * 0.65 }
+                ],
+                blue: [
+                    { x: MAP_WIDTH - 140, y: MAP_HEIGHT * 0.35 },
+                    { x: MAP_WIDTH - 170, y: MAP_HEIGHT * 0.50 },
+                    { x: MAP_WIDTH - 140, y: MAP_HEIGHT * 0.65 }
+                ],
+                green: [
+                    { x: MAP_WIDTH * 0.35, y: 140 },
+                    { x: MAP_WIDTH * 0.50, y: 170 },
+                    { x: MAP_WIDTH * 0.65, y: 140 }
+                ],
+                yellow: [
+                    { x: MAP_WIDTH * 0.35, y: MAP_HEIGHT - 140 },
+                    { x: MAP_WIDTH * 0.50, y: MAP_HEIGHT - 170 },
+                    { x: MAP_WIDTH * 0.65, y: MAP_HEIGHT - 140 }
+                ]
+            };
+
+            let customGoals = [];
+            if (mode === 'ballGoal') {
+                customGoals = [
+                    { team: 'red', x: 18, y: MAP_HEIGHT / 2 - 110, w: 34, h: 220 },
+                    { team: 'blue', x: MAP_WIDTH - 52, y: MAP_HEIGHT / 2 - 110, w: 34, h: 220 }
+                ];
+            }
+
+            return { obstacles, bushCells, spawnPoints, customGoals };
         }
 
         function mergeGridToRects(grid, W, H, cellW, cellH) {
@@ -5011,19 +5628,12 @@
         // or null if everything is unlocked.
         function creditsNextTier() {
             const sequence = ['epic', 'mythic', 'legendary'];
-            const allCreditPlayers = Object.values(playersData).filter(p => p.creditCost);
-            const counts = {}, totals = {};
-            sequence.forEach(r => {
-                counts[r] = allCreditPlayers.filter(p => p.rarity === r && unlockedPlayers.includes(p.id)).length;
-                totals[r] = allCreditPlayers.filter(p => p.rarity === r).length;
-            });
-            const total = counts.epic + counts.mythic + counts.legendary;
-            if (total >= totals.epic + totals.mythic + totals.legendary) return null;
-            for (let offset = 0; offset < 3; offset++) {
-                const rarity = sequence[(total + offset) % 3];
-                if (counts[rarity] < totals[rarity]) return rarity;
+            for (const rarity of sequence) {
+                const tierPlayers = Object.values(playersData).filter(p => p.rarity === rarity && p.creditCost);
+                const hasUnlocked = tierPlayers.some(p => unlockedPlayers.includes(p.id));
+                if (!hasUnlocked) return rarity; // this tier still needs a pick
             }
-            return null;
+            return null; // all tiers done
         }
 
         function renderCreditsPanel() {
@@ -5047,7 +5657,21 @@
                     <p style="color:#888; font-size:11px; text-align:center; margin:4px 0 0;">
                         Pick ONE player per tier. After unlocking, that tier is done — next tier opens.</p>`;
             } else {
-                barEl.innerHTML = `<p style="text-align:center; color:#ffcc00;">🏆 All credit players unlocked!</p>`;
+                // Check if we already gave the champion reward
+                const champRewarded = localStorage.getItem('champRewardGiven') === '1';
+                if (!champRewarded) {
+                    localStorage.setItem('champRewardGiven', '1');
+                    playerCoins += 3000;
+                    energySparks += 1000;
+                    saveProgress();
+                    showLootboxPopup('🏆 Champion! You unlocked all Credit players!\n+3000 coins & +1000 sparks awarded!');
+                }
+                barEl.innerHTML = `
+                    <div style="text-align:center; padding:20px 10px;">
+                        <div style="font-size:48px;">🏆</div>
+                        <h3 style="color:#ffcc00; margin:8px 0 4px; font-size:20px;">Master Attacker!</h3>
+                        <p style="color:#aaa; font-size:13px; margin:0;">You have unlocked every Credit player. Champion reward was granted!</p>
+                    </div>`;
             }
 
             const list = document.getElementById('credits-tier-list');
@@ -5125,10 +5749,11 @@
                 const allInTier = Object.values(playersData).filter(p => p.rarity === tier.rarity && p.creditCost);
                 const tierCost = allInTier[0]?.creditCost ?? 0;
 
-                // Check if this tier is already completed (someone in it is unlocked)
                 const isCompleted = allInTier.some(p => unlockedPlayers.includes(p.id));
                 const isActive = tier.rarity === nextTier;
-                const isLocked = !isCompleted && !isActive;
+
+                // Skip completed tiers — they disappear
+                if (isCompleted) return;
 
                 if (isActive) {
                     const header = document.createElement('div');
@@ -5149,22 +5774,6 @@
                     const row = document.createElement('div');
                     row.style.cssText = 'display:flex; flex-direction:row; align-items:flex-start; gap:12px; min-width:max-content;';
                     allInTier.forEach(pd => row.appendChild(buildCard(pd, rc, tier, 'active')));
-                    rowWrap.appendChild(row);
-                    list.appendChild(rowWrap);
-                } else if (isCompleted) {
-                    const header = document.createElement('div');
-                    header.style.cssText = `padding:8px 0 4px; color:${rc}; font-weight:bold; font-size:15px; border-bottom:1px solid ${rc}44; margin-bottom:12px; opacity:0.7;`;
-                    header.innerHTML = `${tier.label} <span style="font-size:12px; font-weight:normal; color:#4ae8d8;">✅ Completed</span>`;
-                    list.appendChild(header);
-
-                    const rowWrap = document.createElement('div');
-                    rowWrap.style.cssText = 'overflow-x:auto; margin-bottom:24px; padding-bottom:4px;';
-                    const row = document.createElement('div');
-                    row.style.cssText = 'display:flex; flex-direction:row; align-items:flex-start; gap:12px; min-width:max-content;';
-                    allInTier.forEach(pd => {
-                        const mode = unlockedPlayers.includes(pd.id) ? 'owned' : 'missed';
-                        row.appendChild(buildCard(pd, rc, tier, mode));
-                    });
                     rowWrap.appendChild(row);
                     list.appendChild(rowWrap);
                 } else {
@@ -5524,6 +6133,24 @@
             initGameModes();
             initMouseShooting();
             initSuperButton();
+
+            // Mobile gadget button
+            (function initGadgetButton() {
+                const btn = document.getElementById('gadget-btn');
+                if (!btn) return;
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if (player && (player.gadgetCooldown || 0) <= 0) {
+                        activateGadget(player, lastMouseWorldX, lastMouseWorldY);
+                    }
+                }, { passive: false });
+                btn.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    if (player && (player.gadgetCooldown || 0) <= 0) {
+                        activateGadget(player, lastMouseWorldX, lastMouseWorldY);
+                    }
+                });
+            })();
             initBazaar();
             initCreditsPanel();
             initPlayerMenu();
@@ -5544,6 +6171,9 @@
 
             // Start game button
             document.getElementById('start-btn').addEventListener('click', startGame);
+            document.getElementById('close-map-select').addEventListener('click', () => {
+                document.getElementById('map-select-panel').style.display = 'none';
+            });
 
             // Return to menu button
             document.getElementById('return-to-menu').addEventListener('click', () => {
