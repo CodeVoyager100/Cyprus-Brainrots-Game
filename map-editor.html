@@ -44,9 +44,6 @@
   .swatch:hover { transform: scale(1.15); }
   .swatch.active { border-color: #fff; box-shadow: 0 0 6px #fff8; }
 
-  /* Size slider */
-  #brushSize { width: 70px; accent-color: #e94560; }
-
   /* Action buttons */
   .action-btn {
     padding: 6px 14px; border-radius: 7px; border: none; cursor: pointer;
@@ -85,11 +82,12 @@
     flex: 1; display: flex; align-items: center; justify-content: center;
     overflow: auto; background: #111827; padding: 10px; position: relative;
   }
-  #bgCanvas, #editorCanvas {
+  #bgCanvas, #gridCanvas, #editorCanvas {
     image-rendering: pixelated;
     position: absolute;
   }
   #bgCanvas { pointer-events: none; border: 2px solid #0f3460; box-shadow: 0 0 30px #0000009a; }
+  #gridCanvas { pointer-events: none; }
   #editorCanvas { cursor: crosshair; background: transparent; }
   #coords {
     position: absolute; bottom: 8px; right: 14px;
@@ -141,11 +139,6 @@
   <button class="tool-btn" id="toolFill"   onclick="setTool('fill')">🪣 Fill</button>
 
   <div class="sep"></div>
-  <label style="font-size:.8rem;color:#aaa">Brush:&nbsp;</label>
-  <input type="range" id="brushSize" min="1" max="20" value="3">
-  <span id="brushSizeLabel" style="font-size:.8rem;color:#aaa;min-width:22px">3</span>
-
-  <div class="sep"></div>
   <button class="action-btn" id="btnUndo"  onclick="undo()">↩ Undo</button>
   <button class="action-btn" id="btnClear" onclick="clearConfirm()">🗑 Clear</button>
 
@@ -176,6 +169,10 @@
       <div class="side-dot" style="background:#9b5a1a;"></div>
       <span class="side-label">Wall (brick)</span>
     </div>
+    <div class="side-swatch" id="sw_metal"   onclick="setColor('metal')">
+      <div class="side-dot" style="background:#7d8590;"></div>
+      <span class="side-label">Wall (metal)</span>
+    </div>
     <div class="side-swatch" id="sw_water"   onclick="setColor('water')">
       <div class="side-dot" style="background:#1e6fbf;"></div>
       <span class="side-label">Water</span>
@@ -183,6 +180,10 @@
     <div class="side-swatch" id="sw_bush"    onclick="setColor('bush')">
       <div class="side-dot" style="background:#2e7d32;"></div>
       <span class="side-label">Bush</span>
+    </div>
+    <div class="side-swatch" id="sw_healbox" onclick="setColor('healbox')">
+      <div class="side-dot" style="background:#ff4dd2;"></div>
+      <span class="side-label">Heal box spawn</span>
     </div>
 
     <h3 style="margin-top:6px">Spawns</h3>
@@ -220,9 +221,11 @@
     <h3>Legend</h3>
     <div style="font-size:0.7rem;color:#888;line-height:1.7">
       Sand = walkable floor<br>
-      Wall = blocks movement<br>
+      Brick wall = breakable by hyper players<br>
+      Metal wall = unbreakable<br>
       Water = blocks movement<br>
       Bush = hides players<br>
+      Pink = heal box spawn<br>
       Colored = team spawns<br>
       <br>
       Map size: 200×200 px<br>
@@ -233,13 +236,14 @@
   <!-- CANVAS -->
   <div id="canvas-wrap">
     <canvas id="bgCanvas"     width="200" height="200"></canvas>
+    <canvas id="gridCanvas"   width="200" height="200"></canvas>
     <canvas id="editorCanvas" width="200" height="200"></canvas>
     <div id="coords">x:0 y:0</div>
   </div>
 </div>
 
 <div id="info-bar">
-  Drag to draw · Shift+drag erases · Ctrl+Z undo · Right-click: pick color · Canvas is 200×200 px (each pixel = 10×10 game units)
+  Drag to draw · Shift+drag erases · Ctrl+Z undo · Right-click: pick color · Fixed 50×50 game-unit grid snapping
 </div>
 
 <!-- SAVE MODAL -->
@@ -284,8 +288,10 @@
 const TILE_COLORS = {
   empty:     [200, 184, 122,   0],   // transparent — background.png shows through
   brick:     [155,  90,  26, 255],   // brown wall
+  metal:     [125, 133, 144, 255],   // metal wall (unbreakable)
   water:     [ 30, 111, 191, 255],   // water (exported as brick)
   bush:      [ 46, 125,  50, 255],   // dark green bush
+  healbox:   [255,  77, 210, 255],   // heal box spawn marker
   red:       [255,   0,   0, 255],   // red spawn
   blue:      [  0,   0, 255, 255],   // blue spawn
   green:     [  0, 200,   0, 255],   // green spawn
@@ -297,12 +303,16 @@ const TILE_COLORS = {
 const MAP_W = 200;
 const MAP_H = 200;
 const DISPLAY_SCALE = 3;   // canvas CSS scale; actual canvas is 200×200
+const GRID_SIZE_UNITS = 50;
+const GRID_STEP_PX = GRID_SIZE_UNITS / 10; // 1 editor px = 10 game units
 
 // ─── State ──────────────────────────────────────────────────────────────────
 const canvas   = document.getElementById('editorCanvas');
 const ctx      = canvas.getContext('2d');
 const bgCanvas = document.getElementById('bgCanvas');
 const bgCtx    = bgCanvas.getContext('2d');
+const gridCanvas = document.getElementById('gridCanvas');
+const gridCtx    = gridCanvas.getContext('2d');
 
 let currentMode = 'showdown';
 
@@ -319,7 +329,6 @@ const MAX_HIST = 40;
 
 let currentTile  = 'empty';
 let currentTool  = 'pencil';
-let brushSz      = 3;
 let isDrawing    = false;
 let rectStart    = null;       // for rect tool
 let rectSnapshot = null;       // pre-rect snapshot for live preview
@@ -329,6 +338,10 @@ canvas.style.width    = (MAP_W * DISPLAY_SCALE) + 'px';
 canvas.style.height   = (MAP_H * DISPLAY_SCALE) + 'px';
 bgCanvas.style.width  = (MAP_W * DISPLAY_SCALE) + 'px';
 bgCanvas.style.height = (MAP_H * DISPLAY_SCALE) + 'px';
+gridCanvas.style.width  = (MAP_W * DISPLAY_SCALE) + 'px';
+gridCanvas.style.height = (MAP_H * DISPLAY_SCALE) + 'px';
+
+drawGridOverlay();
 
 fillRect(0, 0, MAP_W, MAP_H, 'empty');
 commitToCanvas();
@@ -369,7 +382,7 @@ function fillRect(x0, y0, x1, y1, tile) {
 function strokeRect(x0, y0, x1, y1, tile) {
   const xMin = Math.min(x0, x1), xMax = Math.max(x0, x1);
   const yMin = Math.min(y0, y1), yMax = Math.max(y0, y1);
-  const t = Math.max(1, Math.floor(brushSz / 2));
+  const t = 1;
   // top & bottom edges
   for (let x = xMin; x <= xMax; x++) {
     for (let k = 0; k < t; k++) {
@@ -408,15 +421,86 @@ function floodFill(sx, sy, tile) {
   }
 }
 
-function drawBrush(x, y, tile) {
-  const half = Math.floor(brushSz / 2);
-  for (let dy = -half; dy <= half; dy++)
-    for (let dx = -half; dx <= half; dx++)
-      setPixel(x + dx, y + dy, tile);
+function drawGridCell(x, y, tile) {
+  const xMax = Math.min(MAP_W - 1, x + GRID_STEP_PX - 1);
+  const yMax = Math.min(MAP_H - 1, y + GRID_STEP_PX - 1);
+  fillRect(x, y, xMax, yMax, tile);
+}
+
+function drawGridOverlay() {
+  gridCtx.clearRect(0, 0, MAP_W, MAP_H);
+  gridCtx.save();
+  gridCtx.strokeStyle = 'rgba(255,255,255,0.20)';
+  gridCtx.lineWidth = 0.5;
+  for (let x = 0; x <= MAP_W; x += GRID_STEP_PX) {
+    gridCtx.beginPath();
+    gridCtx.moveTo(x + 0.5, 0);
+    gridCtx.lineTo(x + 0.5, MAP_H);
+    gridCtx.stroke();
+  }
+  for (let y = 0; y <= MAP_H; y += GRID_STEP_PX) {
+    gridCtx.beginPath();
+    gridCtx.moveTo(0, y + 0.5);
+    gridCtx.lineTo(MAP_W, y + 0.5);
+    gridCtx.stroke();
+  }
+  gridCtx.restore();
 }
 
 function commitToCanvas() {
   ctx.putImageData(pixelData, 0, 0);
+  drawMarkerOverlay();
+}
+
+function drawMarkerOverlay() {
+  const spawnStyles = {
+    red: '#ff4a4a',
+    blue: '#4a7dff',
+    green: '#33cc66',
+    yellow: '#ffd447'
+  };
+  const centerOffset = Math.floor(GRID_STEP_PX / 2);
+
+  for (let gy = 0; gy < MAP_H; gy += GRID_STEP_PX) {
+    for (let gx = 0; gx < MAP_W; gx += GRID_STEP_PX) {
+      const cx = gx + centerOffset;
+      const cy = gy + centerOffset;
+      const tile = getPixelTile(cx, cy);
+
+      if (spawnStyles[tile]) {
+        // Render team spawns as circles for clearer map planning
+        ctx.save();
+        ctx.fillStyle = spawnStyles[tile];
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.arc(cx, cy, Math.max(1.2, GRID_STEP_PX * 0.38), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      } else if (tile === 'healbox') {
+        // Draw a small crate-style marker with a white cross
+        const s = Math.max(2, GRID_STEP_PX - 2);
+        const hx = cx - s / 2;
+        const hy = cy - s / 2;
+        ctx.save();
+        ctx.fillStyle = '#c43aac';
+        ctx.fillRect(hx, hy, s, s);
+        ctx.strokeStyle = '#ffd9f6';
+        ctx.lineWidth = 0.8;
+        ctx.strokeRect(hx, hy, s, s);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(cx - s * 0.22, cy);
+        ctx.lineTo(cx + s * 0.22, cy);
+        ctx.moveTo(cx, cy - s * 0.22);
+        ctx.lineTo(cx, cy + s * 0.22);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
 }
 
 // ─── History ────────────────────────────────────────────────────────────────
@@ -441,9 +525,15 @@ function canvasPos(e) {
   const scaleY = MAP_H / rect.height;
   const clientX = e.touches ? e.touches[0].clientX : e.clientX;
   const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  const rawX = Math.floor((clientX - rect.left) * scaleX);
+  const rawY = Math.floor((clientY - rect.top)  * scaleY);
+  const snapX = Math.max(0, Math.min(MAP_W - 1, Math.floor(rawX / GRID_STEP_PX) * GRID_STEP_PX));
+  const snapY = Math.max(0, Math.min(MAP_H - 1, Math.floor(rawY / GRID_STEP_PX) * GRID_STEP_PX));
   return {
-    x: Math.floor((clientX - rect.left) * scaleX),
-    y: Math.floor((clientY - rect.top)  * scaleY)
+    x: snapX,
+    y: snapY,
+    rawX,
+    rawY
   };
 }
 
@@ -472,14 +562,14 @@ canvas.addEventListener('mousedown', (e) => {
 
   pushHistory();
   const tile = (e.shiftKey || currentTool === 'erase') ? 'empty' : currentTile;
-  drawBrush(x, y, tile);
+  drawGridCell(x, y, tile);
   commitToCanvas();
 });
 
 canvas.addEventListener('mousemove', (e) => {
-  const {x, y} = canvasPos(e);
+  const {x, y, rawX, rawY} = canvasPos(e);
   document.getElementById('coords').textContent =
-    `x:${x} y:${y}  (game: ${x*10}, ${y*10})`;
+    `x:${rawX} y:${rawY}  |  snapped: ${x},${y}  (game: ${x*10}, ${y*10})`;
 
   if (!isDrawing) return;
   if (currentTool === 'rect') {
@@ -491,7 +581,7 @@ canvas.addEventListener('mousemove', (e) => {
     return;
   }
   const tile = (e.shiftKey || currentTool === 'erase') ? 'empty' : currentTile;
-  drawBrush(x, y, tile);
+  drawGridCell(x, y, tile);
   commitToCanvas();
 });
 
@@ -550,12 +640,6 @@ function setMode(mode) {
     setColor('empty');
   }
 }
-
-// Brush size
-document.getElementById('brushSize').addEventListener('input', function() {
-  brushSz = parseInt(this.value);
-  document.getElementById('brushSizeLabel').textContent = brushSz;
-});
 
 // Keyboard shortcuts
 window.addEventListener('keydown', e => {
