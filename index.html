@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>Nexus Striker</title>
+    <title>Mecha Striker</title>
     <style>
         body, html {
             margin: 0;
@@ -586,7 +586,7 @@
 </head>
 <body>
     <div class="guide">
-        <h3 style="color: #ffcc00; margin: 0 0 4px;">Welcome to Nexus Striker!</h3>
+        <h3 style="color: #ffcc00; margin: 0 0 4px;">Welcome to Mecha Striker!</h3>
         <p style="margin: 0; line-height: 1.6;">
             🎮 Arrow keys / WASD / white joystick to move<br>
             🖱️ Click / red joystick / tap to shoot<br>
@@ -1798,6 +1798,12 @@
                     c.hp -= laser.damage || 1;
                     if (c.hp <= 0) {
                         spawnPickupAt(c.x + c.size / 2, c.y + c.size / 2);
+                        // Also spawn a heal pack
+                        const offsetAngle = Math.random() * Math.PI * 2;
+                        const offsetDist = 40;
+                        const healX = c.x + c.size / 2 + Math.cos(offsetAngle) * offsetDist;
+                        const healY = c.y + c.size / 2 + Math.sin(offsetAngle) * offsetDist;
+                        pickupItems.push({ x: healX - 18, y: healY - 18, size: 36, type: 'heal' });
                         const fixedSpawn = (c.spawnX !== undefined && c.spawnY !== undefined)
                             ? { x: c.spawnX, y: c.spawnY }
                             : null;
