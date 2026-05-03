@@ -238,11 +238,14 @@
             left: 50%;
             transform: translateX(-50%);
             display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
             gap: 10px;
             z-index: 10;
             background: rgba(0,0,0,0.7);
             padding: 10px;
             border-radius: 10px;
+            max-width: min(96vw, 920px);
         }
 
         .btn {
@@ -325,6 +328,64 @@
             width: 100vw;
             height: 100vh;
             display: block;
+        }
+
+        @media (max-width: 900px) {
+            .guide {
+                top: 6px;
+                max-width: min(95vw, 420px);
+                font-size: 11px;
+                padding: 6px 10px;
+            }
+
+            #coins-display {
+                top: 8px;
+                left: 8px;
+                font-size: 13px;
+                padding: 6px 8px;
+                max-width: 48vw;
+                line-height: 1.35;
+            }
+
+            #daily-btn {
+                top: 8px;
+                right: 8px;
+                font-size: 12px;
+                padding: 5px 9px;
+            }
+
+            #history-btn {
+                top: 40px;
+                right: 8px;
+                font-size: 11px;
+                padding: 4px 8px;
+            }
+
+            #account-chip {
+                top: 72px !important;
+                max-width: 94vw;
+                padding: 6px 8px;
+            }
+
+            .menu {
+                bottom: 10px;
+                width: min(95vw, 640px);
+                max-height: 50vh;
+                overflow-y: auto;
+                gap: 8px;
+                padding: 8px;
+            }
+
+            .menu .btn {
+                padding: 9px 10px;
+                font-size: 13px;
+            }
+
+            #char-showcase {
+                width: 100%;
+                min-width: 0 !important;
+                padding: 8px 10px !important;
+            }
         }
 
         #joystick-container {
@@ -631,7 +692,58 @@
         </div>
     </div>
 
-    <div id="coins-display">💰 Coins: 500<br>🏅 Medals: 0<br>🎖️ Credits: 0</div>
+    <div id="coins-display">💰 Coins: 0<br>🏅 Medals: 0<br>🎖️ Credits: 0</div>
+
+    <div id="account-chip" style="position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:11; background:rgba(0,0,0,0.76); border:1px solid #44ccff; border-radius:10px; padding:7px 10px; display:flex; align-items:center; gap:8px;">
+        <span id="account-chip-name" style="font-size:13px; color:#9fe9ff;">Guest</span>
+        <button id="account-logout-btn" style="background:#333; color:#ddd; border:1px solid #555; border-radius:7px; padding:4px 8px; cursor:pointer; font-size:12px;">Logout</button>
+    </div>
+
+    <div id="account-auth-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:1400; align-items:center; justify-content:center;">
+        <div style="width:min(420px,92vw); background:#121724; border:2px solid #2b8bb8; border-radius:16px; padding:18px 18px 14px; color:#fff;">
+            <h2 style="margin:0 0 6px; color:#8de3ff; text-align:center;">Account</h2>
+            <p style="margin:0 0 12px; color:#9aa8b6; font-size:12px; text-align:center;">Use your name + password (local-only for now, no email required).</p>
+
+            <div style="display:flex; gap:8px; margin-bottom:10px;">
+                <button id="account-tab-login" class="btn" style="flex:1; background:#2b8bb8; color:#001822;">Login</button>
+                <button id="account-tab-register" class="btn" style="flex:1; background:#203040; color:#9fe9ff;">Register</button>
+            </div>
+
+            <div id="account-auth-msg" style="min-height:18px; color:#ff9da0; font-size:12px; text-align:center; margin-bottom:8px;"></div>
+
+            <input id="account-username" type="text" maxlength="20" placeholder="Your name" style="width:100%; margin:5px 0; padding:9px 10px; border-radius:9px; border:1px solid #3c4a60; background:#0f1520; color:#fff; box-sizing:border-box;" />
+            <input id="account-password" type="password" maxlength="40" placeholder="Password" style="width:100%; margin:5px 0; padding:9px 10px; border-radius:9px; border:1px solid #3c4a60; background:#0f1520; color:#fff; box-sizing:border-box;" />
+
+            <button id="account-submit-btn" class="btn" style="width:100%; margin-top:10px; background:#39b7e6; color:#042033;">Login</button>
+        </div>
+    </div>
+
+    <div id="profile-panel" class="modal-panel" style="width:760px; max-width:95vw;">
+        <h2>👤 Profile</h2>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-top:8px;">
+            <div style="background:rgba(255,255,255,0.04); border:1px solid #2e3a4a; border-radius:10px; padding:10px;">
+                <div style="font-size:12px; color:#9ab0c9;">Username</div>
+                <div id="profile-username" style="font-size:18px; color:#8de3ff; font-weight:bold;"></div>
+            </div>
+            <div style="background:rgba(255,255,255,0.04); border:1px solid #2e3a4a; border-radius:10px; padding:10px;">
+                <div style="font-size:12px; color:#9ab0c9;">Max Winstreak Player</div>
+                <div id="profile-max-winstreak" style="font-size:18px; color:#ffcc00; font-weight:bold;"></div>
+            </div>
+            <div style="background:rgba(255,255,255,0.04); border:1px solid #2e3a4a; border-radius:10px; padding:10px;">
+                <div style="font-size:12px; color:#9ab0c9; margin-bottom:6px;">Avatar Icon</div>
+                <div id="profile-avatar-options" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+            </div>
+            <div style="background:rgba(255,255,255,0.04); border:1px solid #2e3a4a; border-radius:10px; padding:10px;">
+                <div style="font-size:12px; color:#9ab0c9; margin-bottom:6px;">Favorite Player</div>
+                <select id="profile-favorite-player" style="width:100%; background:#121a2a; color:#fff; border:1px solid #36465f; border-radius:8px; padding:8px;"></select>
+            </div>
+        </div>
+        <div style="margin-top:14px; background:rgba(255,255,255,0.03); border:1px solid #2e3a4a; border-radius:10px; padding:10px;">
+            <h3 style="margin:0 0 8px; color:#9fdfff; font-size:16px;">🏅 Medals Per All Players</h3>
+            <div id="profile-medals-list" style="max-height:260px; overflow:auto;"></div>
+        </div>
+        <button class="btn modal-close" id="close-profile-panel" style="margin-top:12px;">Close</button>
+    </div>
 
     <!-- Daily Challenges button -->
     <button id="daily-btn" onclick="openDailyChallenges()">📋 Daily <span class="badge" id="daily-badge" style="display:none">!</span></button>
@@ -768,6 +880,7 @@
         </div>
         <button class="btn" id="game-mode-btn">🎮 Game Modes</button>
         <button class="btn" id="start-btn">⚔️ Battle!</button>
+        <button class="btn" id="profile-btn" style="background:#1f2a3e; border:1px solid #8de3ff; color:#8de3ff;">👤 Profile</button>
         <button class="btn" id="credits-btn" style="background:#1a3a3a; border:1px solid #4ae8d8; color:#4ae8d8;">🎖️ Credits</button>
         <button class="btn" id="switch-player-btn"> Players</button>
     </div>
@@ -842,6 +955,23 @@
         let damagePopups = [];
         let screenShakeTimer = 0;
         let screenShakeStrength = 0;
+        let healPickupEffects = [];
+        let gasWisps = [];
+
+        function spawnHealPickupEffect(x, y, burst = 1) {
+            for (let i = 0; i < 7 + burst * 4; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 0.8 + Math.random() * (1.4 + burst * 0.35);
+                healPickupEffects.push({
+                    x,
+                    y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 0.4,
+                    size: 4 + Math.random() * 4,
+                    timer: 26 + Math.floor(Math.random() * 16)
+                });
+            }
+        }
 
         // Migrate old playerXP key to playerMedals
         if (localStorage.getItem('playerXP') !== null && localStorage.getItem('playerMedals') === null) {
@@ -858,7 +988,7 @@
         }
 
         // Game state (persisted via localStorage)
-        let playerCoins = parseInt(localStorage.getItem('playerCoins') ?? '500');
+        let playerCoins = parseInt(localStorage.getItem('playerCoins') ?? '0');
         let unlockedNexus = JSON.parse(localStorage.getItem('unlockedNexus') ?? '["default"]');
         let selectedNexusId = localStorage.getItem('selectedNexusId') ?? 'default';
         let playerMedals = parseInt(localStorage.getItem('playerMedals') ?? '0');
@@ -868,6 +998,317 @@
         let playerCredits = parseInt(localStorage.getItem('playerCredits') ?? '0');
         let playerPowerLevels = JSON.parse(localStorage.getItem('playerPowerLevels') ?? '{}');
         let unlockedGadgets = JSON.parse(localStorage.getItem('unlockedGadgets') ?? '["default"]');
+        let playerMedalsByNexus = JSON.parse(localStorage.getItem('playerMedalsByNexus') ?? '{}');
+        let claimedNexusMedalMilestones = JSON.parse(localStorage.getItem('claimedNexusMedalMilestones') ?? '{}');
+        let accountAuthMode = 'login';
+        let currentAccount = null;
+        const PROFILE_AVATAR_ICONS = ['😀', '😎', '🤖', '🔥', '⚡', '🛡️', '👑', '🐍', '🦾', '🎯', '🚀', '⭐'];
+
+        function normalizeUsername(value) {
+            return (value || '').trim().toLowerCase();
+        }
+
+        function getAccountsStore() {
+            return JSON.parse(localStorage.getItem('nexusAccounts') ?? '{}');
+        }
+
+        function saveAccountsStore(store) {
+            localStorage.setItem('nexusAccounts', JSON.stringify(store));
+        }
+
+        function getCurrentProfile() {
+            return currentAccount?.profile || null;
+        }
+
+        function updateAccountChip() {
+            const chipName = document.getElementById('account-chip-name');
+            const profile = getCurrentProfile();
+            const avatar = profile?.avatarIcon || '👤';
+            chipName.textContent = profile ? `${avatar} ${profile.username}` : 'Guest';
+        }
+
+        function saveCurrentAccountProfile() {
+            const profile = getCurrentProfile();
+            if (!profile) return;
+            const key = normalizeUsername(profile.username);
+            const store = getAccountsStore();
+            if (!store[key]) return;
+            store[key].profile = profile;
+            saveAccountsStore(store);
+        }
+
+        function setCurrentAccount(usernameKey) {
+            const store = getAccountsStore();
+            const acc = store[usernameKey] || null;
+            currentAccount = acc;
+            if (acc) {
+                localStorage.setItem('nexusCurrentAccount', usernameKey);
+                acc.profile.lastLoginAt = Date.now();
+                store[usernameKey] = acc;
+                saveAccountsStore(store);
+            } else {
+                localStorage.removeItem('nexusCurrentAccount');
+            }
+            updateAccountChip();
+        }
+
+        function setAccountAuthMode(mode) {
+            accountAuthMode = mode === 'register' ? 'register' : 'login';
+            const loginTab = document.getElementById('account-tab-login');
+            const registerTab = document.getElementById('account-tab-register');
+            const submitBtn = document.getElementById('account-submit-btn');
+
+            const loginActive = accountAuthMode === 'login';
+            loginTab.style.background = loginActive ? '#2b8bb8' : '#203040';
+            loginTab.style.color = loginActive ? '#001822' : '#9fe9ff';
+            registerTab.style.background = loginActive ? '#203040' : '#2b8bb8';
+            registerTab.style.color = loginActive ? '#9fe9ff' : '#001822';
+            submitBtn.textContent = loginActive ? 'Login' : 'Create Account';
+            document.getElementById('account-auth-msg').textContent = '';
+        }
+
+        function setAccountAuthMessage(text, ok = false) {
+            const el = document.getElementById('account-auth-msg');
+            el.style.color = ok ? '#7df7ab' : '#ff9da0';
+            el.textContent = text || '';
+        }
+
+        function showAccountOverlay() {
+            document.getElementById('account-auth-overlay').style.display = 'flex';
+            document.getElementById('account-username').focus();
+        }
+
+        function hideAccountOverlay() {
+            document.getElementById('account-auth-overlay').style.display = 'none';
+        }
+
+        function registerAccount(username, password) {
+            const store = getAccountsStore();
+            const key = normalizeUsername(username);
+            const rawName = (username || '').trim();
+            if (!key || key.length < 3) return { ok: false, message: 'Name must be at least 3 characters.' };
+            if (password.length < 4) return { ok: false, message: 'Password must be at least 4 characters.' };
+            if (store[key]) return { ok: false, message: 'Name already exists.' };
+
+            store[key] = {
+                username: key,
+                password,
+                profile: {
+                    username: rawName,
+                    bio: '',
+                    country: '',
+                    favoriteNexus: 'default',
+                    avatarIcon: '😀',
+                    avatarColor: '#44ccff',
+                    createdAt: Date.now(),
+                    lastLoginAt: Date.now(),
+                    profileVersion: 1
+                }
+            };
+            saveAccountsStore(store);
+            return { ok: true, key };
+        }
+
+        function loginAccount(username, password) {
+            const store = getAccountsStore();
+            const key = normalizeUsername(username);
+            const acc = store[key];
+            if (!acc) return { ok: false, message: 'Account not found.' };
+            if (acc.password !== password) return { ok: false, message: 'Wrong password.' };
+            return { ok: true, key };
+        }
+
+        function initAccountSystem() {
+            const loginTab = document.getElementById('account-tab-login');
+            const registerTab = document.getElementById('account-tab-register');
+            const submitBtn = document.getElementById('account-submit-btn');
+            const logoutBtn = document.getElementById('account-logout-btn');
+
+            loginTab.addEventListener('click', () => setAccountAuthMode('login'));
+            registerTab.addEventListener('click', () => setAccountAuthMode('register'));
+
+            submitBtn.addEventListener('click', () => {
+                const username = document.getElementById('account-username').value.trim();
+                const password = document.getElementById('account-password').value;
+
+                if (accountAuthMode === 'register') {
+                    const r = registerAccount(username, password);
+                    if (!r.ok) return setAccountAuthMessage(r.message);
+                    setCurrentAccount(r.key);
+                    setAccountAuthMessage('Account created!', true);
+                    hideAccountOverlay();
+                    return;
+                }
+
+                const r = loginAccount(username, password);
+                if (!r.ok) return setAccountAuthMessage(r.message);
+                setCurrentAccount(r.key);
+                setAccountAuthMessage('Logged in!', true);
+                hideAccountOverlay();
+            });
+
+            logoutBtn.addEventListener('click', () => {
+                setCurrentAccount(null);
+                showAccountOverlay();
+            });
+
+            setAccountAuthMode('login');
+            const remembered = localStorage.getItem('nexusCurrentAccount');
+            if (remembered) setCurrentAccount(remembered);
+            else updateAccountChip();
+            if (!currentAccount) showAccountOverlay();
+        }
+
+        function getMaxWinStreakPlayerFromHistory() {
+            const history = loadMatchHistory().slice().reverse();
+            const streakByCharacter = {};
+            let bestCharacterId = null;
+            let bestStreak = 0;
+
+            for (const h of history) {
+                const cid = h.characterId || 'default';
+                if (h.result === 'win') {
+                    streakByCharacter[cid] = (streakByCharacter[cid] || 0) + 1;
+                    if (streakByCharacter[cid] > bestStreak) {
+                        bestStreak = streakByCharacter[cid];
+                        bestCharacterId = cid;
+                    }
+                } else {
+                    streakByCharacter[cid] = 0;
+                }
+            }
+
+            if (!bestCharacterId) return { name: 'No streak yet', streak: 0 };
+            return { name: playersData[bestCharacterId]?.name || bestCharacterId, streak: bestStreak };
+        }
+
+        function renderProfilePanel() {
+            const profile = getCurrentProfile();
+            if (!profile) return;
+
+            document.getElementById('profile-username').textContent = `${profile.avatarIcon || '😀'} ${profile.username}`;
+
+            const maxWs = getMaxWinStreakPlayerFromHistory();
+            document.getElementById('profile-max-winstreak').textContent = `${maxWs.name} (${maxWs.streak})`;
+
+            const avatarWrap = document.getElementById('profile-avatar-options');
+            avatarWrap.innerHTML = '';
+            PROFILE_AVATAR_ICONS.forEach(icon => {
+                const b = document.createElement('button');
+                const active = (profile.avatarIcon || '😀') === icon;
+                b.textContent = icon;
+                b.style.cssText = `width:34px; height:34px; border-radius:8px; border:1px solid ${active ? '#8de3ff' : '#384a60'}; background:${active ? '#24445a' : '#142034'}; color:#fff; cursor:pointer;`;
+                b.onclick = () => {
+                    profile.avatarIcon = icon;
+                    saveCurrentAccountProfile();
+                    updateAccountChip();
+                    renderProfilePanel();
+                };
+                avatarWrap.appendChild(b);
+            });
+
+            const favSelect = document.getElementById('profile-favorite-player');
+            favSelect.innerHTML = '';
+            Object.values(playersData).forEach(pd => {
+                const opt = document.createElement('option');
+                opt.value = pd.id;
+                opt.textContent = pd.name;
+                favSelect.appendChild(opt);
+            });
+            favSelect.value = profile.favoriteNexus && playersData[profile.favoriteNexus] ? profile.favoriteNexus : 'default';
+            favSelect.onchange = () => {
+                profile.favoriteNexus = favSelect.value;
+                saveCurrentAccountProfile();
+            };
+
+            const medalsEntries = Object.values(playersData)
+                .map(pd => ({ id: pd.id, name: pd.name, medals: getNexusMedals(pd.id) }))
+                .sort((a, b) => b.medals - a.medals || a.name.localeCompare(b.name));
+
+            const medalsList = document.getElementById('profile-medals-list');
+            medalsList.innerHTML = medalsEntries.map((m, i) => `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 8px; border-radius:8px; margin:4px 0; background:${i === 0 ? 'rgba(255,204,0,0.14)' : 'rgba(255,255,255,0.02)'}; border:1px solid ${i === 0 ? '#8f7a2f' : '#2a3545'};">
+                    <span style="color:#e6f3ff; font-size:13px;">${m.name}</span>
+                    <span style="color:#ffcc66; font-weight:bold; font-size:13px;">🏅 ${m.medals}</span>
+                </div>
+            `).join('');
+        }
+
+        function initProfilePanel() {
+            document.getElementById('profile-btn').addEventListener('click', () => {
+                if (!currentAccount) {
+                    showAccountOverlay();
+                    return;
+                }
+                renderProfilePanel();
+                document.getElementById('profile-panel').style.display = 'block';
+            });
+
+            document.getElementById('close-profile-panel').addEventListener('click', () => {
+                document.getElementById('profile-panel').style.display = 'none';
+            });
+        }
+
+        const NEXUS_MEDAL_MILESTONES = [25, 50, 100];
+
+        function getNexusMedals(playerId) {
+            return Math.max(0, playerMedalsByNexus[playerId] || 0);
+        }
+
+        function getNextNexusMedalMilestone(playerId) {
+            const medals = getNexusMedals(playerId);
+            for (const m of NEXUS_MEDAL_MILESTONES) {
+                if (medals < m) return m;
+            }
+            return null;
+        }
+
+        function isNexusMedalMilestoneClaimed(playerId, milestone) {
+            const claimed = claimedNexusMedalMilestones[playerId] || [];
+            return claimed.includes(milestone);
+        }
+
+        function markNexusMedalMilestoneClaimed(playerId, milestone) {
+            if (!claimedNexusMedalMilestones[playerId]) claimedNexusMedalMilestones[playerId] = [];
+            if (!claimedNexusMedalMilestones[playerId].includes(milestone)) {
+                claimedNexusMedalMilestones[playerId].push(milestone);
+            }
+        }
+
+        function claimNexusMedalMilestones(playerId) {
+            const medals = getNexusMedals(playerId);
+            const messages = [];
+            const playerName = playersData[playerId]?.name || playerId;
+
+            for (const milestone of NEXUS_MEDAL_MILESTONES) {
+                if (medals < milestone) continue;
+                if (isNexusMedalMilestoneClaimed(playerId, milestone)) continue;
+
+                if (milestone === 25) {
+                    const candidateGadgets = getCharacterGadgetKeys(playerId)
+                        .filter(k => gadgetData[k] && !unlockedGadgets.includes(k));
+                    if (candidateGadgets.length > 0) {
+                        unlockedGadgets.push(candidateGadgets[0]);
+                        messages.push(`🏅 ${playerName} Medal ${milestone}: unlocked gadget ${gadgetData[candidateGadgets[0]].name}!`);
+                    } else {
+                        playerCoins += 300;
+                        messages.push(`🏅 ${playerName} Medal ${milestone}: +300 coins!`);
+                    }
+                } else if (milestone === 50) {
+                    playerCoins += 700;
+                    energySparks += 150;
+                    messages.push(`🏅 ${playerName} Medal ${milestone}: +700 coins and +150 sparks!`);
+                } else if (milestone === 100) {
+                    playerCredits += 10;
+                    energySparks += 500;
+                    messages.push(`🏅 ${playerName} Medal ${milestone}: +10 credits and +500 sparks!`);
+                }
+
+                markNexusMedalMilestoneClaimed(playerId, milestone);
+            }
+
+            return messages;
+        }
 
         // Upgrade cost table: [sparks, coins] per level, indexed by rarity
         const upgradeCosts = {
@@ -919,27 +1360,42 @@
             localStorage.setItem('playerCredits', playerCredits);
             localStorage.setItem('playerPowerLevels', JSON.stringify(playerPowerLevels));
             localStorage.setItem('unlockedGadgets', JSON.stringify(unlockedGadgets));
+            localStorage.setItem('playerMedalsByNexus', JSON.stringify(playerMedalsByNexus));
+            localStorage.setItem('claimedNexusMedalMilestones', JSON.stringify(claimedNexusMedalMilestones));
             localStorage.setItem('claimedLevelRewards', JSON.stringify(levelRewards.filter(r => r.claimed).map(r => r.level)));
         }
 
         let levelUpMessage = null; // { text, timer }
         let healMessage = null;    // { text, timer }
 
-        function awardMedals(amount) {
+        function awardMedals(amount, characterId = null) {
             const oldLevel = Math.floor(playerMedals / 10) + 1;
             playerMedals = Math.max(0, playerMedals + amount);
             playerLevel = Math.floor(playerMedals / 10) + 1;
+            const medalCharacterId = characterId || player?.characterId || selectedNexusId || 'default';
+            playerMedalsByNexus[medalCharacterId] = Math.max(0, getNexusMedals(medalCharacterId) + amount);
+            const milestoneMessages = claimNexusMedalMilestones(medalCharacterId);
             if (playerLevel > oldLevel) {
                 levelUpMessage = { text: `Level Up! Level ${playerLevel}`, timer: 180 };
             }
             saveProgress();
             showCoins();
+            if (milestoneMessages.length > 0) {
+                showLootboxPopup(milestoneMessages.join('\n'));
+            }
         }
         let currentGameMode = 'showdown';
 
+        // Global combat scaling so HP numbers are in the thousands while pacing stays similar.
+        const COMBAT_STAT_SCALE = 100;
+        const ITEM_HEAL_AMOUNT = 30 * COMBAT_STAT_SCALE;
+        const ITEM_SHIELD_AMOUNT = 30 * COMBAT_STAT_SCALE;
+        const PASSIVE_REGEN_AMOUNT = 1 * COMBAT_STAT_SCALE;
+        const POISON_TICK_DAMAGE = 1 * COMBAT_STAT_SCALE;
+
         // Poison gas zone (Showdown only)
         let poisonZone = { x: 0, y: 0, w: MAP_WIDTH, h: MAP_HEIGHT, shrinking: false, timer: 0, phase: 0 };
-        const POISON_DAMAGE = 2;
+        const POISON_DAMAGE = 2 * COMBAT_STAT_SCALE;
         const POISON_TICK_INTERVAL = 30; // frames between damage ticks
         const POISON_SHRINK_DELAY = 300; // ~5 seconds before first shrink
         const POISON_SHRINK_SPEED = 0.15; // pixels per frame per side
@@ -1293,7 +1749,7 @@
                 laserDamage: 4,
                 size: 60,
                 laserRange: 550,
-                creditCost: 500,
+                creditCost: 1000,
                 rarity: 'legendary',
                 attackType: 'spread',        // 3-shot spread punch
                 superType: 'rockrush',       // charge forward, massive damage to everything in path
@@ -1476,7 +1932,7 @@
                 camera.x = Math.max(0, Math.min(camera.x, MAP_WIDTH - camera.width));
                 camera.y = Math.max(0, Math.min(camera.y, MAP_HEIGHT - camera.height));
                 screenShakeTimer--;
-                screenShakeStrength = Math.max(0.6, screenShakeStrength * 0.82);
+                screenShakeStrength = Math.max(1.2, screenShakeStrength * 0.9);
             }
         }
 
@@ -1506,8 +1962,8 @@
             if (damagePopups.length > 80) damagePopups.shift();
 
             if (target === player || target.isHuman) {
-                screenShakeTimer = Math.max(screenShakeTimer, 8);
-                screenShakeStrength = Math.min(8, Math.max(screenShakeStrength, 2 + amount * 0.25));
+                screenShakeTimer = Math.max(screenShakeTimer, 14);
+                screenShakeStrength = Math.min(18, Math.max(screenShakeStrength, 6 + Math.sqrt(amount) * 0.08));
             }
         }
 
@@ -1831,6 +2287,9 @@
                 const item = pickupItems[i];
                 if (entity.x < item.x + item.size && entity.x + entity.size > item.x &&
                     entity.y < item.y + item.size && entity.y + entity.size > item.y) {
+                    if (item.type === 'heal') {
+                        spawnHealPickupEffect(entity.x + entity.size / 2, entity.y + entity.size / 2);
+                    }
                     if (entity.items.length < 3) {
                         entity.items.push(item.type);
                         pickupItems.splice(i, 1);
@@ -1852,9 +2311,12 @@
             if (!entity.items || entity.items.length === 0) return;
             const type = entity.items.shift();
             if (type === 'heal') {
-                const amount = 30;
+                const amount = ITEM_HEAL_AMOUNT;
                 entity.currentHp = Math.min(entity.maxHp, entity.currentHp + amount);
-                if (entity.isHuman) healMessage = { text: `+${amount} HP!`, timer: 90 };
+                entity._speedTimer = Math.max(entity._speedTimer || 0, 240);
+                entity._damageTimer = Math.max(entity._damageTimer || 0, 180);
+                spawnHealPickupEffect(entity.x + entity.size / 2, entity.y + entity.size / 2, 2);
+                if (entity.isHuman) healMessage = { text: `+${amount} HP + Speed + Damage!`, timer: 110 };
                 entity.healingReceived += amount;
             } else if (type === 'speed') {
                 entity._speedTimer = 600; // 10 seconds
@@ -1863,7 +2325,7 @@
                 entity._damageTimer = 600;
                 if (entity.isHuman) healMessage = { text: '🔥 Damage Boost!', timer: 90 };
             } else if (type === 'shield') {
-                entity._shieldHp = 30;
+                entity._shieldHp = ITEM_SHIELD_AMOUNT;
                 if (entity.isHuman) healMessage = { text: '🛡️ Shield Up!', timer: 90 };
             }
         }
@@ -2522,9 +2984,9 @@
                 y: playerPos.y,
                 isHuman: true,
                 team: playerTeam,
-                maxHp: Math.round(playerData.hp * playerBonus),
-                currentHp: Math.round(playerData.hp * playerBonus),
-                laserDamage: Math.round(playerData.laserDamage * playerBonus),
+                maxHp: Math.round(playerData.hp * playerBonus * COMBAT_STAT_SCALE),
+                currentHp: Math.round(playerData.hp * playerBonus * COMBAT_STAT_SCALE),
+                laserDamage: Math.round(playerData.laserDamage * playerBonus * COMBAT_STAT_SCALE),
                 shootCooldown: 1,
                 healCooldown: 1,
                 regenCooldown: 0,
@@ -2575,8 +3037,9 @@
                     y: botPos.y,
                     isBot: true,
                     team: botTeam,
-                    maxHp: botData.hp,
-                    currentHp: botData.hp,
+                    maxHp: Math.round(botData.hp * COMBAT_STAT_SCALE),
+                    currentHp: Math.round(botData.hp * COMBAT_STAT_SCALE),
+                    laserDamage: Math.round(botData.laserDamage * COMBAT_STAT_SCALE),
                     vx: 0,
                     vy: 0,
                     shootCooldown: 0,
@@ -2614,6 +3077,8 @@
             // Reset super effects
             superEffects = [];
             snakeMinions = [];
+            healPickupEffects = [];
+            gasWisps = [];
 
             // Init poison zone for Showdown
             poisonZone = { x: 0, y: 0, w: MAP_WIDTH, h: MAP_HEIGHT, shrinking: false, timer: 0, phase: 0 };
@@ -3452,6 +3917,37 @@
             healMessage.timer--;
         }
 
+        function drawHealPickupEffects() {
+            if (!healPickupEffects.length) return;
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            for (let i = healPickupEffects.length - 1; i >= 0; i--) {
+                const fx = healPickupEffects[i];
+                fx.x += fx.vx;
+                fx.y += fx.vy;
+                fx.vy -= 0.018;
+                fx.timer--;
+                const alpha = Math.max(0, fx.timer / 40);
+                const sx = fx.x - camera.x;
+                const sy = fx.y - camera.y;
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = '#33ff8c';
+                ctx.shadowColor = '#14d85f';
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.arc(sx, sy, fx.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = Math.min(1, alpha + 0.15);
+                ctx.font = 'bold 12px Arial';
+                ctx.fillText('❤', sx, sy - 1);
+                ctx.globalAlpha = 1;
+                ctx.shadowBlur = 0;
+                if (fx.timer <= 0) healPickupEffects.splice(i, 1);
+            }
+            ctx.restore();
+        }
+
         function drawDamagePopups() {
             if (!damagePopups.length) return;
             ctx.save();
@@ -3620,7 +4116,7 @@
                     if (hasDamageShield(p)) return;
                     if (p.x < poisonZone.x || p.x + p.size > poisonZone.x + poisonZone.w ||
                         p.y < poisonZone.y || p.y + p.size > poisonZone.y + poisonZone.h) {
-                        const dmg = POISON_DAMAGE + poisonZone.phase;
+                        const dmg = POISON_DAMAGE + poisonZone.phase * COMBAT_STAT_SCALE;
                         p.currentHp -= dmg;
                         registerDamageFeedback(p, dmg, '#c26bff');
                         if (p.isHuman) {
@@ -3629,6 +4125,52 @@
                         }
                     }
                 });
+            }
+
+            const targetWispCount = 36;
+            if (gasWisps.length < targetWispCount && Math.random() < 0.45) {
+                const side = Math.floor(Math.random() * 4);
+                let x = poisonZone.x;
+                let y = poisonZone.y;
+                let vx = 0;
+                let vy = 0;
+                if (side === 0) {
+                    x = poisonZone.x + Math.random() * poisonZone.w;
+                    y = poisonZone.y - 6;
+                    vx = (Math.random() * 2 - 1) * 0.35;
+                    vy = -0.35 - Math.random() * 0.5;
+                } else if (side === 1) {
+                    x = poisonZone.x + poisonZone.w + 6;
+                    y = poisonZone.y + Math.random() * poisonZone.h;
+                    vx = 0.35 + Math.random() * 0.5;
+                    vy = (Math.random() * 2 - 1) * 0.35;
+                } else if (side === 2) {
+                    x = poisonZone.x + Math.random() * poisonZone.w;
+                    y = poisonZone.y + poisonZone.h + 6;
+                    vx = (Math.random() * 2 - 1) * 0.35;
+                    vy = 0.35 + Math.random() * 0.5;
+                } else {
+                    x = poisonZone.x - 6;
+                    y = poisonZone.y + Math.random() * poisonZone.h;
+                    vx = -0.35 - Math.random() * 0.5;
+                    vy = (Math.random() * 2 - 1) * 0.35;
+                }
+                gasWisps.push({
+                    x,
+                    y,
+                    vx,
+                    vy,
+                    size: 8 + Math.random() * 14,
+                    timer: 50 + Math.floor(Math.random() * 45)
+                });
+            }
+
+            for (let i = gasWisps.length - 1; i >= 0; i--) {
+                const w = gasWisps[i];
+                w.x += w.vx;
+                w.y += w.vy;
+                w.timer--;
+                if (w.timer <= 0) gasWisps.splice(i, 1);
             }
         }
 
@@ -3641,7 +4183,8 @@
             const zy = poisonZone.y - camera.y;
             const zw = poisonZone.w;
             const zh = poisonZone.h;
-            const pulse = 0.25 + Math.sin(Date.now() / 400) * 0.08;
+            const pulse = 0.24 + Math.sin(Date.now() / 380) * 0.09;
+            const borderPulse = 0.72 + Math.sin(Date.now() / 210) * 0.2;
 
             ctx.fillStyle = `rgba(120, 0, 180, ${pulse})`;
             // Top strip
@@ -3654,11 +4197,28 @@
             ctx.fillRect(zx + zw, zy, MAP_WIDTH - poisonZone.x - poisonZone.w, zh);
 
             // Safe zone border
-            ctx.strokeStyle = `rgba(180, 50, 255, 0.8)`;
+            ctx.strokeStyle = `rgba(190, 70, 255, ${borderPulse})`;
             ctx.lineWidth = 3;
             ctx.setLineDash([10, 5]);
+            ctx.lineDashOffset = -poisonZone.timer * 0.8;
             ctx.strokeRect(zx, zy, zw, zh);
             ctx.setLineDash([]);
+
+            // Drifting gas wisps around the safe-zone edge
+            for (const w of gasWisps) {
+                const alpha = Math.max(0, w.timer / 95);
+                const sx = w.x - camera.x;
+                const sy = w.y - camera.y;
+                ctx.globalAlpha = alpha * 0.7;
+                const g = ctx.createRadialGradient(sx, sy, 2, sx, sy, w.size);
+                g.addColorStop(0, 'rgba(205,120,255,0.75)');
+                g.addColorStop(1, 'rgba(120,0,180,0)');
+                ctx.fillStyle = g;
+                ctx.beginPath();
+                ctx.arc(sx, sy, w.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
             ctx.restore();
 
             // Warn player if outside zone
@@ -4048,7 +4608,6 @@
         function updateRespawns() {
             const isTeamMode = gameModes[currentGameMode] && gameModes[currentGameMode].teams;
             if (currentGameMode === 'elimination' || currentGameMode === 'showdown') return; // no respawns
-            const isBounty = currentGameMode === 'bounty';
 
             function setSafeRespawnPosition(p, desiredX, desiredY) {
                 let x = Math.max(0, Math.min(desiredX, MAP_WIDTH - p.size));
@@ -4076,16 +4635,6 @@
 
             for (let p of players) {
                 if (p.currentHp > 0 || !p.respawnTimer) continue;
-
-                // In team modes (except bounty), require a living teammate.
-                if (isTeamMode && !isBounty) {
-                    // Check if any living teammate exists
-                    const hasLivingTeammate = players.some(t => t !== p && t.team === p.team && t.currentHp > 0);
-                    if (!hasLivingTeammate) {
-                        p.respawnTimer = 0; // Can't respawn — all teammates dead
-                        continue;
-                    }
-                }
 
                 p.respawnTimer--;
 
@@ -4809,15 +5358,13 @@
 
             if (gameModes[currentGameMode].teams) {
                 const teams = gameModes[currentGameMode].teamNames;
-                // A team is eliminated only when ALL its members are dead
-                // and none can respawn (no living teammates = respawnTimer stopped)
+                // A team is eliminated only when everyone is dead AND no respawns are pending.
                 const teamsAlive = teams.filter(t => {
                     const teamMembers = players.filter(p => p.team === t);
                     if (teamMembers.length === 0) return false;
-                    // Team is alive only if at least one member is alive (hp > 0)
-                    // Dead members can only respawn while a living teammate exists,
-                    // so if all are dead the team is eliminated regardless of respawnTimer
-                    return teamMembers.some(p => p.currentHp > 0);
+                    const hasAliveMember = teamMembers.some(p => p.currentHp > 0);
+                    if (hasAliveMember) return true;
+                    return teamMembers.some(p => p.respawnTimer > 0);
                 });
 
                 if (teamsAlive.length === 1) {
@@ -5140,8 +5687,8 @@
                             x: cx + Math.cos(angle) * spawnDist,
                             y: cy + Math.sin(angle) * spawnDist,
                             size: 20,
-                            hp: 5,
-                            damage: 2,
+                            hp: 5 * COMBAT_STAT_SCALE,
+                            damage: 2 * COMBAT_STAT_SCALE,
                             speed: 3.5,
                             life: 1080,
                             attackCooldown: Math.floor(Math.random() * 20)
@@ -5272,7 +5819,7 @@
                     break;
                 }
                 case 'boboshiros':
-                    p._shieldHp = (p._shieldHp || 0) + 20;
+                    p._shieldHp = (p._shieldHp || 0) + 20 * COMBAT_STAT_SCALE;
                     superEffects.push({ type: 'screamflash', x: cx, y: cy, radius: 45, timer: 20, shooter: p });
                     break;
                 case 'kafekauboy':
@@ -5363,12 +5910,12 @@
                 case 'fidas':
                     for (let i = 0; i < 2; i++) {
                         const a = (Math.PI * 2 / 2) * i;
-                        superEffects.push({ type: 'smokezone', x: cx + Math.cos(a) * 45, y: cy + Math.sin(a) * 45, radius: 55, timer: 120, tickTimer: 0, tickInterval: 30, damage: 1, shooter: p });
+                        superEffects.push({ type: 'smokezone', x: cx + Math.cos(a) * 45, y: cy + Math.sin(a) * 45, radius: 55, timer: 120, tickTimer: 0, tickInterval: 30, damage: COMBAT_STAT_SCALE, shooter: p });
                     }
                     p._speedTimer = 120;
                     break;
                 case 'pompakis':
-                    p._shieldHp = (p._shieldHp || 0) + 25;
+                    p._shieldHp = (p._shieldHp || 0) + 25 * COMBAT_STAT_SCALE;
                     p._speedTimer = 120;
                     superEffects.push({ type: 'screamflash', x: cx, y: cy, radius: 50, timer: 20, shooter: p });
                     break;
@@ -5624,8 +6171,8 @@
                     p._poisonTickTimer = (p._poisonTickTimer || 45) - 1;
                     if (p._poisonTickTimer <= 0) {
                         if (!hasDamageShield(p)) {
-                            p.currentHp = Math.max(0, p.currentHp - 1);
-                            registerDamageFeedback(p, 1, '#7fe06b');
+                            p.currentHp = Math.max(0, p.currentHp - POISON_TICK_DAMAGE);
+                            registerDamageFeedback(p, POISON_TICK_DAMAGE, '#7fe06b');
                         }
                         p.bushRevealTimer = 60;
                         if (p.currentHp <= 0 && p._poisonBy) {
@@ -6092,7 +6639,7 @@
             if (player.regenCooldown > 0) { player.regenCooldown--; return; }
             player.regenTimer++;
             if (player.regenTimer >= 90) {
-                player.currentHp = Math.min(player.maxHp, player.currentHp + 1);
+                player.currentHp = Math.min(player.maxHp, player.currentHp + PASSIVE_REGEN_AMOUNT);
                 player.regenTimer = 0;
             }
         }
@@ -6126,6 +6673,7 @@
             drawHealthPacks();
             drawPlayers();
             drawDamagePopups();
+            drawHealPickupEffects();
             drawSnakeMinions();
             drawBushes();
             drawSuperEffects();
@@ -6535,11 +7083,13 @@
         function hideAllUI() {
             document.querySelector('.guide').style.display = 'none';
             document.querySelector('.menu').style.display = 'none';
+            document.getElementById('account-chip').style.display = 'none';
             document.getElementById('joystick-container').style.display = 'none';
             document.getElementById('shoot-joystick-container').style.display = 'none';
             document.getElementById('game-modes-container').style.display = 'none';
             document.getElementById('map-select-panel').style.display = 'none';
             document.getElementById('player-menu').style.display = 'none';
+            document.getElementById('profile-panel').style.display = 'none';
             document.getElementById('game-over-overlay').style.display = 'none';
             document.getElementById('stardrop-overlay').style.display = 'none';
             document.getElementById('daily-btn').style.display = 'none';
@@ -6549,6 +7099,7 @@
         function showAllUI() {
             document.querySelector('.guide').style.display = 'block';
             document.querySelector('.menu').style.display = 'flex';
+            document.getElementById('account-chip').style.display = 'flex';
             document.getElementById('daily-btn').style.display = 'block';
             document.getElementById('history-btn').style.display = 'block';
             if (window.innerWidth <= 1024 || ('ontouchstart' in window)) {
@@ -6564,6 +7115,10 @@
         }
 
         function startGame() {
+            if (!currentAccount) {
+                showAccountOverlay();
+                return;
+            }
             hideAllUI();
             setupGameMode(currentGameMode);
             gameStarted = true;
@@ -6859,7 +7414,23 @@
             return null; // all tiers done
         }
 
+        function tryAutoUnlockCreditTier() {
+            const nextTier = creditsNextTier();
+            if (!nextTier) return false;
+            const pending = Object.values(playersData).find(p => p.rarity === nextTier && p.creditCost && !unlockedNexus.includes(p.id));
+            if (!pending) return false;
+            if (playerCredits < pending.creditCost) return false;
+
+            playerCredits -= pending.creditCost;
+            unlockedNexus.push(pending.id);
+            saveProgress();
+            showCoins();
+            showLootboxPopup(`🎖️ Auto Unlock: ${pending.name} (${rarityLabels[pending.rarity]}) for ${pending.creditCost} credits`);
+            return true;
+        }
+
         function renderCreditsPanel() {
+            tryAutoUnlockCreditTier();
             const nextTier = creditsNextTier();
 
             // Progress bar
@@ -6953,7 +7524,7 @@
                 card.innerHTML = `${badge}${imgHtml}${fallback}
                     <h3 style="font-size:13px; margin:6px 0 2px; color:${mode==='owned' ? rc : '#fff'};">${pd.name}</h3>
                     <p style="color:${rc}; font-weight:bold; margin:2px 0; font-size:12px;">${rarityLabels[tier.rarity]}</p>
-                    <p style="font-size:11px; margin:2px 0;">HP:${Math.round(pd.hp*bBonus)} Dmg:${Math.round(pd.laserDamage*bBonus)}</p>
+                    <p style="font-size:11px; margin:2px 0;">HP:${Math.round(pd.hp*bBonus*COMBAT_STAT_SCALE)} Dmg:${Math.round(pd.laserDamage*bBonus*COMBAT_STAT_SCALE)}</p>
                     <p style="font-size:11px; margin:2px 0;">Spd:${pd.speed} Rng:${pd.laserRange}</p>
                     ${pd.attackType ? `<p style="font-size:10px; margin:2px 0; color:#88aaff;">🎯 ${pd.attackType}</p>` : ''}
                     <button class="btn choose-btn" ${btnDisabled ? 'disabled' : ''} style="font-size:12px; padding:5px 10px; margin-top:4px; width:100%; ${btnStyle}">${btnLabel}</button>`;
@@ -7124,15 +7695,18 @@
             const bonus = getStatBonus(playerId);
             const isSelected = selectedNexusId === playerId;
             const isUnlocked = unlockedNexus.includes(playerId);
+            const nexusMedals = getNexusMedals(playerId);
+            const nextMedalMilestone = getNextNexusMedalMilestone(playerId);
 
             document.getElementById('pd-img').src = pd.img || '';
             document.getElementById('pd-img').style.borderColor = pRarityColor;
             document.getElementById('pd-name').textContent = pd.name;
             document.getElementById('pd-rarity').textContent = pRarityLabel;
             document.getElementById('pd-rarity').style.color = pRarityColor;
-            document.getElementById('pd-level').textContent = `⚡ Power Level ${pLevel}/14`;
-            document.getElementById('pd-hp').textContent = Math.round(pd.hp * bonus);
-            document.getElementById('pd-dmg').textContent = Math.round(pd.laserDamage * bonus);
+            document.getElementById('pd-level').textContent = `⚡ Power Level ${pLevel}/14 • 🏅 Medals ${nexusMedals}` +
+                (nextMedalMilestone ? ` (next reward at ${nextMedalMilestone})` : ' (all mastery rewards claimed)');
+            document.getElementById('pd-hp').textContent = Math.round(pd.hp * bonus * COMBAT_STAT_SCALE);
+            document.getElementById('pd-dmg').textContent = Math.round(pd.laserDamage * bonus * COMBAT_STAT_SCALE);
             document.getElementById('pd-spd').textContent = pd.speed;
             document.getElementById('pd-rng').textContent = pd.laserRange;
             document.getElementById('player-detail-box').style.borderColor = pRarityColor;
@@ -7420,7 +7994,7 @@
             rarityEl.textContent = rl;
             rarityEl.style.color = rc;
             document.getElementById('char-showcase-stats').innerHTML =
-                `❤️ ${Math.round(pd.hp * bonus)}  &nbsp;⚔️ ${Math.round(pd.laserDamage * bonus)}  &nbsp;💨 ${pd.speed}  &nbsp;🎯 ${pd.laserRange}`;
+                `❤️ ${Math.round(pd.hp * bonus * COMBAT_STAT_SCALE)}  &nbsp;⚔️ ${Math.round(pd.laserDamage * bonus * COMBAT_STAT_SCALE)}  &nbsp;💨 ${pd.speed}  &nbsp;🎯 ${pd.laserRange}`;
         }
 
         function initGame() {
@@ -7452,8 +8026,10 @@
             initBazaar();
             initCreditsPanel();
             initPlayerMenu();
+            initProfilePanel();
             discoverMaps();
             initLevelRewards();
+            initAccountSystem();
             showCoins();
             updateCharShowcase();
             //hide joystick on first screen
