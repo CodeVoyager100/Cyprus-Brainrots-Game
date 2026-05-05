@@ -96,3 +96,21 @@ Last reviewed: 2026-03-31 (session 10)
 - [x] **Bug fix: Bazaar unlock** — Fixed Petras/Rocky key mismatch (`Petras:`/`Rocky:` → `petras:`/`rocky:`) that silently blocked unlocking those two characters
 - [x] **Bounty mode** — 2-minute 3v3 timer match; kills earn team stars; team with most stars wins; always-respawn (5s); bounty HUD shows countdown + team star counts *(bountyTimerFrames, updateBountyTimer(), drawHUD bounty branch)*
 - [x] **Unique attacks per character** — 8 distinct attack types: `standard`, `spread` (3-shot), `triple` (wide 3-fan), `double` (parallel beams), `heavy` (slow ball + AoE), `rapid` (2 quick shots), `homing` (tracks nearest enemy), `boomerang` (returns), `aoehit` (AoE on impact). Bot AI uses same system via `botFireAttack()`. Visual differentiation in `drawLasers()` *(attackType field in playersData, botFireAttack helper, homing/boomerang logic in updateLasers)*
+
+---
+
+## Next Sprint Features (Organized by Difficulty)
+
+### Easy
+- [ ] **Tutorial/Tips Panel** — In-game tooltips explaining mechanics (crates drop items, strafe to dodge, use F key for gadgets, super meter). Reduces learning curve for new players *(modal panel with animated tips, triggered on first-time or via help button)*
+
+### Medium
+- [ ] **Daily Quest Variety** — Expand beyond "play X matches" to skill-based quests: "Get 5 kills in one match", "Survive 2 minutes", "Win 3 in a row", "Earn 100 coins". Tracks progress per-quest *(quest definition array, progress tracking, completion rewards)*
+- [ ] **Leaderboards** — Track player stats globally (total kills, wins, winrate, matches played) and display top 10 players. Shows session-local rankings *(stats aggregation per-account, sorting, leaderboard panel UI)*
+
+### Hard
+- [ ] **Seasonal Battle Pass** — Tiered progression system (50 tiers) with cosmetics/coins/sparks as rewards. Resets monthly. Free + Premium tracks *(tier tracking, reward definitions, seasonal timer, monthly reset logic)*
+- [ ] **Replay System** — Save last 5 match recordings (canvas frame snapshots + input log) and let players watch highlights. Includes playback controls (play/pause/speed) *(frame capture during gameplay, playback engine, storage management)*
+
+### Hardest
+- [ ] **Friend/Clan System** — Add player-to-player messaging, create/join clans, clan chat, clan war tournaments. Enable private lobbies for friends/clan mates *(social graph, clan data model, private match system, messaging UI)*

@@ -30,6 +30,7 @@
             border: 1px solid #ffcc00;
             font-size: 12px;
             pointer-events: none;
+            display: none;
         }
 
         #coins-display {
@@ -171,6 +172,42 @@
             user-select: none;
         }
         #history-btn:hover { background: rgba(30,30,30,0.9); }
+
+        /* ── Tips / Leaderboard quick buttons ── */
+        #tutorial-btn {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 12;
+            background: rgba(0,0,0,0.78);
+            border: 1px solid #66ccff;
+            color: #9fe9ff;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+        #tutorial-btn:hover { background: rgba(0,40,80,0.92); }
+
+        #leaderboard-btn {
+            position: absolute;
+            top: 134px;
+            left: 10px;
+            z-index: 12;
+            background: rgba(0,0,0,0.78);
+            border: 1px solid #ffcc66;
+            color: #ffdd8a;
+            font-size: 13px;
+            font-weight: bold;
+            padding: 6px 11px;
+            border-radius: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+        #leaderboard-btn:hover { background: rgba(80,60,0,0.9); }
 
         .history-row {
             display: flex; align-items: center; gap: 8px;
@@ -361,10 +398,25 @@
                 padding: 4px 8px;
             }
 
+            #tutorial-btn {
+                top: 8px;
+                left: 50%;
+                transform: translateX(-50%);
+                font-size: 13px;
+                padding: 7px 12px;
+            }
+
+            #leaderboard-btn {
+                top: 106px;
+                left: 8px;
+                font-size: 11px;
+                padding: 4px 8px;
+            }
+
             #account-chip {
-                top: 72px !important;
-                max-width: 94vw;
-                padding: 6px 8px;
+                top: 10px !important;
+                max-width: 200px;
+                padding: 8px 12px;
             }
 
             .menu {
@@ -382,9 +434,10 @@
             }
 
             #char-showcase {
-                width: 100%;
+                width: min(86vw, 460px);
                 min-width: 0 !important;
                 padding: 8px 10px !important;
+                top: 50%;
             }
         }
 
@@ -692,17 +745,18 @@
         </div>
     </div>
 
-    <div id="coins-display">💰 Coins: 0<br>🏅 Medals: 0<br>🎖️ Credits: 0</div>
+    <div id="coins-display" style="display:none;">💰 Coins: 0<br>🏅 Medals: 0<br>🎖️ Credits: 0</div>
 
-    <div id="account-chip" style="position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:11; background:rgba(0,0,0,0.76); border:1px solid #44ccff; border-radius:10px; padding:7px 10px; display:flex; align-items:center; gap:8px;">
-        <span id="account-chip-name" style="font-size:13px; color:#9fe9ff;">Guest</span>
-        <button id="account-logout-btn" style="background:#333; color:#ddd; border:1px solid #555; border-radius:7px; padding:4px 8px; cursor:pointer; font-size:12px;">Logout</button>
+    <div id="account-chip" style="position:absolute; top:10px; left:10px; z-index:11; background:rgba(0,0,0,0.82); border:1px solid #44ccff; border-radius:12px; padding:10px 16px; display:flex; flex-direction:column; gap:5px; min-width:170px;">
+        <span id="account-chip-name" style="font-size:20px; font-weight:bold; color:#9fe9ff; cursor:pointer; text-decoration:underline; text-underline-offset:3px; user-select:none;">Guest</span>
+        <span id="account-chip-stats" style="font-size:12px; color:#c8e8ff; line-height:1.65;"></span>
     </div>
 
     <div id="account-auth-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:1400; align-items:center; justify-content:center;">
         <div style="width:min(420px,92vw); background:#121724; border:2px solid #2b8bb8; border-radius:16px; padding:18px 18px 14px; color:#fff;">
-            <h2 style="margin:0 0 6px; color:#8de3ff; text-align:center;">Account</h2>
-            <p style="margin:0 0 12px; color:#9aa8b6; font-size:12px; text-align:center;">Use your name + password (local-only for now, no email required).</p>
+            <p style="margin:0 0 4px; color:#9fe9ff; font-size:22px; font-weight:bold; text-align:center; letter-spacing:0.5px;">Log in or Sign up</p>
+            <h2 style="margin:0 0 6px; color:#8de3ff; text-align:center; font-size:15px; font-weight:normal;">Account</h2>
+            <p style="margin:0 0 12px; color:#9aa8b6; font-size:12px; text-align:center;">Use your name + password (local-only, no email required).</p>
 
             <div style="display:flex; gap:8px; margin-bottom:10px;">
                 <button id="account-tab-login" class="btn" style="flex:1; background:#2b8bb8; color:#001822;">Login</button>
@@ -735,14 +789,24 @@
             </div>
             <div style="background:rgba(255,255,255,0.04); border:1px solid #2e3a4a; border-radius:10px; padding:10px;">
                 <div style="font-size:12px; color:#9ab0c9; margin-bottom:6px;">Favorite Player</div>
-                <select id="profile-favorite-player" style="width:100%; background:#121a2a; color:#fff; border:1px solid #36465f; border-radius:8px; padding:8px;"></select>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <select id="profile-favorite-player" style="flex:1; background:#121a2a; color:#fff; border:1px solid #36465f; border-radius:8px; padding:8px;"></select>
+                    <img id="profile-fav-player-img" src="" style="width:56px; height:56px; border-radius:8px; border:2px solid #36465f; background:#111; object-fit:cover; flex-shrink:0;" />
+                </div>
+            </div>
+            <div style="background:rgba(255,255,255,0.04); border:1px solid #2e3a4a; border-radius:10px; padding:10px;">
+                <div style="font-size:12px; color:#9ab0c9; margin-bottom:6px;">Kill Feed Color</div>
+                <div id="profile-killfeed-colors" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
             </div>
         </div>
         <div style="margin-top:14px; background:rgba(255,255,255,0.03); border:1px solid #2e3a4a; border-radius:10px; padding:10px;">
-            <h3 style="margin:0 0 8px; color:#9fdfff; font-size:16px;">🏅 Medals Per All Players</h3>
+            <h3 style="margin:0 0 8px; color:#9fdfff; font-size:16px;">🏅 Medals Per Players You Have</h3>
             <div id="profile-medals-list" style="max-height:260px; overflow:auto;"></div>
         </div>
-        <button class="btn modal-close" id="close-profile-panel" style="margin-top:12px;">Close</button>
+        <div style="display:flex; gap:8px; margin-top:12px;">
+            <button class="btn modal-close" id="close-profile-panel" style="flex:1;">Close</button>
+            <button id="profile-logout-btn" class="btn" style="background:#8b3a3a; border:1px solid #c84545; color:#ff8080;">🚪 Logout</button>
+        </div>
     </div>
 
     <!-- Daily Challenges button -->
@@ -750,6 +814,12 @@
 
     <!-- Match History button -->
     <button id="history-btn" onclick="openMatchHistory()">📊 History</button>
+
+    <!-- Tutorial button -->
+    <button id="tutorial-btn" onclick="openTutorial()">📖 How to Play</button>
+
+    <!-- Leaderboard button -->
+    <button id="leaderboard-btn" onclick="openLeaderboard()">🏆 Leaderboard</button>
 
     <!-- Kill Streak banner (in-game, canvas-overlay) -->
     <div id="streak-banner"></div>
@@ -775,6 +845,22 @@
         <div id="history-stats" class="history-stats-grid"></div>
         <div id="history-list" style="margin: 14px 0; max-height: 360px; overflow-y: auto;"></div>
         <button class="btn modal-close" id="close-history-panel">Close</button>
+    </div>
+
+    <div id="tutorial-panel" class="modal-panel" style="width:600px; display:none;">
+        <h2>📖 How To Play</h2>
+        <div id="tutorial-content" style="max-height:420px; overflow-y:auto; font-size:14px; line-height:1.7; color:#ccc;"></div>
+        <div style="display:flex; gap:8px; margin-top:12px;">
+            <button class="btn modal-close" id="close-tutorial-panel" style="flex:1;">Close</button>
+            <button class="btn" id="mark-tips-seen-btn" style="flex:1;">Got it!</button>
+        </div>
+    </div>
+
+    <div id="leaderboard-panel" class="modal-panel" style="width:580px; display:none;">
+        <h2>🏆 Leaderboard</h2>
+        <p style="color:#aaa; text-align:center; margin-top:-10px; font-size:12px;">Top players by total wins (local accounts)</p>
+        <div id="leaderboard-list" style="margin:14px 0; max-height:380px; overflow-y:auto;"></div>
+        <button class="btn modal-close" id="close-leaderboard-panel">Close</button>
     </div>
 
     <div id="credits-panel" class="modal-panel" style="width:700px;">
@@ -868,7 +954,7 @@
 
     <div class="menu">
         <!-- Character showcase -->
-        <div id="char-showcase" style="display:flex; align-items:center; gap:14px; background:rgba(255,255,255,0.04); border:1px solid #333; border-radius:14px; padding:10px 16px; margin-bottom:6px; min-width:220px;">
+        <div id="char-showcase" style="display:flex; align-items:center; gap:14px; background:rgba(255,255,255,0.04); border:1px solid #333; border-radius:14px; padding:10px 16px; min-width:220px; position:fixed; left:50%; top:50%; transform:translate(-50%, -50%); z-index:12;">
             <div id="char-showcase-img-wrap" style="width:72px; height:72px; flex-shrink:0; border-radius:10px; overflow:hidden; border:2px solid #555; background:#111;">
                 <img id="char-showcase-img" src="" style="width:100%; height:100%; object-fit:cover; animation: showcasePulse 2s ease-in-out infinite;" />
             </div>
@@ -880,7 +966,6 @@
         </div>
         <button class="btn" id="game-mode-btn">🎮 Game Modes</button>
         <button class="btn" id="start-btn">⚔️ Battle!</button>
-        <button class="btn" id="profile-btn" style="background:#1f2a3e; border:1px solid #8de3ff; color:#8de3ff;">👤 Profile</button>
         <button class="btn" id="credits-btn" style="background:#1a3a3a; border:1px solid #4ae8d8; color:#4ae8d8;">🎖️ Credits</button>
         <button class="btn" id="switch-player-btn"> Players</button>
     </div>
@@ -1002,7 +1087,7 @@
         let claimedNexusMedalMilestones = JSON.parse(localStorage.getItem('claimedNexusMedalMilestones') ?? '{}');
         let accountAuthMode = 'login';
         let currentAccount = null;
-        const PROFILE_AVATAR_ICONS = ['😀', '😎', '🤖', '🔥', '⚡', '🛡️', '👑', '🐍', '🦾', '🎯', '🚀', '⭐'];
+        const PROFILE_AVATAR_ICONS = ['😀', '😎', '🤖', '🔥', '⚡', '🛡️', '👑', '🐍', '🦾', '🎯', '🚀', '⭐','🐖','💘'];
 
         function normalizeUsername(value) {
             return (value || '').trim().toLowerCase();
@@ -1022,9 +1107,15 @@
 
         function updateAccountChip() {
             const chipName = document.getElementById('account-chip-name');
+            const chipStats = document.getElementById('account-chip-stats');
             const profile = getCurrentProfile();
             const avatar = profile?.avatarIcon || '👤';
             chipName.textContent = profile ? `${avatar} ${profile.username}` : 'Guest';
+            if (chipStats) {
+                chipStats.innerHTML = profile
+                    ? `💰 ${playerCoins}&nbsp;&nbsp;🏅 ${playerMedals}<br>⚡ ${energySparks}&nbsp;&nbsp;🎖️ ${playerCredits}`
+                    : '';
+            }
         }
 
         function saveCurrentAccountProfile() {
@@ -1086,13 +1177,14 @@
             const store = getAccountsStore();
             const key = normalizeUsername(username);
             const rawName = (username || '').trim();
+            const trimmedPassword = (password || '').trim();
             if (!key || key.length < 3) return { ok: false, message: 'Name must be at least 3 characters.' };
-            if (password.length < 4) return { ok: false, message: 'Password must be at least 4 characters.' };
+            if (trimmedPassword.length < 4) return { ok: false, message: 'Password must be at least 4 characters.' };
             if (store[key]) return { ok: false, message: 'Name already exists.' };
 
             store[key] = {
                 username: key,
-                password,
+                password: trimmedPassword,
                 profile: {
                     username: rawName,
                     bio: '',
@@ -1127,9 +1219,9 @@
             loginTab.addEventListener('click', () => setAccountAuthMode('login'));
             registerTab.addEventListener('click', () => setAccountAuthMode('register'));
 
-            submitBtn.addEventListener('click', () => {
+            function doAccountSubmit() {
                 const username = document.getElementById('account-username').value.trim();
-                const password = document.getElementById('account-password').value;
+                const password = document.getElementById('account-password').value.trim();
 
                 if (accountAuthMode === 'register') {
                     const r = registerAccount(username, password);
@@ -1145,12 +1237,23 @@
                 setCurrentAccount(r.key);
                 setAccountAuthMessage('Logged in!', true);
                 hideAccountOverlay();
+            }
+
+            submitBtn.addEventListener('click', doAccountSubmit);
+
+            // Allow pressing Enter in either input field to submit
+            ['account-username', 'account-password'].forEach(id => {
+                document.getElementById(id).addEventListener('keydown', e => {
+                    if (e.key === 'Enter') doAccountSubmit();
+                });
             });
 
-            logoutBtn.addEventListener('click', () => {
-                setCurrentAccount(null);
-                showAccountOverlay();
-            });
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', () => {
+                    setCurrentAccount(null);
+                    showAccountOverlay();
+                });
+            }
 
             setAccountAuthMode('login');
             const remembered = localStorage.getItem('nexusCurrentAccount');
@@ -1209,33 +1312,66 @@
 
             const favSelect = document.getElementById('profile-favorite-player');
             favSelect.innerHTML = '';
-            Object.values(playersData).forEach(pd => {
+            const unlockedPlayersList = Object.values(playersData).filter(pd => unlockedNexus.includes(pd.id));
+            unlockedPlayersList.forEach(pd => {
                 const opt = document.createElement('option');
                 opt.value = pd.id;
                 opt.textContent = pd.name;
                 favSelect.appendChild(opt);
             });
-            favSelect.value = profile.favoriteNexus && playersData[profile.favoriteNexus] ? profile.favoriteNexus : 'default';
+            const validFav = (profile.favoriteNexus && playersData[profile.favoriteNexus] && unlockedNexus.includes(profile.favoriteNexus))
+                ? profile.favoriteNexus : (unlockedPlayersList[0]?.id || 'default');
+            profile.favoriteNexus = validFav;
+            favSelect.value = validFav;
+            function updateFavPlayerImg(id) {
+                const imgEl = document.getElementById('profile-fav-player-img');
+                if (imgEl) imgEl.src = playersData[id]?.img || '';
+            }
+            updateFavPlayerImg(validFav);
             favSelect.onchange = () => {
                 profile.favoriteNexus = favSelect.value;
                 saveCurrentAccountProfile();
+                updateFavPlayerImg(favSelect.value);
             };
 
+            // Kill feed color picker
+            const killFeedColors = ['#ffffff', '#ffcc00', '#ff4444', '#44ccff', '#44ff88', '#ff88ff', '#ffaa00'];
+            const colorNames = ['White', 'Gold', 'Red', 'Cyan', 'Green', 'Magenta', 'Orange'];
+            const colorWrap = document.getElementById('profile-killfeed-colors');
+            colorWrap.innerHTML = '';
+            killFeedColors.forEach((col, idx) => {
+                const b = document.createElement('button');
+                const active = killFeedColor === col;
+                b.textContent = colorNames[idx];
+                b.style.cssText = `padding:6px 10px; border-radius:8px; border:2px solid ${active ? col : '#384a60'}; background:${active ? col + '30' : '#142034'}; color:${col}; cursor:pointer; font-size:11px; font-weight:bold;`;
+                b.onclick = () => {
+                    killFeedColor = col;
+                    localStorage.setItem('killFeedColor', killFeedColor);
+                    renderProfilePanel();
+                };
+                colorWrap.appendChild(b);
+            });
+
             const medalsEntries = Object.values(playersData)
+                .filter(pd => unlockedNexus.includes(pd.id))
                 .map(pd => ({ id: pd.id, name: pd.name, medals: getNexusMedals(pd.id) }))
                 .sort((a, b) => b.medals - a.medals || a.name.localeCompare(b.name));
 
             const medalsList = document.getElementById('profile-medals-list');
-            medalsList.innerHTML = medalsEntries.map((m, i) => `
-                <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 8px; border-radius:8px; margin:4px 0; background:${i === 0 ? 'rgba(255,204,0,0.14)' : 'rgba(255,255,255,0.02)'}; border:1px solid ${i === 0 ? '#8f7a2f' : '#2a3545'};">
-                    <span style="color:#e6f3ff; font-size:13px;">${m.name}</span>
-                    <span style="color:#ffcc66; font-weight:bold; font-size:13px;">🏅 ${m.medals}</span>
-                </div>
-            `).join('');
+            if (medalsEntries.length === 0) {
+                medalsList.innerHTML = '<div style="color:#7a9ab8; font-size:13px; text-align:center; padding:12px;">No medals earned yet. Play some matches!</div>';
+            } else {
+                medalsList.innerHTML = medalsEntries.map((m, i) => `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 8px; border-radius:8px; margin:4px 0; background:${i === 0 ? 'rgba(255,204,0,0.14)' : 'rgba(255,255,255,0.02)'}; border:1px solid ${i === 0 ? '#8f7a2f' : '#2a3545'};">
+                        <span style="color:#e6f3ff; font-size:13px;">${m.name}</span>
+                        <span style="color:#ffcc66; font-weight:bold; font-size:13px;">🏅 ${m.medals}</span>
+                    </div>
+                `).join('');
+            }
         }
 
         function initProfilePanel() {
-            document.getElementById('profile-btn').addEventListener('click', () => {
+            document.getElementById('account-chip-name').addEventListener('click', () => {
                 if (!currentAccount) {
                     showAccountOverlay();
                     return;
@@ -1246,6 +1382,12 @@
 
             document.getElementById('close-profile-panel').addEventListener('click', () => {
                 document.getElementById('profile-panel').style.display = 'none';
+            });
+
+            document.getElementById('profile-logout-btn').addEventListener('click', () => {
+                setCurrentAccount(null);
+                document.getElementById('profile-panel').style.display = 'none';
+                showAccountOverlay();
             });
         }
 
@@ -1320,7 +1462,10 @@
         };
 
         function getPlayerPowerLevel(playerId) {
-            return playerPowerLevels[playerId] || 1;
+            if (!playerPowerLevels || typeof playerPowerLevels !== 'object' || Array.isArray(playerPowerLevels)) {
+                playerPowerLevels = {};
+            }
+            return Math.max(1, toSafeInt(playerPowerLevels[playerId] || 1));
         }
 
         function getUpgradeCost(playerId) {
@@ -1331,13 +1476,21 @@
             return { sparks: costs[level - 1][0], coins: costs[level - 1][1] };
         }
 
+        function toSafeInt(value) {
+            const n = Number(value);
+            return Number.isFinite(n) ? Math.floor(n) : 0;
+        }
+
         function upgradePlayer(playerId) {
             const cost = getUpgradeCost(playerId);
             if (!cost) return false;
-            if (energySparks < cost.sparks || playerCoins < cost.coins) return false;
-            energySparks -= cost.sparks;
-            playerCoins -= cost.coins;
-            playerPowerLevels[playerId] = (playerPowerLevels[playerId] || 1) + 1;
+            const currentSparks = toSafeInt(energySparks);
+            const currentCoins = toSafeInt(playerCoins);
+            if (currentSparks < cost.sparks || currentCoins < cost.coins) return false;
+            energySparks = currentSparks - cost.sparks;
+            playerCoins = currentCoins - cost.coins;
+            const currLevel = Math.max(1, toSafeInt(playerPowerLevels[playerId] || 1));
+            playerPowerLevels[playerId] = currLevel + 1;
             saveProgress();
             showCoins();
             return true;
@@ -1524,17 +1677,7 @@
                 imageCache[src].src = src;
                 imageCache[src].onerror = function () {
                     console.warn('Failed to load image:', src);
-                    // Create a colored fallback
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 100;
-                    canvas.height = 100;
-                    const ctx = canvas.getContext('2d');
-                    ctx.fillStyle = '#ff00ff';
-                    ctx.fillRect(0, 0, 100, 100);
-                    ctx.fillStyle = '#000';
-                    ctx.font = '12px Arial';
-                    ctx.fillText('teammap', 10, 50);
-                    imageCache[src].src = canvas.toDataURL();
+                    imageCache[src]._failed = true;
                 };
             }
             return imageCache[src];
@@ -1726,7 +1869,7 @@
             petras: {
                 id: 'petras',
                 name: 'Petras',
-                img: 'images/petras.png',
+                img: 'images/Petras.png',
                 color: '#e8e84a',
                 hp: 50,
                 speed: 2.5,
@@ -1742,7 +1885,7 @@
             rocky: {
                 id: 'rocky',
                 name: 'Rocky',
-                img: 'images/rocky.png',
+                img: 'images/Rocky.png',
                 color: '#e8e84a',
                 hp: 50,
                 speed: 2.5,
@@ -3439,14 +3582,15 @@
                 }
 
                 // Try to draw player image if available
-                if (p.img && imageCache[p.img] && imageCache[p.img].complete) {
-                    ctx.drawImage(imageCache[p.img], px, py, p.size, p.size);
+                const imgEntry = p.img ? imageCache[p.img] : null;
+                if (imgEntry && imgEntry.complete && !imgEntry._failed && imgEntry.naturalWidth > 0) {
+                    ctx.drawImage(imgEntry, px, py, p.size, p.size);
 
                     // Add glow effect for human player
                     if (p.isHuman) {
                         ctx.shadowColor = p.color;
                         ctx.shadowBlur = 15;
-                        ctx.drawImage(imageCache[p.img], px, py, p.size, p.size);
+                        ctx.drawImage(imgEntry, px, py, p.size, p.size);
                         ctx.shadowBlur = 0;
                     }
                 } else {
@@ -3817,9 +3961,11 @@
             const gadgetBtn  = document.getElementById('gadget-btn');
             const gadgetFill = document.getElementById('gadget-btn-fill');
             const gadgetLbl  = document.getElementById('gadget-btn-label');
+            const gadgetBtnContainer = document.getElementById('gadget-btn-container');
+            if (gadgetBtnContainer) gadgetBtnContainer.style.display = hasGadget ? '' : 'none';
             if (gadgetBtn && gadgetFill && gadgetLbl) {
                 gadgetFill.style.height = Math.round(gdPct * 100) + '%';
-                gadgetLbl.textContent   = !hasGadget ? '🔒' : (gdReady ? (gdInfo?.icon || 'G') : Math.ceil(gdCD / 60) + 's');
+                gadgetLbl.textContent   = gdReady ? (gdInfo?.icon || 'G') : Math.ceil(gdCD / 60) + 's';
                 if (gdReady) gadgetBtn.classList.add('ready');
                 else gadgetBtn.classList.remove('ready');
             }
@@ -6324,6 +6470,8 @@
             const loseCoins = is3v3 ? 50  : 25;
             const winMedals  = is3v3 ? 12  : 8;
             const loseMedals = is3v3 ? -4  : -2;
+            const winSparks  = is3v3 ? 30  : 20;
+            const loseSparks = is3v3 ? 12  : 8;
 
             const winCredits = is3v3 ? 30 : 20;
             const loseCredits = is3v3 ? 15 : 10;
@@ -6335,16 +6483,25 @@
 
                 playerCoins += winCoins;
                 playerCredits += winCredits;
+                energySparks += winSparks;
                 awardMedals(winMedals);
                 saveProgress();
                 showCoins();
-                messageEl.innerHTML += `<br><br>🎉 You earned ${winCoins} coins, +${winMedals} 🏅 medals, and +${winCredits} 🎖️ credits!`;
+                messageEl.innerHTML += `<br><br>🎉 You earned ${winCoins} coins, +${winMedals} 🏅 medals, +${winCredits} 🎖️ credits and +${winSparks} ⚡ sparks!`;
 
                 // Progress daily challenges
+                const humanPlayer = matchStatsList.find(s => s.isHuman) || { kills: 0, damageDealt: 0 };
                 progressDaily('wins', 1);
                 progressDaily('games', 1);
+                progressDaily('kills', humanPlayer.kills || 0);
+                progressDaily('damage', humanPlayer.damageDealt || 0);
+                progressDaily('coins', winCoins);
+                progressDaily('winstreak', 1);
+                
+                // Update win streak
+                currentWinStreak++;
+                
                 // Save to match history
-                const humanPlayer = matchStatsList.find(s => s.isHuman) || { kills: 0 };
                 saveMatchToHistory(true, currentGameMode, humanPlayer.kills || 0, winMedals, selectedNexusId, winCoins);
             } else {
                 title.textContent = 'Game Over';
@@ -6353,14 +6510,22 @@
 
                 playerCoins += loseCoins;
                 playerCredits += loseCredits;
+                energySparks += loseSparks;
                 awardMedals(loseMedals);
                 saveProgress();
                 showCoins();
-                messageEl.innerHTML += `<br><br>💫 You earned ${loseCoins} coins, ${loseMedals} 🏅 medals, and +${loseCredits} 🎖️ credits.`;
+                messageEl.innerHTML += `<br><br>💫 You earned ${loseCoins} coins, ${loseMedals} 🏅 medals, +${loseCredits} 🎖️ credits and +${loseSparks} ⚡ sparks.`;
 
                 // Progress daily challenges
+                const humanPlayer2 = matchStatsList.find(s => s.isHuman) || { kills: 0, damageDealt: 0 };
                 progressDaily('games', 1);
-                const humanPlayer2 = matchStatsList.find(s => s.isHuman) || { kills: 0 };
+                progressDaily('kills', humanPlayer2.kills || 0);
+                progressDaily('damage', humanPlayer2.damageDealt || 0);
+                progressDaily('coins', loseCoins);
+                
+                // Reset win streak on loss
+                currentWinStreak = 0;
+                
                 saveMatchToHistory(false, currentGameMode, humanPlayer2.kills || 0, loseMedals, selectedNexusId, loseCoins);
             }
             // Reset streak on game end
@@ -6619,7 +6784,7 @@
             // Show main menu UI
             document.querySelector('.guide').style.display = 'block';
             document.querySelector('.menu').style.display = 'flex';
-            document.getElementById('coins-display').style.display = 'block';
+            // coins-display is merged into account chip; keep hidden in menu
 
             // Reset camera
             camera = { x: 0, y: 0, width: gameCanvas.width, height: gameCanvas.height };
@@ -6702,12 +6867,19 @@
 
         const DAILY_CHALLENGE_DEFS = [
             { id: 'win2',      desc: 'Win 2 matches',             type: 'wins',   target: 2,    reward: { type:'sparks', amount: 250 },  icon: '🏆' },
+            { id: 'win3',      desc: 'Win 3 matches',             type: 'wins',   target: 3,    reward: { type:'sparks', amount: 400 },  icon: '🏆' },
             { id: 'kill8',     desc: 'Get 8 kills in total',      type: 'kills',  target: 8,    reward: { type:'sparks', amount: 300 },  icon: '⚡' },
+            { id: 'kill12',    desc: 'Get 12 kills in total',     type: 'kills',  target: 12,   reward: { type:'sparks', amount: 450 },  icon: '⚡' },
             { id: 'play3',     desc: 'Play 3 matches',            type: 'games',  target: 3,    reward: { type:'sparks', amount: 220 },  icon: '🎮' },
+            { id: 'play5',     desc: 'Play 5 matches',            type: 'games',  target: 5,    reward: { type:'sparks', amount: 380 },  icon: '🎮' },
             { id: 'streak3',   desc: 'Get a 3-kill streak',       type: 'streak', target: 3,    reward: { type:'sparks', amount: 360 },  icon: '🔥' },
             { id: 'streak5',   desc: 'Reach RAMPAGE (5 streak)',  type: 'streak', target: 5,    reward: { type:'sparks', amount: 650 },  icon: '💥' },
             { id: 'damage1200',desc: 'Deal 1200 total damage',    type: 'damage', target: 1200, reward: { type:'sparks', amount: 320 },  icon: '💣' },
             { id: 'damage2000',desc: 'Deal 2000 total damage',    type: 'damage', target: 2000, reward: { type:'sparks', amount: 520 },  icon: '💥' },
+            { id: 'winstreak2',desc: 'Win 2 matches in a row',    type: 'winstreak', target: 2, reward: { type:'coins', amount: 150 }, icon: '🔴' },
+            { id: 'winstreak3',desc: 'Win 3 matches in a row',    type: 'winstreak', target: 3, reward: { type:'sparks', amount: 400 }, icon: '🎯' },
+            { id: 'coins200',  desc: 'Earn 200 coins total',      type: 'coins',  target: 200, reward: { type:'sparks', amount: 280 }, icon: '💰' },
+            { id: 'coins500',  desc: 'Earn 500 coins total',      type: 'coins',  target: 500, reward: { type:'sparks', amount: 550 }, icon: '💰' },
         ];
 
         function getDailyKey() {
@@ -6821,6 +6993,8 @@
         let currentStreak = 0;
         let streakTimer   = 0; // frames since last kill
         const STREAK_WINDOW = 600; // 10 seconds at 60fps
+
+        let currentWinStreak = 0; // Track wins in a row
 
         const STREAK_LABELS = {
             2: { text: 'DOUBLE KILL!', color: '#ffcc00', size: 34 },
@@ -6943,6 +7117,103 @@
             `).join('');
         }
 
+        // ── TUTORIAL & TIPS ──────────────────────────────────────────────────────
+
+        const GAME_TIPS = [
+            { title: '🎯 Basic Movement', text: 'Use Arrow Keys / WASD / Left Joystick to move around the map. Strafe side-to-side to avoid enemy fire.' },
+            { title: '🔫 Shooting', text: 'Click / Tap / Right Joystick to aim and fire. Lead your shots on moving targets. Different characters have different attack types!' },
+            { title: '⚡ Super Ability', text: 'Each character has a unique super ability charged by dealing damage. Press the Super button (or assigned key) to unleash it for massive effect.' },
+            { title: '💚 Health Packs', text: 'Green cross drops heal you for 10 HP. Grab them when your health is low. You auto-heal slowly when not taking damage.' },
+            { title: '🛡️ Obstacles', text: 'Trees, rocks, and water block your movement and bullets. Use them as cover against enemies.' },
+            { title: '🏆 Game Modes', text: 'Try different modes: Showdown (Free-for-All), Team Battle (3v3), Ball-Goal (soccer), and more. Each has unique rewards!' },
+            { title: '💰 Progression', text: 'Earn coins and medals from every match. Spend coins to unlock new characters in the Bazaar. Use energy sparks to upgrade character stats.' },
+            { title: '⚔️ Daily Challenges', text: 'Complete daily challenges for extra energy sparks. Win streaks, survive matches, deal damage – the more you play, the more you earn!' },
+            { title: '🎮 Mobile Support', text: 'Play on mobile with touch joysticks (left for movement, right for aiming). Adjustable in settings when on touch devices.' },
+            { title: '🌟 Tips for Victory', text: 'Stay mobile, use cover, focus fire with teammates, manage your health, and upgrade your favorite characters. Good luck!' },
+        ];
+
+        function openTutorial() {
+            renderTutorial();
+            document.getElementById('tutorial-panel').style.display = 'block';
+        }
+
+        function renderTutorial() {
+            const content = document.getElementById('tutorial-content');
+            content.innerHTML = GAME_TIPS.map(tip => `
+                <div style="margin-bottom:14px; padding:10px; background:rgba(68,204,255,0.08); border-left:3px solid #44ccff; border-radius:6px;">
+                    <div style="font-weight:bold; color:#44ccff; font-size:14px; margin-bottom:6px;">${tip.title}</div>
+                    <div style="color:#bbb; font-size:13px; line-height:1.5;">${tip.text}</div>
+                </div>
+            `).join('');
+        }
+
+        // ── LEADERBOARDS ─────────────────────────────────────────────────────────
+
+        function getLeaderboardStats(accountKey) {
+            // Load account data
+            const store = getAccountsStore();
+            const account = store[accountKey];
+            if (!account) return null;
+
+            // Load account's match history (currently global; could be per-account later)
+            const history = loadMatchHistory();
+            const accountMatches = history; // For now, all matches are global
+            
+            const totalMatches = accountMatches.length;
+            const wins = accountMatches.filter(h => h.result === 'win').length;
+            const totalKills = accountMatches.reduce((sum, h) => sum + (h.kills || 0), 0);
+            const winrate = totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0;
+
+            return {
+                username: account.profile?.username || 'Unknown',
+                wins,
+                totalMatches,
+                totalKills,
+                winrate,
+                avatar: account.profile?.avatarIcon || '👤',
+            };
+        }
+
+        function openLeaderboard() {
+            renderLeaderboard();
+            document.getElementById('leaderboard-panel').style.display = 'block';
+        }
+
+        function renderLeaderboard() {
+            const list = document.getElementById('leaderboard-list');
+            const store = getAccountsStore();
+            
+            // Get stats for all accounts
+            const stats = Object.keys(store)
+                .map(key => ({ key, ...getLeaderboardStats(key) }))
+                .filter(s => s && s.totalMatches > 0)
+                .sort((a, b) => b.wins - a.wins || b.totalKills - a.totalKills);
+
+            if (stats.length === 0) {
+                list.innerHTML = '<p style="color:#aaa; text-align:center; padding:20px;">No matches played yet on any account.</p>';
+                return;
+            }
+
+            list.innerHTML = stats.map((s, idx) => `
+                <div style="display:flex; align-items:center; padding:10px; margin:6px 0; background:${idx < 3 ? (idx === 0 ? 'rgba(255,204,0,0.12)' : idx === 1 ? 'rgba(192,192,192,0.12)' : 'rgba(205,127,50,0.12)') : 'rgba(255,255,255,0.03)'}; border-radius:8px; border-left:4px solid ${idx < 3 ? (idx === 0 ? '#ffcc00' : idx === 1 ? '#c0c0c0' : '#cd7f32') : '#384a60'};">
+                    <div style="font-size:24px; margin-right:12px; min-width:30px; text-align:center;">
+                        ${idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`}
+                    </div>
+                    <div style="flex:1;">
+                        <div style="color:#8de3ff; font-weight:bold; font-size:13px;">${s.avatar} ${s.username}</div>
+                        <div style="color:#aaa; font-size:11px; margin-top:4px;">
+                            <span style="color:#ffcc00; margin-right:12px;">🏆 ${s.wins} Wins</span>
+                            <span style="color:#44ff88; margin-right:12px;">⚔️ ${s.totalKills} Kills</span>
+                            <span style="color:#8f8f8f;">📊 ${s.winrate}% WR</span>
+                        </div>
+                    </div>
+                    <div style="text-align:right; font-size:12px; color:#aaa;">
+                        <div>${s.totalMatches} matches</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
         // ── UI Functions ─────────────────────────────────────────────────────────
 
         const levelRewards = [
@@ -7025,6 +7296,11 @@
             claimLevelRewards();
             document.getElementById('coins-display').innerHTML =
                 `💰 Coins: ${playerCoins}<br>🏅 Medals: ${playerMedals} &nbsp;(Lv ${playerLevel})<br>⚡ Energy Sparks: ${energySparks}<br>🎖️ Credits: ${playerCredits}`;
+            // Keep account chip stats in sync
+            const chipStats = document.getElementById('account-chip-stats');
+            if (chipStats && currentAccount) {
+                chipStats.innerHTML = `💰 ${playerCoins}&nbsp;&nbsp;🏅 ${playerMedals}<br>⚡ ${energySparks}&nbsp;&nbsp;🎖️ ${playerCredits}`;
+            }
         }
 
         function renderLevelRewards() {
@@ -7076,6 +7352,20 @@
             document.getElementById('close-history-panel').addEventListener('click', () => {
                 document.getElementById('history-panel').style.display = 'none';
             });
+            
+            document.getElementById('close-tutorial-panel').addEventListener('click', () => {
+                document.getElementById('tutorial-panel').style.display = 'none';
+            });
+            
+            document.getElementById('mark-tips-seen-btn').addEventListener('click', () => {
+                localStorage.setItem('tutorialSeen', 'true');
+                document.getElementById('tutorial-panel').style.display = 'none';
+            });
+            
+            document.getElementById('close-leaderboard-panel').addEventListener('click', () => {
+                document.getElementById('leaderboard-panel').style.display = 'none';
+            });
+            
             // Show badge if claimable on load
             updateDailyBadge();
         }
@@ -7094,14 +7384,18 @@
             document.getElementById('stardrop-overlay').style.display = 'none';
             document.getElementById('daily-btn').style.display = 'none';
             document.getElementById('history-btn').style.display = 'none';
+            document.getElementById('tutorial-btn').style.display = 'none';
+            document.getElementById('leaderboard-btn').style.display = 'none';
         }
 
         function showAllUI() {
-            document.querySelector('.guide').style.display = 'block';
+            document.querySelector('.guide').style.display = 'none';
             document.querySelector('.menu').style.display = 'flex';
             document.getElementById('account-chip').style.display = 'flex';
             document.getElementById('daily-btn').style.display = 'block';
             document.getElementById('history-btn').style.display = 'block';
+            document.getElementById('tutorial-btn').style.display = 'block';
+            document.getElementById('leaderboard-btn').style.display = 'block';
             if (window.innerWidth <= 1024 || ('ontouchstart' in window)) {
                 document.getElementById('joystick-container').style.display = 'block';
                 document.getElementById('shoot-joystick-container').style.display = 'block';
@@ -7758,21 +8052,31 @@
                 if (pLevel >= 14) {
                     upgradeDiv.innerHTML = '<p style="color:#ffcc00; font-weight:bold;">⭐ MAX LEVEL ⭐</p>';
                 } else {
-                    const canUpgrade = cost && energySparks >= cost.sparks && playerCoins >= cost.coins;
+                    const availableSparks = toSafeInt(energySparks);
+                    const availableCoins = toSafeInt(playerCoins);
+                    const canUpgrade = cost && availableSparks >= cost.sparks && availableCoins >= cost.coins;
                     upgradeDiv.innerHTML = `
                         <p style="color:#aaa; font-size:13px; margin:4px 0;">Upgrade to Lv ${pLevel + 1}:</p>
                         <p style="font-size:13px; margin:2px 0;">⚡ ${cost.sparks} Sparks + 💰 ${cost.coins} Coins</p>
-                        <p style="font-size:11px; color:#888; margin:2px 0;">You have: ⚡ ${energySparks} | 💰 ${playerCoins}</p>
-                        <button id="pd-upgrade-btn" class="btn" ${canUpgrade ? '' : 'disabled'}
+                        <p style="font-size:11px; color:#888; margin:2px 0;">You have: ⚡ ${availableSparks} | 💰 ${availableCoins}</p>
+                        <button id="pd-upgrade-btn" class="btn"
                             style="font-size:14px; padding:6px 16px; margin-top:6px; background:${canUpgrade ? '#44ccff' : '#555'}; color:${canUpgrade ? '#000' : '#888'};">
                             ⚡ Upgrade
                         </button>`;
                     const uBtn = upgradeDiv.querySelector('#pd-upgrade-btn');
-                    if (uBtn && canUpgrade) {
+                    if (uBtn) {
                         uBtn.onclick = () => {
-                            if (upgradePlayer(playerId)) {
+                            const upgraded = upgradePlayer(playerId);
+                            if (upgraded) {
                                 showPlayerDetail(playerId); // Refresh
                                 updatePlayerMenu(); // Refresh icons
+                            } else {
+                                const latestCost = getUpgradeCost(playerId);
+                                const s = toSafeInt(energySparks);
+                                const c = toSafeInt(playerCoins);
+                                if (latestCost) {
+                                    showLootboxPopup(`Need ⚡ ${latestCost.sparks} and 💰 ${latestCost.coins}. You have ⚡ ${s} and 💰 ${c}.`);
+                                }
                             }
                         };
                     }
